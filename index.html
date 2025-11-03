@@ -11,7 +11,10 @@
       <aside class="sidebar" aria-label="Hovednavigasjon">
         <div class="brand">
           <h1 class="brand-title">Innløse eller beholde</h1>
-          <button id="theme-toggle" class="theme-toggle" type="button" aria-pressed="false" aria-label="Bytt tema">🌙</button>
+          <div style="display: flex; gap: 0.5rem; align-items: center;">
+            <button id="theme-toggle" class="theme-toggle" type="button" aria-pressed="false" aria-label="Bytt tema">🌙</button>
+            <button id="disclaimer-btn" class="disclaimer-btn" type="button" aria-label="Åpne Disclaimer">Disclaimer/forklaring</button>
+          </div>
         </div>
         <nav class="nav" role="navigation">
           <button class="nav-item is-active" data-section="Input">
@@ -20,17 +23,17 @@
             </span>
             <span class="nav-label">Input</span>
           </button>
-          <button class="nav-item" data-section="Låne for å investere">
+          <button class="nav-item" data-section="Nedbetale lån">
             <span class="nav-icon" aria-hidden="true">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="5" width="20" height="14" rx="3" stroke="currentColor" stroke-width="2"/><path d="M3 10H21" stroke="currentColor" stroke-width="2"/></svg>
             </span>
-            <span class="nav-label">Låne for å investere</span>
+            <span class="nav-label">Nedbetale lån</span>
           </button>
-          <button class="nav-item" data-section="Utbytte/lån">
+          <button class="nav-item" data-section="Utbetale utbytte">
             <span class="nav-icon" aria-hidden="true">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/><path d="M8 13c1.2 1.8 3.2 3 5.5 3 1.9 0 3.5-1 3.5-2.5S15.4 11 13 11 9 9.9 9 8.5 10.6 6 12.5 6c1.8 0 3.3.8 4.3 2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
             </span>
-            <span class="nav-label">Utbytte/lån</span>
+            <span class="nav-label">Utbetale utbytte</span>
           </button>
           <button class="nav-item" data-section="Innløse Fondskonto">
             <span class="nav-icon" aria-hidden="true">
@@ -105,6 +108,20 @@
             <span class="copy-icon" aria-hidden="true">📋</span>
             <span class="copy-label">Kopier</span>
           </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Disclaimer modal -->
+    <div id="disclaimer-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="disclaimer-title" hidden>
+      <div class="modal-backdrop" data-close="true"></div>
+      <div class="modal-panel" role="document">
+        <button class="modal-close" aria-label="Lukk" data-close="true">×</button>
+        <h3 id="disclaimer-title">Disclaimer/forklaring</h3>
+        <div class="disclaimer-content">
+          <p>Resultatet av de beregninger som gjøres i kalkulatoren vil variere ut ifra hvilke tall som legges til grunn. Tallene som legges til grunn bestemmes i samtale mellom rådgiver og deltaker i møtet. Resultatet vil dermed kunne variere fra de tallene som fremkommer offisielle dokumenter i tilknytning til ytelse av investeringsrådgivning.</p>
+          
+          <p>Beregningene i kalkulatoren må ansees som statiske og er kun ment for illustrasjonsformål. For konkrete fremstillinger, vises det til offisielle dokumenter knyttet til rådgivningen.</p>
         </div>
       </div>
     </div>
