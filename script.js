@@ -33,12 +33,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Theme init + toggle
   initTheme();
+  
+  // Disclaimer modal init
+  initDisclaimerUI();
 
   // Bygg stepper (uten å vise "Nullstille")
   const allSteps = [
     { key: "Input" },
-    { key: "Låne for å investere" },
-    { key: "Utbytte/lån" },
+    { key: "Nedbetale lån" },
+    { key: "Utbetale utbytte" },
     { key: "Innløse Fondskonto" },
     { key: "Innløse ASK" },
     { key: "Nullstille" }
@@ -240,6 +243,19 @@ function updateInputTabValues() {
       }
     }
   }
+  
+  // Oppdater custom rådgivningshonorar input felt
+  const feesWrap = moduleRoot.querySelector('.fees-wrap');
+  if (feesWrap) {
+    const firstInput = feesWrap.querySelector('input[type="text"][inputMode="decimal"]');
+    if (firstInput) {
+      const savedFee = AppState.advisoryFeePct !== undefined ? AppState.advisoryFeePct : 0.0;
+      const currentValue = parseFloat(firstInput.value.replace(',', '.')) || 0;
+      if (Math.abs(currentValue - savedFee) > 0.01) {
+        firstInput.value = savedFee.toFixed(2).replace('.', ',');
+      }
+    }
+  }
 
   // Oppdater tekstfelt for skatt (Utbytteskatt og Kapitalskatt)
   const textInputs = moduleRoot.querySelectorAll('input[type="text"][inputMode="decimal"]');
@@ -336,8 +352,8 @@ function renderPlaceholder(root) {
   // Kun for Input: legg til to ekstra identiske bokser under,
   // med lik avstand mellom hver (16px), og gjør den tredje høyere
   // title er allerede definert øverst i funksjonen
-  // Faner som skal ha to stående paneler som i "Låne for å investere"
-  const twoPanelTabs = new Set(["Låne for å investere", "Utbytte/lån", "Innløse ASK", "Innløse Fondskonto"]);
+  // Faner som skal ha to stående paneler som i "Nedbetale lån"
+  const twoPanelTabs = new Set(["Nedbetale lån", "Utbetale utbytte", "Innløse ASK", "Innløse Fondskonto"]);
   if (twoPanelTabs.has(title)) {
     const spacing = 1; // luft mellom panelene i rem for zoom-uavhengighet
     if (first && first.remove) first.remove();
@@ -472,7 +488,19 @@ function renderPlaceholder(root) {
           capital = Number(AppState.inputCapital);
         }
         const gain = Math.max(0, Math.round(portfolio - capital)); // Gevinst = Portefølje − Innskutt kapital
-        const tax = Math.round(gain * 0.378);
+        // Hent aksjeandel for beregning av skatt
+        let equitySharePctTax = 65;
+        if (typeof AppState.stockSharePercent === 'number') equitySharePctTax = AppState.stockSharePercent;
+        else if (AppState.stockShareOption) {
+          const m = String(AppState.stockShareOption).match(/(\d+)%/);
+          if (m) equitySharePctTax = Number(m[1]);
+          if (/Renter/i.test(String(AppState.stockShareOption))) equitySharePctTax = 0;
+        }
+        const aksjeAndelTax = equitySharePctTax / 100;
+        // Beregn skatt: Gevinst × ((Aksjeandel × 0,3784) + ((1 - Aksjeandel) × 0,22))
+        // Hvis aksjeandel > 80%, bruk utbytteskatt (37,84%) på hele gevinsten
+        const taxRateLeft = equitySharePctTax > 80 ? 0.3784 : ((aksjeAndelTax * 0.3784) + ((1 - aksjeAndelTax) * 0.22));
+        const tax = Math.round(gain * taxRateLeft);
         const elP = document.getElementById("fk-left-portfolio");
         const elC = document.getElementById("fk-left-capital");
         const elG = document.getElementById("fk-left-gain");
@@ -570,7 +598,8 @@ function renderPlaceholder(root) {
           }
           const equityShareR = Math.max(0, Math.min(1, equitySharePctR / 100));
           const interestShareR = 1 - equityShareR;
-          const rateRight = equityShareR * 0.378 + interestShareR * 0.22;
+          // Hvis aksjeandel > 80%, bruk utbytteskatt (37,84%) på hele gevinsten
+          const rateRight = equitySharePctR > 80 ? 0.3784 : (equityShareR * 0.3784 + interestShareR * 0.22);
           const taxRight = Math.round(gainRight * rateRight);
           elTR.textContent = formatNOK(taxRight);
           elTR.style.color = "#D32F2F";
@@ -601,9 +630,10 @@ function renderPlaceholder(root) {
         if (elExcess) elExcess.textContent = formatNOK(excess);
 
         // Skatt (fremtid) = avkastning utover skjerming × ((aksjeandel × 0,378) + ((1 − aksjeandel) × 0,22))
+        // Hvis aksjeandel > 80%, bruk utbytteskatt (37,84%) på hele avkastningen
         const equityShare = Math.max(0, Math.min(1, equitySharePct / 100));
         const interestShare = 1 - equityShare; // renteandel
-        const effectiveTaxRate = equityShare * 0.378 + interestShare * 0.22;
+        const effectiveTaxRate = equitySharePct > 80 ? 0.3784 : (equityShare * 0.3784 + interestShare * 0.22);
         const taxFuture = Math.round(excess * effectiveTaxRate);
         if (elTaxFuture) { elTaxFuture.textContent = formatNOK(taxFuture); elTaxFuture.style.color = "#D32F2F"; }
 
@@ -615,8 +645,8 @@ function renderPlaceholder(root) {
       return; // ikke kjør annen tab-spesifikk logikk
     }
 
-    // Hvis fanen er "Låne for å investere": to kolonner med pen kalkulasjonsliste
-    if (title === "Låne for å investere") {
+    // Hvis fanen er "Nedbetale lån": to kolonner med pen kalkulasjonsliste
+    if (title === "Nedbetale lån") {
       [left, right].forEach(col => {
         col.innerHTML = "";
         col.style.display = "grid";
@@ -1142,8 +1172,8 @@ function renderPlaceholder(root) {
       }, 0);
     }
     
-    // Hvis fanen er "Utbytte/lån": fyll venstre panel med regnestykke
-    if (title === "Utbytte/lån") {
+    // Hvis fanen er "Utbetale utbytte": fyll venstre panel med regnestykke
+    if (title === "Utbetale utbytte") {
       left.innerHTML = "";
       left.style.display = "flex";
       left.style.flexDirection = "column";
@@ -1171,7 +1201,7 @@ function renderPlaceholder(root) {
         row.style.alignItems = "center";
         row.style.gap = "0.4rem"; // Redusert fra 0.75rem til 0.4rem for mindre luft mellom label og verdi
 
-        // Behagelig rødfarge for kostnader (samme som i "Låne for å investere")
+        // Behagelig rødfarge for kostnader (samme som i "Nedbetale lån")
         const costColor = "#D32F2F"; // En behagelig rødfarge, ikke for sterk
 
         const label = document.createElement("div");
@@ -1267,7 +1297,7 @@ function renderPlaceholder(root) {
         row.style.alignItems = "center";
         row.style.gap = "0.4rem";
 
-        // Behagelig rødfarge for kostnader (samme som i "Låne for å investere")
+        // Behagelig rødfarge for kostnader (samme som i "Nedbetale lån")
         const costColor = "#D32F2F";
         // Behagelig grønnfarge for positive verdier
         const positiveColor = "#0C8F4A";
@@ -1383,7 +1413,7 @@ function renderPlaceholder(root) {
     stretchToBottom();
     window.addEventListener("resize", stretchToBottom, { passive: true });
     // Lytter på zoom-endringer via VisualViewport API
-    if (window.VisualViewport) {
+    if (window.VisualViewport && typeof window.VisualViewport.addEventListener === 'function') {
       window.VisualViewport.addEventListener("resize", stretchToBottom, { passive: true });
     }
     // Backup: lytter på window zoom events
@@ -1778,6 +1808,7 @@ function renderPlaceholder(root) {
     thirdLeft.appendChild(feeLabel);
 
     const feesWrap = document.createElement("div");
+    feesWrap.className = "fees-wrap";
     feesWrap.style.display = "flex";
     feesWrap.style.flexWrap = "nowrap"; // én horisontal rekke
     feesWrap.style.gap = "8px";
@@ -1786,6 +1817,8 @@ function renderPlaceholder(root) {
 
     const feeOptions = [0.0, 1.37, 0.93, 0.81, 0.69, 0.57];
     const feeButtons = [];
+    let customFeeInput = null;
+    
     function setFeeActive(idx) {
       feeButtons.forEach((b, i) => {
         const active = i === idx;
@@ -1794,10 +1827,77 @@ function renderPlaceholder(root) {
         b.style.borderColor = active ? "#93C5FD" : "var(--BORDER_LIGHT)";
         b.style.boxShadow = active ? "0 0 0 3px rgba(59,130,246,0.15)" : "0 2px 6px rgba(16,24,40,0.06)";
       });
+      if (customFeeInput) {
+        const active = idx === 0;
+        customFeeInput.style.background = active ? "#ffffff" : "var(--BG_CARD)";
+        customFeeInput.style.borderColor = active ? "#93C5FD" : "var(--BORDER_LIGHT)";
+        customFeeInput.style.boxShadow = active ? "0 0 0 3px rgba(59,130,246,0.15)" : "0 2px 6px rgba(16,24,40,0.06)";
+      }
       AppState.advisoryFeePct = feeOptions[idx];
       updateExpectedReturn();
     }
-    feeOptions.forEach((pct, idx) => {
+    
+    function setCustomFeeActive() {
+      feeButtons.forEach((b, i) => {
+        b.setAttribute("aria-pressed", "false");
+        b.style.background = "var(--BG_CARD)";
+        b.style.borderColor = "var(--BORDER_LIGHT)";
+        b.style.boxShadow = "0 2px 6px rgba(16,24,40,0.06)";
+      });
+      if (customFeeInput) {
+        customFeeInput.style.background = "#ffffff";
+        customFeeInput.style.borderColor = "#93C5FD";
+        customFeeInput.style.boxShadow = "0 0 0 3px rgba(59,130,246,0.15)";
+      }
+    }
+    
+    // Create custom input for first option (0.0)
+    const customInput = document.createElement("input");
+    customInput.type = "text";
+    customInput.value = "0,00";
+    customInput.style.width = "60px";
+    customInput.style.padding = "10px 14px";
+    customInput.style.borderRadius = "10px";
+    customInput.style.border = "1px solid var(--BORDER_LIGHT)";
+    customInput.style.background = "#ffffff";
+    customInput.style.color = "var(--GRAY_TEXT_DARK)";
+    customInput.style.fontWeight = "700";
+    customInput.style.fontSize = "14px";
+    customInput.style.textAlign = "center";
+    customInput.inputMode = "decimal";
+    let isUpdatingCustomFee = false;
+    
+    customInput.addEventListener("focus", setCustomFeeActive);
+    
+    customInput.addEventListener("blur", () => {
+      if (isUpdatingCustomFee) return;
+      isUpdatingCustomFee = true;
+      const rawValue = String(customInput.value).replace(/\s/g, '');
+      const v = parseFloat(rawValue.replace(',', '.')) || 0;
+      const formatted = v.toFixed(2).replace('.', ',');
+      customInput.value = formatted;
+      AppState.advisoryFeePct = v;
+      setCustomFeeActive();
+      updateExpectedReturn();
+      isUpdatingCustomFee = false;
+    });
+    
+    customInput.addEventListener("input", () => {
+      if (isUpdatingCustomFee) return;
+      const rawValue = String(customInput.value).replace(/\s/g, '');
+      const v = parseFloat(rawValue.replace(',', '.')) || 0;
+      if (!isNaN(v)) {
+        AppState.advisoryFeePct = v;
+        setCustomFeeActive();
+        updateExpectedReturn();
+      }
+    });
+    
+    customFeeInput = customInput;
+    feesWrap.appendChild(customInput);
+    
+    // Create buttons for remaining options
+    feeOptions.slice(1).forEach((pct, idx) => {
       const b = document.createElement("button");
       b.type = "button";
       b.style.padding = "10px 14px";
@@ -1809,15 +1909,22 @@ function renderPlaceholder(root) {
       b.style.fontSize = "14px";
       b.style.cursor = "pointer";
       b.textContent = `${pct.toFixed(2).replace('.', ',')}%`;
-      b.addEventListener("click", () => setFeeActive(idx));
-      b.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setFeeActive(idx); } });
+      b.addEventListener("click", () => setFeeActive(idx + 1));
+      b.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setFeeActive(idx + 1); } });
       feeButtons.push(b);
       feesWrap.appendChild(b);
     });
+    
     // Finn riktig indeks basert på AppState.advisoryFeePct
     const savedFee = AppState.advisoryFeePct !== undefined ? AppState.advisoryFeePct : 0.0;
     const savedFeeIdx = feeOptions.findIndex(f => Math.abs(f - savedFee) < 0.01);
-    setFeeActive(savedFeeIdx >= 0 ? savedFeeIdx : 0);
+    if (savedFeeIdx === 0 && !feeOptions.slice(1).find(f => Math.abs(f - savedFee) < 0.01)) {
+      // Custom value, not matching any preset
+      customInput.value = savedFee.toFixed(2).replace('.', ',');
+      setCustomFeeActive();
+    } else {
+      setFeeActive(savedFeeIdx >= 0 ? savedFeeIdx : 0);
+    }
 
     // Resultatboks nederst
     const result = document.createElement("div");
@@ -2312,9 +2419,9 @@ function calculateFV(rate, nper, pmt, pv, type = 0) {
   return fv;
 }
 
-// Oppdater kalkulasjonslisten i "Låne for å investere" dersom den finnes på siden
+// Oppdater kalkulasjonslisten i "Nedbetale lån" dersom den finnes på siden
 function updateInvestLoanCalc() {
-  // Sjekk om "Låne for å investere" elementene finnes
+  // Sjekk om "Nedbetale lån" elementene finnes
   const elInvEndValue = document.getElementById('inv-left-endvalue');
   if (!elInvEndValue) return; // ikke i riktig fane
 
@@ -2869,7 +2976,7 @@ function updateInvestLoanCalc() {
   }, 200);
 }
 
-// Oppdater kalkulasjonslisten i "Utbytte/lån" dersom den finnes på siden
+// Oppdater kalkulasjonslisten i "Utbetale utbytte" dersom den finnes på siden
 function updateDividendLoanCalc() {
   const elPortfolio = document.getElementById('div-portfolio');
   const elExpected = document.getElementById('div-expected');
@@ -3007,7 +3114,7 @@ function updateDividendLoanCalc() {
   if (elRSum) elRSum.textContent = formatNOK(Math.round(rSum));
 }
 
-// Oppdater høyre kalkulasjonsliste i "Låne for å investere"
+// Oppdater høyre kalkulasjonsliste i "Nedbetale lån"
 // Funksjonen er tom fordi calc2-* elementene ikke lenger eksisterer i DOM
 function updateInvestLoanRightCalc() {
   // Funksjonen beholdes for bakoverkompatibilitet, men gjør ingenting
@@ -3074,7 +3181,20 @@ function updateTopSummaries() {
       }
 
       const gain = Math.max(0, Math.round(portfolio - capital));
-      const taxLeft = Math.round(gain * 0.378);
+      
+      // Hent aksjeandel for beregning av skatt på venstre side
+      let equitySharePctLeft = 65;
+      if (typeof AppState.stockSharePercent === 'number') equitySharePctLeft = AppState.stockSharePercent;
+      else if (AppState.stockShareOption) {
+        const m = String(AppState.stockShareOption).match(/(\d+)%/);
+        if (m) equitySharePctLeft = Number(m[1]);
+        if (/Renter/i.test(String(AppState.stockShareOption))) equitySharePctLeft = 0;
+      }
+      const aksjeAndelLeft = equitySharePctLeft / 100;
+      // Beregn skatt: Gevinst × ((Aksjeandel × 0,3784) + ((1 - Aksjeandel) × 0,22))
+      // Hvis aksjeandel > 80%, bruk utbytteskatt (37,84%) på hele gevinsten
+      const taxRateLeft = equitySharePctLeft > 80 ? 0.3784 : ((aksjeAndelLeft * 0.3784) + ((1 - aksjeAndelLeft) * 0.22));
+      const taxLeft = Math.round(gain * taxRateLeft);
 
       const elLP = document.getElementById("fk-left-portfolio");
       const elLG = document.getElementById("fk-left-gain");
@@ -3105,7 +3225,8 @@ function updateTopSummaries() {
         }
         const equityShareR = Math.max(0, Math.min(1, equitySharePctR / 100));
         const interestShareR = 1 - equityShareR;
-        const rateRight = equityShareR * 0.378 + interestShareR * 0.22;
+        // Hvis aksjeandel > 80%, bruk utbytteskatt (37,84%) på hele gevinsten
+        const rateRight = equitySharePctR > 80 ? 0.3784 : (equityShareR * 0.3784 + interestShareR * 0.22);
         const taxRight = Math.round(gain * rateRight);
         if (elRT) { elRT.textContent = formatNOK(taxRight); elRT.style.color = "#D32F2F"; }
         // På høyre side (øverste blokk) skal "Netto portefølje" vise Porteføljestørrelse
@@ -3125,7 +3246,7 @@ function updateTopSummaries() {
     }
   } catch (_) {}
 
-  // Oppdater "Låne for å investere"-kortene dersom de finnes i DOM
+  // Oppdater "Nedbetale lån"-kortene dersom de finnes i DOM
   try {
     const elInvPortfolio = document.getElementById("inv-left-portfolio");
     const elInvCapital = document.getElementById("inv-left-capital");
@@ -3463,7 +3584,96 @@ function initOutputUI() {
   function openModal() {
     // Generate fresh output every time
     try {
+      // Store current active tab to restore later
+      const moduleRoot = document.getElementById("module-root");
+      const currentTab = document.querySelector(".nav-item.is-active");
+      const currentTabSection = currentTab ? currentTab.getAttribute("data-section") : null;
+      const originalRootHTML = moduleRoot ? moduleRoot.innerHTML : "";
+      
+      // First, ensure all tabs are updated to get fresh values
+      try { updateTopSummaries(); } catch (_) {}
+      
+      // Get list of all calculation tabs that need to be rendered
+      // Note: ASK tab is not yet implemented, so skip it
+      const calculationTabs = ["Nedbetale lån", "Utbetale utbytte", "Innløse Fondskonto"];
+      
+      // Create hidden container to store all rendered tabs
+      const hiddenContainer = document.createElement("div");
+      hiddenContainer.style.position = "absolute";
+      hiddenContainer.style.left = "-9999px";
+      hiddenContainer.style.visibility = "hidden";
+      document.body.appendChild(hiddenContainer);
+      
+      // Iterate through each calculation tab and render it temporarily to collect data
+      calculationTabs.forEach((tabName) => {
+        // Find the tab button
+        const tabButton = Array.from(document.querySelectorAll(".nav-item")).find(
+          btn => btn.getAttribute("data-section") === tabName || btn.textContent.includes(tabName)
+        );
+        
+        if (tabButton) {
+          // Activate this tab
+          document.querySelectorAll(".nav-item").forEach(t => t.classList.remove("is-active"));
+          tabButton.classList.add("is-active");
+          
+          // Create a temporary root for this tab and append to body so getElementById works
+          const tempRoot = document.createElement("div");
+          tempRoot.style.position = "absolute";
+          tempRoot.style.left = "-9999px";
+          tempRoot.style.visibility = "hidden";
+          document.body.appendChild(tempRoot);
+          
+          // Render the tab content into tempRoot
+          try {
+            renderPlaceholder(tempRoot);
+            updateTopSummaries();
+            
+            // Copy all elements with IDs from tempRoot to hidden container
+            const clonedElements = tempRoot.querySelectorAll("[id]");
+            clonedElements.forEach(el => {
+              const clone = el.cloneNode(true);
+              clone.id = el.id; // Preserve the ID
+              hiddenContainer.appendChild(clone);
+            });
+            
+            // Clean up tempRoot
+            document.body.removeChild(tempRoot);
+          } catch (e) {
+            console.error(`Error rendering tab ${tabName}:`, e);
+            // Ensure cleanup even on error
+            try { document.body.removeChild(tempRoot); } catch (_) {}
+          }
+        }
+      });
+      
+      // Now generate output which will read all the rendered tabs from the hidden container
+      // Temporarily move hidden container content to main moduleRoot so getElementById works
+      const savedModuleRootHTML = moduleRoot ? moduleRoot.innerHTML : "";
+      if (moduleRoot) {
+        moduleRoot.innerHTML = "";
+        const hiddenElements = Array.from(hiddenContainer.children);
+        hiddenElements.forEach(el => moduleRoot.appendChild(el.cloneNode(true)));
+      }
+      
       textArea.value = generateOutputText();
+      
+      // Restore original content
+      if (moduleRoot) {
+        moduleRoot.innerHTML = originalRootHTML;
+      }
+      
+      // Clean up hidden container
+      document.body.removeChild(hiddenContainer);
+      
+      // Restore the previously active tab
+      if (currentTab) {
+        document.querySelectorAll(".nav-item").forEach(t => t.classList.remove("is-active"));
+        currentTab.classList.add("is-active");
+        if (moduleRoot) {
+          renderPlaceholder(moduleRoot);
+          updateTopSummaries();
+        }
+      }
     } catch (e) {
       textArea.value = `Kunne ikke generere output.\n${String(e && e.message || e)}`;
     }
@@ -3530,95 +3740,156 @@ function initOutputUI() {
 }
 
 function generateOutputText() {
-  // Samle alle inn- og ut-data med norsk formatering
   const nf = new Intl.NumberFormat("nb-NO");
   const nok = (v) => new Intl.NumberFormat("nb-NO", { style: "currency", currency: "NOK", maximumFractionDigits: 0 }).format(v || 0);
-  const nokSigned = (v) => new Intl.NumberFormat("nb-NO", { style: "currency", currency: "NOK", maximumFractionDigits: 0 }).format(v);
-
-  // Inputs (skann AppState)
-  const assets = (AppState.assets || []).map((a) => `- ${a.name}: ${nok(a.amount)}`).join("\n");
-  const debts = (AppState.debts || []).map((d) => `- ${d.name}: ${nok(d.amount)}`).join("\n");
-  const incomes = (AppState.incomes || []).map((i) => `- ${i.name}: ${nok(i.amount)}`).join("\n");
-  const debtParams = `- Lånetype: ${AppState.debtParams.type}\n- Lånetid: ${nf.format(AppState.debtParams.years)} år\n- Rente: ${(AppState.debtParams.rate*100).toFixed(1).replace('.', ',')} %`;
-  const exp = AppState.expectations || { likvider: 0, fastEiendom: 0, investeringer: 0, andreEiendeler: 0 };
-  const expectations = [
-    `- LIKVIDER: ${nf.format(exp.likvider)} %`,
-    `- FAST EIENDOM: ${nf.format(exp.fastEiendom)} %`,
-    `- INVESTERINGER: ${nf.format(exp.investeringer)} %`,
-    `- ANDRE EIENDELER: ${nf.format(exp.andreEiendeler)} %`
-  ].join("\n");
-
-  // Results (sanntid)
-  const sumAssets = (AppState.assets || []).reduce((s, x) => s + (x.amount || 0), 0);
-  const sumDebts = (AppState.debts || []).reduce((s, x) => s + (x.amount || 0), 0);
-  const equity = sumAssets - sumDebts;
-
-  const incomeItems = AppState.incomes || [];
-  const upper = (s) => String(s || "").toUpperCase();
-  const annualCosts = incomeItems.filter((x) => /SKATT|KOSTNAD/.test(upper(x.name))).reduce((s, x) => s + (x.amount || 0), 0);
-  const totalIncome = incomeItems.filter((x) => !/SKATT|KOSTNAD/.test(upper(x.name))).reduce((s, x) => s + (x.amount || 0), 0);
-  const r = AppState.debtParams.rate;
-  const n = Math.max(1, AppState.debtParams.years);
-  let annualDebtPayment = 0;
-  if (AppState.debtParams.type === "Annuitetslån") {
-    if (r === 0) annualDebtPayment = sumDebts / n;
-    else annualDebtPayment = sumDebts * (r / (1 - Math.pow(1 + r, -n)));
-  } else if (AppState.debtParams.type === "Serielån") {
-    annualDebtPayment = sumDebts / n + (sumDebts * r) / 2;
-  } else { // Avdragsfrihet
-    annualDebtPayment = sumDebts * r;
-  }
-  const cashflow = Math.round(totalIncome - annualCosts - annualDebtPayment);
-
-  // Waterfall-detaljer (inntekter og kostnader eksplisitt)
-  const wage = incomeItems.filter(x => /L[ØO]NN/.test(upper(x.name))).reduce((s,x)=> s + (x.amount || 0), 0);
-  const dividends = incomeItems.filter(x => /UTBYT/.test(upper(x.name))).reduce((s,x)=> s + (x.amount || 0), 0);
-  const otherIncome = incomeItems.filter(x => /ANDRE/.test(upper(x.name))).reduce((s,x)=> s + (x.amount || 0), 0);
-  const annualTax = incomeItems.filter(x => /SKATT/.test(upper(x.name))).reduce((s,x)=> s + (x.amount || 0), 0);
-  const annualCostsOnly = incomeItems.filter(x => /KOSTNAD/.test(upper(x.name))).reduce((s,x)=> s + (x.amount || 0), 0);
-  const totalDebt = sumDebts;
-  const interestCost = totalDebt * r;
-  let annualPaymentWF = 0;
-  if (AppState.debtParams.type === "Serielån") annualPaymentWF = totalDebt / n + (totalDebt * r) / 2;
-  else if (AppState.debtParams.type === "Annuitetslån") annualPaymentWF = r === 0 ? totalDebt / n : totalDebt * (r / (1 - Math.pow(1 + r, -n)));
-  else annualPaymentWF = totalDebt * r; // Avdragsfrihet
-  const principalCost = Math.max(0, annualPaymentWF - interestCost);
-
-  // Strukturert tekst
   const lines = [];
+  
+  // === INPUT FANEN ===
   lines.push("=== INPUT ===");
-  lines.push("Eiendeler:");
-  lines.push(assets || "- (ingen)");
+  lines.push(`Antall år: ${AppState.yearsCount || 10} år`);
+  lines.push(`Porteføljestørrelse: ${nok(AppState.portfolioSize || 10000000)}`);
+  lines.push(`Innskutt kapital: ${nok(AppState.inputCapital || 0)}`);
+  lines.push(`Aksjeandel: ${AppState.stockShareOption || "65% Aksjer"}`);
+  lines.push(`Forventet avkastning aksjer: ${(AppState.expEquity || 8.0).toFixed(1).replace('.', ',')} %`);
+  lines.push(`Forventet avkastning renter: ${(AppState.expBonds || 5.0).toFixed(1).replace('.', ',')} %`);
+  lines.push(`Forventet KPI: ${(AppState.expKpi || 0.0).toFixed(1).replace('.', ',')} %`);
+  lines.push(`Rådgivningshonorar: ${(AppState.advisoryFeePct || 0.0).toFixed(2).replace('.', ',')} %`);
+  lines.push(`Skjermingsrente: ${(AppState.shieldRatePct || 3.9).toFixed(1).replace('.', ',')} %`);
+  lines.push(`Rentekostnader: ${(AppState.interestCostPct || 5.0).toFixed(1).replace('.', ',')} %`);
+  lines.push(`Avdragsprofil: ${AppState.repaymentProfileYears || 20} år`);
+  lines.push(`Utbytteskatt: ${(AppState.stockTaxPct || 37.84).toFixed(2).replace('.', ',')} %`);
+  lines.push(`Kapitalskatt: ${(AppState.capitalTaxPct || 22.0).toFixed(2).replace('.', ',')} %`);
   lines.push("");
-  lines.push("Gjeld:");
-  lines.push(debts || "- (ingen)");
+  
+  // === NEDBETALE LÅN FANEN ===
+  lines.push("=== NEDBETALE LÅN ===");
+  const nedbetaleData = [
+    { id: "inv-left-portfolio", label: "Portefølje" },
+    { id: "inv-left-capital", label: "Innskutt kapital" },
+    { id: "inv-left-expected", label: "Forventet avkastning" },
+    { id: "inv-left-payment", label: "Uttak til renter og avdrag" },
+    { id: "inv-left-endvalue", label: "Verdi ved periodens slutt" },
+    { id: "inv-left-return", label: "Avkastning" },
+    { id: "inv-left-rest-capital", label: "Rest innskutt kapital" },
+    { id: "inv-left-excess", label: "Avkastning utover skjerming" },
+    { id: "inv-left-tax", label: "Skatt" },
+    { id: "inv-left-net", label: "Netto portefølje etter skatt" },
+    { id: "inv-left-debt-settle", label: "Oppgjør gjeld" },
+    { id: "inv-left-interest-deduction", label: "Fradrag rentekostnader" },
+    { id: "inv-left-net-return", label: "Netto avkastning" },
+    { id: "inv-right-remaining-loan", label: "Restlån ved periodens slutt" },
+    { id: "inv-right-annual-payment", label: "Årlig renter og avdrag per år" }
+  ];
+  nedbetaleData.forEach(item => {
+    const el = document.getElementById(item.id);
+    if (el && el.textContent.trim()) {
+      lines.push(`${item.label}: ${el.textContent.trim()}`);
+    }
+  });
   lines.push("");
-  lines.push("Inntekter og kostnader:");
-  lines.push(incomes || "- (ingen)");
+  
+  // === UTBETALE UTBYTTE FANEN ===
+  lines.push("=== UTBETALE UTBYTTE ===");
+  const utbytteData = [
+    { id: "div-portfolio", label: "Beholde portefølje" },
+    { id: "div-expected", label: "Forventet avkastning" },
+    { id: "div-endvalue", label: "Verdi ved periodens slutt" },
+    { id: "div-dividend", label: "Utbytte" },
+    { id: "div-dividend-tax", label: "Utbytteskatt" },
+    { id: "div-dividend-net", label: "Netto" },
+    { id: "div-remaining", label: "Restportefølje" },
+    { id: "div-loan", label: "Lån" },
+    { id: "div-interest-costs", label: "rentekostnader i x antall år" },
+    { id: "div-sum", label: "Sum" }
+  ];
+  utbytteData.forEach(item => {
+    const el = document.getElementById(item.id);
+    if (el && el.textContent.trim()) {
+      lines.push(`${item.label}: ${el.textContent.trim()}`);
+    }
+  });
   lines.push("");
-  lines.push("Låneparametre:");
-  lines.push(debtParams);
+  
+  // === INNLØSE FONDSKONTO FANEN ===
+  lines.push("=== INNLØSE FONDSKONTO ===");
+  const fondskontoData = [
+    { id: "fk-left-portfolio", label: "Portefølje" },
+    { id: "fk-left-capital", label: "Innskutt kapital" },
+    { id: "fk-left-gain", label: "Gevinst" },
+    { id: "fk-left-tax", label: "Skatt" },
+    { id: "fk-left-net", label: "Netto portefølje" },
+    { id: "fk-left-future", label: "Verdi portefølje om x år" },
+    { id: "fk-left-gain-future", label: "Gevinst om x år" },
+    { id: "fk-left-shield", label: "Skjermingsgrunnlag" },
+    { id: "fk-left-excess", label: "Avkastning utover skjerming" },
+    { id: "fk-left-tax-future", label: "Skatt" },
+    { id: "fk-left-net-future", label: "Netto portefølje" },
+    { id: "fk-right-portfolio", label: "Portefølje" },
+    { id: "fk-right-capital", label: "Innskutt kapital" },
+    { id: "fk-right-gain", label: "Gevinst" },
+    { id: "fk-right-tax", label: "Skatt" },
+    { id: "fk-right-net", label: "Netto portefølje" }
+  ];
+  fondskontoData.forEach(item => {
+    const el = document.getElementById(item.id);
+    if (el && el.textContent.trim()) {
+      lines.push(`${item.label}: ${el.textContent.trim()}`);
+    }
+  });
   lines.push("");
-  lines.push("Forventninger (% p.a.):");
-  lines.push(expectations);
-  lines.push("");
-  lines.push("=== RESULTATER (sanntid) ===");
-  lines.push(`Sum eiendeler: ${nok(sumAssets)}`);
-  lines.push(`Sum gjeld: ${nok(sumDebts)}`);
-  lines.push(`Egenkapital: ${nok(equity)}`);
-  lines.push(`Årlig kontantstrøm: ${nok(cashflow)}`);
-
-  // Waterfall-detaljer
-  lines.push("");
-  lines.push("=== KONTANTSTRØM (detaljer) ===");
-  if (wage > 0) lines.push(`Lønnsinntekt: ${nok(wage)}`);
-  if (dividends > 0) lines.push(`Utbytter: ${nok(dividends)}`);
-  if (otherIncome > 0) lines.push(`Andre inntekter: ${nok(otherIncome)}`);
-  if (annualTax > 0) lines.push(`Årlig skatt: ${nokSigned(-annualTax)}`);
-  if (annualCostsOnly > 0) lines.push(`Årlige kostnader: ${nokSigned(-annualCostsOnly)}`);
-  if (interestCost > 0) lines.push(`Rentekostnader: ${nokSigned(-Math.round(interestCost))}`);
-  if (principalCost > 0) lines.push(`Avdrag: ${nokSigned(-Math.round(principalCost))}`);
-  lines.push(`Netto kontantstrøm: ${nokSigned(Math.round(cashflow))}`);
-
+  
+  // === INNLØSE ASK FANEN ===
+  lines.push("=== INNLØSE ASK ===");
+  const askData = [
+    { id: "ask-left-portfolio", label: "Portefølje" },
+    { id: "ask-left-capital", label: "Innskutt kapital" },
+    { id: "ask-left-gain", label: "Gevinst" },
+    { id: "ask-left-tax", label: "Skatt" },
+    { id: "ask-left-net", label: "Netto portefølje" },
+    { id: "ask-right-portfolio", label: "Portefølje" },
+    { id: "ask-right-capital", label: "Innskutt kapital" },
+    { id: "ask-right-gain", label: "Gevinst" },
+    { id: "ask-right-tax", label: "Skatt" },
+    { id: "ask-right-net", label: "Netto portefølje" }
+  ];
+  askData.forEach(item => {
+    const el = document.getElementById(item.id);
+    if (el && el.textContent.trim()) {
+      lines.push(`${item.label}: ${el.textContent.trim()}`);
+    }
+  });
+  
   return lines.join("\n");
+}
+
+// --- Disclaimer modal ---
+function initDisclaimerUI() {
+  const btn = document.getElementById("disclaimer-btn");
+  const modal = document.getElementById("disclaimer-modal");
+  if (!btn || !modal) return;
+
+  function openModal() {
+    modal.removeAttribute("hidden");
+    document.addEventListener("keydown", onKeyDown);
+  }
+
+  function closeModal() {
+    modal.setAttribute("hidden", "");
+    document.removeEventListener("keydown", onKeyDown);
+  }
+
+  function onKeyDown(e) {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      closeModal();
+    }
+  }
+
+  btn.addEventListener("click", openModal);
+  modal.addEventListener("click", (e) => {
+    const t = e.target;
+    if (t && (t.getAttribute && t.getAttribute("data-close") === "true")) {
+      closeModal();
+    }
+  });
 }
