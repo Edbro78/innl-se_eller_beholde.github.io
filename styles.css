@@ -1011,7 +1011,6 @@ p { /* Avsnitt */
 
 /* Theme toggle button */
 .theme-toggle {
-  margin-left: 8px;
   appearance: none;
   border: 1px solid var(--BORDER_LIGHT);
   background: var(--BG_CARD);
@@ -1021,6 +1020,42 @@ p { /* Avsnitt */
   cursor: pointer;
 }
 .theme-toggle:hover { background: var(--BLUE_100); }
+
+/* Disclaimer button container */
+.brand > div {
+  margin-top: 12px;
+}
+
+/* Disclaimer button */
+.disclaimer-btn {
+  appearance: none;
+  border: 1px solid var(--BORDER_LIGHT);
+  background: var(--BG_CARD);
+  color: var(--GRAY_TEXT_SECONDARY);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.disclaimer-btn:hover {
+  background: var(--BLUE_100);
+  color: var(--GRAY_TEXT_DARK);
+  border-color: var(--BLUE_300);
+}
+
+/* Disclaimer modal content */
+.disclaimer-content {
+  line-height: 1.6;
+  color: var(--GRAY_TEXT_DARK);
+}
+.disclaimer-content p {
+  margin-bottom: 1rem;
+}
+.disclaimer-content p:last-child {
+  margin-bottom: 0;
+}
 
 /* Modal uses theme variables */
 .modal-panel {
@@ -1053,6 +1088,5 @@ p { /* Avsnitt */
   background: oklch(0.7 0.2 150);
   border-color: color-mix(in oklch, oklch(0.7 0.2 150) 40%, var(--BORDER_LIGHT));
 }
-
 
 
