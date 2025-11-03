@@ -187,6 +187,9 @@
   --shadow-2xl: 0 1px 3px 0px hsl(0 0% 0% / 0.25);
 }
 
+/* @theme inline block commented out - not standard CSS, only causes linter warning */
+/* These variables are already defined in :root and .dark blocks above */
+/*
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -239,6 +242,7 @@
   --shadow-xl: var(--shadow-xl);
   --shadow-2xl: var(--shadow-2xl);
 }
+*/
 
 /* Grunnoppsett */
 * { box-sizing: border-box; }
@@ -668,46 +672,49 @@ p { /* Avsnitt */
 .summary-cash { background: #074EB9; } /* Accent Foreground */
 .summary-cash .summary-title { color: #FFFFFF !important; }
 .summary-cash .summary-value { color: #FFFFFF; }
-.summary-value { font-weight: var(--weight-semibold); font-size: 1.25rem; color: var(--GRAY_TEXT_SECONDARY); text-align: center; }
 
-.assets { display: flex; flex-direction: column; gap: 24px; }
-
-.asset-row { display: grid; grid-template-columns: minmax(300px, 1fr) minmax(500px, 1fr); gap: 16px; }
-.asset-col { display: flex; flex-direction: column; gap: 10px; }
-
-.asset-top { display: flex; align-items: center; gap: 10px; }
-
-.asset-name {
-  flex: 1;
-  border: 1px solid var(--BORDER_LIGHT);
-  background: #ffffff;
-  color: var(--GRAY_TEXT_DARK);
-  border-radius: 10px;
-  padding: 10px 12px;
-  font-weight: var(--weight-medium);
-  letter-spacing: 0.1em; /* 10% */
-  text-transform: uppercase;
+/* Dark mode: Endre de to hvite boksene til to behagelige blå nyanser */
+.dark .summary-assets {
+  background: #1e3a5f; /* Behagelig blå nyanse 1 */
+}
+.dark .summary-assets .summary-title,
+.dark .summary-assets .summary-value {
+  color: #e0f2fe !important; /* Lys tekst for bedre kontrast */
 }
 
+.dark .summary-equity {
+  background: #2d4a6b; /* Behagelig blå nyanse 2 (litt lysere) */
+}
+.dark .summary-equity .summary-title,
+.dark .summary-equity .summary-value {
+  color: #e0f2fe !important; /* Lys tekst for bedre kontrast */
+}
+
+/* De mørkeblå boksene beholder sin farge i dark mode */
+.dark .summary-debts {
+  background: #002359; /* Beholder mørkeblå */
+}
+.dark .summary-debts .summary-title,
+.dark .summary-debts .summary-value {
+  color: #FFFFFF !important;
+}
+
+.dark .summary-cash {
+  background: #074EB9; /* Beholder mørkeblå */
+}
+.dark .summary-cash .summary-title,
+.dark .summary-cash .summary-value {
+  color: #FFFFFF !important;
+}
+.summary-value { font-weight: var(--weight-semibold); font-size: 1.25rem; color: var(--GRAY_TEXT_SECONDARY); text-align: center; }
+
 /* Kostnadsrader: svakt rødskjær på felt og rød verdi */
-.is-cost .asset-name { background: var(--ERROR_LIGHT_BG); }
 .is-cost .asset-amount { color: var(--ERROR_DEBT); }
 .is-cost .asset-range::-webkit-slider-runnable-track {
   background: linear-gradient(90deg, #F9D3D0 0%, #FDE8E7 100%);
 }
 .is-cost .asset-range::-moz-range-track {
   background: linear-gradient(90deg, #F9D3D0 0%, #FDE8E7 100%);
-}
-
-.asset-delete {
-  appearance: none;
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
-  border: 1px solid var(--BORDER_LIGHT);
-  background: #ffffff;
-  color: var(--GRAY_TEXT_SECONDARY);
-  cursor: pointer;
 }
 
 .asset-amount {
@@ -731,7 +738,6 @@ p { /* Avsnitt */
 
 /* Stakk rader på smale skjermer for å sikre at hele tallet vises */
 @media (max-width: 1024px) {
-  .asset-row { grid-template-columns: 1fr; }
   .asset-amount { justify-self: stretch; }
 }
 
