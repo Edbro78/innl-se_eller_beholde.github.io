@@ -8,18 +8,6 @@ const AppState = {
     { id: genId(), name: "FAST EIENDOM", amount: 15000000, locked: true },
     { id: genId(), name: "INVESTERINGER", amount: 8000000, locked: true }
   ],
-  debts: [
-    { id: genId(), name: "BOLIGLÅN", amount: 10000000 }
-  ],
-  incomes: [
-    { id: genId(), name: "LØNNSINNTEKT", amount: 1500000 },
-    { id: genId(), name: "UTBYTTER", amount: 0 },
-    { id: genId(), name: "ANDRE INNTEKTER", amount: 0 },
-    { id: genId(), name: "ÅRLIG SKATT", amount: 0 },
-    { id: genId(), name: "ÅRLIGE KOSTNADER", amount: 0 }
-  ],
-  debtParams: { type: "Annuitetslån", years: 25, rate: 0.04 },
-  expectations: { likvider: 4, fastEiendom: 5, investeringer: 8, andreEiendeler: 0 },
   repaymentProfileYears: 20
 };
 
@@ -296,8 +284,6 @@ function renderPlaceholder(root) {
     (AppState.assets || []).forEach(a => {
       if (!a.locked) a.amount = 0;
     });
-    (AppState.debts || []).forEach(d => d.amount = 0);
-    (AppState.incomes || []).forEach(i => i.amount = 0);
     AppState.portfolioSize = 10000000;
     AppState.yearsCount = 10;
     AppState.stockSharePercent = 65;
@@ -3114,12 +3100,6 @@ function updateDividendLoanCalc() {
   if (elRSum) elRSum.textContent = formatNOK(Math.round(rSum));
 }
 
-// Oppdater høyre kalkulasjonsliste i "Nedbetale lån"
-// Funksjonen er tom fordi calc2-* elementene ikke lenger eksisterer i DOM
-function updateInvestLoanRightCalc() {
-  // Funksjonen beholdes for bakoverkompatibilitet, men gjør ingenting
-  // siden alle calc2-* elementene er fjernet
-}
 
 function updateTopSummaries() {
   // Oppdater titler på toppkortene (gjelder alle faner)
@@ -3155,7 +3135,6 @@ function updateTopSummaries() {
 
   // Oppdater kalkulasjon (hvis aktuell fane)
   try { updateInvestLoanCalc(); } catch (_) {}
-  try { updateInvestLoanRightCalc(); } catch (_) {}
   try { updateDividendLoanCalc(); } catch (_) {}
 
   // Oppdater «Flytte fondskonto»-kortene dersom de finnes i DOM
@@ -3588,7 +3567,6 @@ function initOutputUI() {
       const moduleRoot = document.getElementById("module-root");
       const currentTab = document.querySelector(".nav-item.is-active");
       const currentTabSection = currentTab ? currentTab.getAttribute("data-section") : null;
-      const originalRootHTML = moduleRoot ? moduleRoot.innerHTML : "";
       
       // First, ensure all tabs are updated to get fresh values
       try { updateTopSummaries(); } catch (_) {}
@@ -3629,8 +3607,11 @@ function initOutputUI() {
             updateTopSummaries();
             
             // Copy all elements with IDs from tempRoot to hidden container
+            // But skip modal elements to avoid creating backdrops
             const clonedElements = tempRoot.querySelectorAll("[id]");
             clonedElements.forEach(el => {
+              // Skip modal elements and their children
+              if (el.closest('.modal')) return;
               const clone = el.cloneNode(true);
               clone.id = el.id; // Preserve the ID
               hiddenContainer.appendChild(clone);
@@ -3657,15 +3638,15 @@ function initOutputUI() {
       
       textArea.value = generateOutputText();
       
-      // Restore original content
-      if (moduleRoot) {
-        moduleRoot.innerHTML = originalRootHTML;
-      }
-      
-      // Clean up hidden container
+      // Clean up hidden container first
       document.body.removeChild(hiddenContainer);
       
-      // Restore the previously active tab
+      // Restore the previously active tab by re-rendering it
+      // Don't restore originalRootHTML since we'll re-render anyway
+      if (moduleRoot) {
+        moduleRoot.innerHTML = "";
+      }
+      
       if (currentTab) {
         document.querySelectorAll(".nav-item").forEach(t => t.classList.remove("is-active"));
         currentTab.classList.add("is-active");
