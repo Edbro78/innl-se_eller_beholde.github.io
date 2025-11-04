@@ -1095,4 +1095,7 @@ p { /* Avsnitt */
   border-color: color-mix(in oklch, oklch(0.7 0.2 150) 40%, var(--BORDER_LIGHT));
 }
 
-
+/* Skjul "Avkastning" linjen i "Nedbetale lån"-fanen (både tekst og tall) - beholder plassen */
+.row-hide-return {
+  visibility: hidden;
+}
