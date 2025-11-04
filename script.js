@@ -647,6 +647,10 @@ function renderPlaceholder(root) {
         row.style.alignItems = "center";
         row.style.justifyContent = "space-between";
         row.style.lineHeight = "1.4";
+        // Legg til klasse på rad-div-en hvis det er "Avkastning"-linjen
+        if (opts.id === "inv-left-return") {
+          row.className = "row-hide-return";
+        }
         const label = document.createElement("span");
         label.textContent = opts.placeholder ? "" : text;
         if (opts.labelId) label.id = opts.labelId;
