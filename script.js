@@ -446,8 +446,8 @@ function renderPlaceholder(root) {
       right.appendChild(makeRow(`Verdi portefølje om ${AppState.yearsCount || 0} år:`, { id: "fk-right-future", labelId: "fk-right-future-label" }));
       right.appendChild(makeDivider());
       right.appendChild(makeRow(`Gevinst om ${AppState.yearsCount || 0} år`, { id: "fk-right-gain-future", labelId: "fk-right-gain-future-label" }));
-      right.appendChild(makeRow("Skjermingsgrunnlag"));
-      right.appendChild(makeRow("Avkastning utover skjerming"));
+      right.appendChild(makeRow("Skjermingsgrunnlag", { id: "fk-right-shield" }));
+      right.appendChild(makeRow("Avkastning utover skjerming", { id: "fk-right-excess" }));
       right.appendChild(makeRow("Skatt", { red: true, id: "fk-right-tax" }));
       right.appendChild(makeDivider());
       right.appendChild(makeRow("Netto portefølje", { bold: true, id: "fk-right-net" }));
@@ -505,6 +505,8 @@ function renderPlaceholder(root) {
         const elNRNow = document.getElementById("fk-right-net-now");
         const elFR = document.getElementById("fk-right-future");
         const elGFR = document.getElementById("fk-right-gain-future");
+        const elShieldRight = document.getElementById("fk-right-shield");
+        const elExcessRight = document.getElementById("fk-right-excess");
         const elTR = document.getElementById("fk-right-tax");
         if (elP) elP.textContent = formatNOK(Math.round(portfolio));
         if (elPR) elPR.textContent = formatNOK(Math.round(portfolio));
@@ -574,19 +576,34 @@ function renderPlaceholder(root) {
         // Høyre: Gevinst om x år = portefølje om x år − innskutt kapital
         const gainRight = Math.max(0, futureRight - capital);
         if (elGFR) elGFR.textContent = formatNOK(gainRight);
-        // Høyre: Skatt = gevinst om x år × ((aksjeandel × 0,378) + ((1 − aksjeandel) × 0,22))
+        
+        // Høyre: Skjermingsgrunnlag = (netto portefølje × aksjeandel) × ((1 + skjermingsrente)^antall år) - (netto portefølje × aksjeandel)
+        let equitySharePctR = 65;
+        if (typeof AppState.stockSharePercent === 'number') equitySharePctR = AppState.stockSharePercent;
+        else if (AppState.stockShareOption) {
+          const m = String(AppState.stockShareOption).match(/(\d+)%/);
+          if (m) equitySharePctR = Number(m[1]);
+        }
+        let shieldRateR = 0;
+        const shieldSliderR = document.getElementById('shield-rate-slider');
+        if (shieldSliderR && shieldSliderR.value) shieldRateR = Number(shieldSliderR.value);
+        else if (isFinite(AppState.shieldRatePct)) shieldRateR = Number(AppState.shieldRatePct);
+        const nettoPortfolioR = portfolio; // Netto portefølje i høyre tabell
+        const nettoAksjeandel = nettoPortfolioR * (equitySharePctR / 100);
+        const shieldBaseRight = Math.round((nettoAksjeandel * Math.pow(1 + shieldRateR / 100, years)) - nettoAksjeandel);
+        if (elShieldRight) elShieldRight.textContent = formatNOK(shieldBaseRight);
+        
+        // Høyre: Avkastning utover skjerming = Gevinst om x år - Skjermingsgrunnlag
+        const excessRight = Math.max(0, gainRight - shieldBaseRight);
+        if (elExcessRight) elExcessRight.textContent = formatNOK(excessRight);
+        
+        // Høyre: Skatt = Avkastning utover skjerming × ((aksjeandel × 0,3784) + ((1 − aksjeandel) × 0,22))
         if (elTR) {
-          let equitySharePctR = 65;
-          if (typeof AppState.stockSharePercent === 'number') equitySharePctR = AppState.stockSharePercent;
-          else if (AppState.stockShareOption) {
-            const m = String(AppState.stockShareOption).match(/(\d+)%/);
-            if (m) equitySharePctR = Number(m[1]);
-          }
           const equityShareR = Math.max(0, Math.min(1, equitySharePctR / 100));
           const interestShareR = 1 - equityShareR;
           // Hvis aksjeandel > 80%, bruk utbytteskatt (37,84%) på hele gevinsten
           const rateRight = equitySharePctR > 80 ? 0.3784 : (equityShareR * 0.3784 + interestShareR * 0.22);
-          const taxRight = Math.round(gainRight * rateRight);
+          const taxRight = Math.round(excessRight * rateRight);
           elTR.textContent = formatNOK(taxRight);
           elTR.style.color = "#D32F2F";
           // Høyre: Netto portefølje (fremtid) = Verdi om x år − Skatt
@@ -608,11 +625,11 @@ function renderPlaceholder(root) {
           const m = String(AppState.stockShareOption).match(/(\d+)%/);
           if (m) equitySharePct = Number(m[1]);
         }
-        const shieldBase = Math.round(net * (equitySharePct / 100) * Math.pow(1 + shieldRate / 100, years));
+        const shieldBase = Math.round((net * (equitySharePct / 100) * Math.pow(1 + shieldRate / 100, years)) - (net * (equitySharePct / 100)));
         if (elShield) elShield.textContent = formatNOK(shieldBase);
 
-        // Avkastning utover skjerming = framtidsverdi - skjermingsgrunnlag
-        const excess = Math.max(0, future - shieldBase);
+        // Avkastning utover skjerming = Gevinst om x år - Skjermingsgrunnlag
+        const excess = Math.max(0, gainFuture - shieldBase);
         if (elExcess) elExcess.textContent = formatNOK(excess);
 
         // Skatt (fremtid) = avkastning utover skjerming × ((aksjeandel × 0,378) + ((1 − aksjeandel) × 0,22))
@@ -3499,11 +3516,10 @@ function updateTopSummaries() {
         const pvRate = interestCost / 100;
         const remainingYears = repaymentYearsForTop2 - years;
         const pvNper = remainingYears;
-        const pvPmt = -annualPayment;
         const pvFv = 0;
         const pvType = 0;
         
-        remainingLoan = Math.abs(calculatePV(pvRate, pvNper, pvPmt, pvFv, pvType));
+        remainingLoan = Math.abs(calculatePV(pvRate, pvNper, pvFv, pvType));
       }
       elInvRemainingLoan.textContent = formatNOK(Math.round(remainingLoan));
     }
