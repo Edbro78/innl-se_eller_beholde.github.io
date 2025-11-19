@@ -27,6 +27,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Bygg stepper (uten å vise "Nullstille")
   const allSteps = [
+    { key: "Forside" },
     { key: "Input" },
     { key: "Nedbetale lån" },
     { key: "Utbetale utbytte" },
@@ -34,7 +35,7 @@ document.addEventListener("DOMContentLoaded", () => {
     { key: "Innløse ASK" },
     { key: "Nullstille" }
   ];
-  const steps = allSteps.filter(s => s.key !== "Nullstille");
+  const steps = allSteps.filter(s => s.key !== "Nullstille" && s.key !== "Forside");
   function renderStepper(currentKey) {
     if (!stepperList) return;
     stepperList.innerHTML = "";
@@ -81,7 +82,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // Oppdater summer i topp-boksene
   updateTopSummaries();
   // Init stepper
-  renderStepper("Input");
+  renderStepper("Forside");
 });
 
 function initTheme() {
@@ -310,18 +311,158 @@ function renderPlaceholder(root) {
     return;
   }
   
-  // For Input-fanen: sjekk om elementene faktisk eksisterer først
-  if (title === "Input") {
-    const yearsSlider = document.getElementById('input-years-slider');
-    const portfolioSlider = document.getElementById('input-portfolio-slider');
-    const expectedReturnOut = document.getElementById('expected-return-out');
+  // For Forside-fanen: vis 6 fliser med knapp
+  if (title === "Forside") {
+    root.innerHTML = "";
     
-    // Hvis elementene eksisterer og root har innhold, oppdater bare verdiene (ikke render på nytt)
-    if (inputTabInitialized && root.children.length > 0 && yearsSlider && portfolioSlider && expectedReturnOut) {
-      updateInputTabValues();
-      return;
-    }
-    // Hvis elementene ikke eksisterer eller root er tom, må vi rendre på nytt
+    // Container for alle fliser
+    const tilesContainer = document.createElement("div");
+    tilesContainer.style.display = "grid";
+    tilesContainer.style.gridTemplateColumns = "repeat(2, 1fr)";
+    tilesContainer.style.gap = "1.5rem";
+    tilesContainer.style.marginBottom = "2rem";
+    tilesContainer.style.maxWidth = "1200px";
+    tilesContainer.style.margin = "0 auto";
+    
+    // Opprett 4 fliser
+    const tiles = [
+      { 
+        id: "tile-assets", 
+        icon: `<svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 3v18h18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M7 16l4-4 4 4 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`, 
+        title: "Input", 
+        description: "Porteføljestørrelse, aksjeandel, innskutt kapital, skatt og forventet avkastning" 
+      },
+      { 
+        id: "tile-income", 
+        icon: `<svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/><path d="M12 6v6l4 2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`, 
+        title: "Nedbetale lån", 
+        description: "Lønner det seg å nedbetale lån eller beholde eksisterende lån" 
+      },
+      { 
+        id: "tile-debt", 
+        icon: `<svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2v20M17 5h-4a3 3 0 0 0 0 6h4a3 3 0 0 1 0 6h-4M7 5h4a3 3 0 0 1 0 6H7a3 3 0 0 0 0 6h4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`, 
+        title: "Utbetale utbytte", 
+        description: "Hva koster et utbytte i lys av skatt, alternativ avkastning og rentes rente-effekten" 
+      },
+      { 
+        id: "tile-cashflow", 
+        icon: `<svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="4" width="18" height="16" rx="2" stroke="currentColor" stroke-width="2"/><path d="M7 8h10M7 12h10M7 16h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`, 
+        title: "Innløse Fondskonto", 
+        description: "Flytte en fondskonto over til en ASK, eller beholde den som den er" 
+      }
+    ];
+    
+    tiles.forEach(tile => {
+      const tileElement = document.createElement("div");
+      tileElement.id = tile.id;
+      tileElement.style.cssText = `
+        background: #E3F2FD;
+        border-radius: 12px;
+        padding: 2rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        box-shadow: var(--shadow-sm);
+        transition: transform 0.2s, box-shadow 0.2s;
+        cursor: pointer;
+      `;
+      
+      tileElement.addEventListener("mouseenter", () => {
+        tileElement.style.transform = "translateY(-2px)";
+        tileElement.style.boxShadow = "var(--shadow-md)";
+      });
+      
+      tileElement.addEventListener("mouseleave", () => {
+        tileElement.style.transform = "translateY(0)";
+        tileElement.style.boxShadow = "var(--shadow-sm)";
+      });
+      
+      const iconElement = document.createElement("div");
+      iconElement.innerHTML = tile.icon;
+      iconElement.style.cssText = `
+        width: 48px;
+        height: 48px;
+        margin-bottom: 1rem;
+        color: #1976D2;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      `;
+      
+      const titleElement = document.createElement("h3");
+      titleElement.textContent = tile.title;
+      titleElement.style.cssText = `
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--GRAY_TEXT_DARK);
+        margin: 0 0 0.5rem 0;
+      `;
+      
+      const descElement = document.createElement("p");
+      descElement.textContent = tile.description;
+      descElement.style.cssText = `
+        font-size: 0.875rem;
+        color: var(--GRAY_TEXT_SECONDARY);
+        margin: 0;
+      `;
+      
+      tileElement.appendChild(iconElement);
+      tileElement.appendChild(titleElement);
+      tileElement.appendChild(descElement);
+      tilesContainer.appendChild(tileElement);
+    });
+    
+    root.appendChild(tilesContainer);
+    
+    // Knapp nederst
+    const buttonContainer = document.createElement("div");
+    buttonContainer.style.cssText = `
+      display: flex;
+      justify-content: center;
+      margin-top: 2rem;
+    `;
+    
+    const goToInputButton = document.createElement("button");
+    goToInputButton.textContent = "Gå til input";
+    goToInputButton.style.cssText = `
+      background: var(--P_ACCENT);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 1rem 2rem;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.2s;
+      box-shadow: var(--shadow-sm);
+    `;
+    
+    goToInputButton.addEventListener("mouseenter", () => {
+      goToInputButton.style.background = "#0848B8";
+      goToInputButton.style.transform = "translateY(-2px)";
+      goToInputButton.style.boxShadow = "var(--shadow-md)";
+    });
+    
+    goToInputButton.addEventListener("mouseleave", () => {
+      goToInputButton.style.background = "var(--P_ACCENT)";
+      goToInputButton.style.transform = "translateY(0)";
+      goToInputButton.style.boxShadow = "var(--shadow-sm)";
+    });
+    
+    goToInputButton.addEventListener("click", () => {
+      const inputNav = document.querySelector('.nav-item[data-section="Input"]');
+      if (inputNav) {
+        // Simuler et klikk på nav-elementet for å trigge standard navigasjon
+        inputNav.click();
+      }
+    });
+    
+    buttonContainer.appendChild(goToInputButton);
+    root.appendChild(buttonContainer);
+    
+    return;
   }
   
   root.innerHTML = "";
@@ -577,7 +718,7 @@ function renderPlaceholder(root) {
         const gainRight = Math.max(0, futureRight - capital);
         if (elGFR) elGFR.textContent = formatNOK(gainRight);
         
-        // Høyre: Skjermingsgrunnlag = (netto portefølje × aksjeandel) × ((1 + skjermingsrente)^antall år) - (netto portefølje × aksjeandel)
+        // Høyre: Skjermingsgrunnlag = (Innskuttkapital × aksjeandel) × ((1 + skjermingsrente)^antall år) - (innskuttkapital × aksjeandel)
         let equitySharePctR = 65;
         if (typeof AppState.stockSharePercent === 'number') equitySharePctR = AppState.stockSharePercent;
         else if (AppState.stockShareOption) {
@@ -588,9 +729,8 @@ function renderPlaceholder(root) {
         const shieldSliderR = document.getElementById('shield-rate-slider');
         if (shieldSliderR && shieldSliderR.value) shieldRateR = Number(shieldSliderR.value);
         else if (isFinite(AppState.shieldRatePct)) shieldRateR = Number(AppState.shieldRatePct);
-        const nettoPortfolioR = portfolio; // Netto portefølje i høyre tabell
-        const nettoAksjeandel = nettoPortfolioR * (equitySharePctR / 100);
-        const shieldBaseRight = Math.round((nettoAksjeandel * Math.pow(1 + shieldRateR / 100, years)) - nettoAksjeandel);
+        const capitalAksjeandel = capital * (equitySharePctR / 100);
+        const shieldBaseRight = Math.round((capitalAksjeandel * Math.pow(1 + shieldRateR / 100, years)) - capitalAksjeandel);
         if (elShieldRight) elShieldRight.textContent = formatNOK(shieldBaseRight);
         
         // Høyre: Avkastning utover skjerming = Gevinst om x år - Skjermingsgrunnlag
@@ -935,8 +1075,8 @@ function renderPlaceholder(root) {
                   elRestCapital.textContent = formatNOK(0);
                   restCapitalValue = 0;
                 } else {
-                  const restCapital = Math.abs(calculateFV(restRate, restNper, restPmt, restPv, restType));
-                  // Sørg for at resultatet ikke blir negativt
+                  const restCapital = -calculateFV(restRate, restNper, restPmt, restPv, restType);
+                  // Hvis verdien blir negativ, vis 0
                   restCapitalValue = Math.max(0, Math.round(restCapital));
                   elRestCapital.textContent = formatNOK(restCapitalValue);
                 }
@@ -2740,8 +2880,8 @@ function updateInvestLoanCalc() {
       elRestCapital.textContent = formatNOK(0);
       restCapitalValue = 0;
     } else {
-      const restCapital = Math.abs(calculateFV(restRate, restNper, restPmt, restPv, restType));
-      // Sørg for at resultatet ikke blir negativt
+      const restCapital = -calculateFV(restRate, restNper, restPmt, restPv, restType);
+      // Hvis verdien blir negativ, vis 0
       restCapitalValue = Math.max(0, Math.round(restCapital));
       elRestCapital.textContent = formatNOK(restCapitalValue);
     }
@@ -3428,8 +3568,8 @@ function updateTopSummaries() {
           elInvRestCapital.textContent = formatNOK(0);
           restCapitalValue = 0;
         } else {
-          const restCapital = Math.abs(calculateFV(restRate, restNper, restPmt, restPv, restType));
-          // Sørg for at resultatet ikke blir negativt
+          const restCapital = -calculateFV(restRate, restNper, restPmt, restPv, restType);
+          // Hvis verdien blir negativ, vis 0
           restCapitalValue = Math.max(0, Math.round(restCapital));
           elInvRestCapital.textContent = formatNOK(restCapitalValue);
         }
