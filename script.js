@@ -246,7 +246,7 @@ function updateInputTabValues() {
     }
   }
 
-  // Oppdater tekstfelt for skatt (Utbytteskatt og Kapitalskatt)
+  // Oppdater tekstfelt for skatt (Utbytteskatt, Kapitalskatt og Skatt fondskonto første år)
   const textInputs = moduleRoot.querySelectorAll('input[type="text"][inputMode="decimal"]');
   textInputs.forEach(input => {
     const label = input.closest('div')?.previousElementSibling;
@@ -262,6 +262,13 @@ function updateInputTabValues() {
       } else if (labelText.includes('Kapitalskatt') && AppState.capitalTaxPct !== undefined) {
         const currentValue = parseFloat(input.value.replace(',', '.')) || 0;
         const savedValue = AppState.capitalTaxPct;
+        if (Math.abs(currentValue - savedValue) > 0.01) {
+          input.value = savedValue.toFixed(2).replace('.', ',');
+          // Ikke dispatche input-event for å unngå loop
+        }
+      } else if (labelText.includes('Skatt fondskonto første år') && AppState.fundTaxFirstYearPct !== undefined) {
+        const currentValue = parseFloat(input.value.replace(',', '.')) || 0;
+        const savedValue = AppState.fundTaxFirstYearPct;
         if (Math.abs(currentValue - savedValue) > 0.01) {
           input.value = savedValue.toFixed(2).replace('.', ',');
           // Ikke dispatche input-event for å unngå loop
@@ -615,18 +622,9 @@ function renderPlaceholder(root) {
           capital = Number(AppState.inputCapital);
         }
         const gain = Math.max(0, Math.round(portfolio - capital)); // Gevinst = Portefølje − Innskutt kapital
-        // Hent aksjeandel for beregning av skatt
-        let equitySharePctTax = 65;
-        if (typeof AppState.stockSharePercent === 'number') equitySharePctTax = AppState.stockSharePercent;
-        else if (AppState.stockShareOption) {
-          const m = String(AppState.stockShareOption).match(/(\d+)%/);
-          if (m) equitySharePctTax = Number(m[1]);
-          if (/Renter/i.test(String(AppState.stockShareOption))) equitySharePctTax = 0;
-        }
-        const aksjeAndelTax = equitySharePctTax / 100;
-        // Beregn skatt: Gevinst × ((Aksjeandel × 0,3784) + ((1 - Aksjeandel) × 0,22))
-        // Hvis aksjeandel > 80%, bruk utbytteskatt (37,84%) på hele gevinsten
-        const taxRateLeft = equitySharePctTax > 80 ? 0.3784 : ((aksjeAndelTax * 0.3784) + ((1 - aksjeAndelTax) * 0.22));
+        // Beregn skatt for venstre side: Gevinst × Skatt fondskonto første år (%)
+        const fundTaxFirstYearPct = AppState.fundTaxFirstYearPct || 37.84;
+        const taxRateLeft = fundTaxFirstYearPct / 100; // Konverter prosent til desimal
         const tax = Math.round(gain * taxRateLeft);
         const elP = document.getElementById("fk-left-portfolio");
         const elC = document.getElementById("fk-left-capital");
@@ -737,12 +735,15 @@ function renderPlaceholder(root) {
         const excessRight = Math.max(0, gainRight - shieldBaseRight);
         if (elExcessRight) elExcessRight.textContent = formatNOK(excessRight);
         
-        // Høyre: Skatt = Avkastning utover skjerming × ((aksjeandel × 0,3784) + ((1 − aksjeandel) × 0,22))
+        // Høyre: Skatt = Avkastning utover skjerming × ((aksjeandel × Utbytteskatt) + ((1 − aksjeandel) × Kapitalskatt))
         if (elTR) {
+          // Hent skattesatser fra Input-fanen
+          const stockTaxRate = (AppState.stockTaxPct || 37.84) / 100; // Konverter prosent til desimal
+          const capitalTaxRate = (AppState.capitalTaxPct || 22.00) / 100; // Konverter prosent til desimal
           const equityShareR = Math.max(0, Math.min(1, equitySharePctR / 100));
           const interestShareR = 1 - equityShareR;
-          // Hvis aksjeandel > 80%, bruk utbytteskatt (37,84%) på hele gevinsten
-          const rateRight = equitySharePctR > 80 ? 0.3784 : (equityShareR * 0.3784 + interestShareR * 0.22);
+          // Hvis aksjeandel > 80%, bruk utbytteskatt på hele gevinsten
+          const rateRight = equitySharePctR > 80 ? stockTaxRate : (equityShareR * stockTaxRate + interestShareR * capitalTaxRate);
           const taxRight = Math.round(excessRight * rateRight);
           elTR.textContent = formatNOK(taxRight);
           elTR.style.color = "#D32F2F";
@@ -772,11 +773,14 @@ function renderPlaceholder(root) {
         const excess = Math.max(0, gainFuture - shieldBase);
         if (elExcess) elExcess.textContent = formatNOK(excess);
 
-        // Skatt (fremtid) = avkastning utover skjerming × ((aksjeandel × 0,378) + ((1 − aksjeandel) × 0,22))
-        // Hvis aksjeandel > 80%, bruk utbytteskatt (37,84%) på hele avkastningen
+        // Skatt (fremtid) = avkastning utover skjerming × ((aksjeandel × Utbytteskatt) + ((1 − aksjeandel) × Kapitalskatt))
+        // Hent skattesatser fra Input-fanen
+        const stockTaxRate = (AppState.stockTaxPct || 37.84) / 100; // Konverter prosent til desimal
+        const capitalTaxRate = (AppState.capitalTaxPct || 22.00) / 100; // Konverter prosent til desimal
         const equityShare = Math.max(0, Math.min(1, equitySharePct / 100));
         const interestShare = 1 - equityShare; // renteandel
-        const effectiveTaxRate = equitySharePct > 80 ? 0.3784 : (equityShare * 0.3784 + interestShare * 0.22);
+        // Hvis aksjeandel > 80%, bruk utbytteskatt på hele avkastningen
+        const effectiveTaxRate = equitySharePct > 80 ? stockTaxRate : (equityShare * stockTaxRate + interestShare * capitalTaxRate);
         const taxFuture = Math.round(excess * effectiveTaxRate);
         if (elTaxFuture) { elTaxFuture.textContent = formatNOK(taxFuture); elTaxFuture.style.color = "#D32F2F"; }
 
@@ -2094,6 +2098,83 @@ function renderPlaceholder(root) {
     result.appendChild(resValue);
     thirdLeft.appendChild(result);
 
+    // Ny slider: Innskutt kapital (0–porteføljestørrelse, default = porteføljestørrelse)
+    const capitalLabel = document.createElement("div");
+    capitalLabel.className = "section-label";
+    capitalLabel.textContent = "Innskutt kapital";
+    capitalLabel.style.fontSize = "0.75rem";
+    capitalLabel.style.marginTop = "12px";
+    thirdLeft.appendChild(capitalLabel);
+
+    const capitalRow = document.createElement("div");
+    capitalRow.style.display = "grid";
+    capitalRow.style.gridTemplateColumns = "1fr 140px";
+    capitalRow.style.alignItems = "center";
+    capitalRow.style.gap = "12px";
+    const capitalCol = document.createElement("div");
+    capitalCol.style.display = "flex";
+    capitalCol.style.alignItems = "center";
+    const capitalSlider = document.createElement("input");
+    capitalSlider.type = "range";
+    capitalSlider.className = "asset-range";
+    capitalSlider.id = "input-capital-slider";
+    capitalSlider.min = "0";
+    capitalSlider.max = "50000000";
+    capitalSlider.step = "50000";
+    
+    // Default: Innskutt kapital = porteføljestørrelse (hvis ikke allerede satt manuelt)
+    const initialPortfolioSize = AppState.portfolioSize || 10000000;
+    const initialCapitalValue = AppState.capitalManuallySet ? (AppState.inputCapital || 0) : initialPortfolioSize;
+    capitalSlider.value = String(initialCapitalValue);
+    capitalSlider.style.width = "100%";
+    
+    // Sett maksverdi basert på porteføljestørrelse
+    capitalSlider.max = String(initialPortfolioSize);
+    
+    const capitalOut = document.createElement("div");
+    capitalOut.className = "asset-amount";
+    capitalOut.style.width = "140px";
+    capitalOut.style.fontSize = "1rem";
+    capitalOut.style.padding = "10px 12px";
+    capitalOut.style.textAlign = "center";
+    // Initialiser capitalManuallySet hvis den ikke eksisterer
+    if (AppState.capitalManuallySet === undefined) {
+      AppState.capitalManuallySet = false;
+    }
+    
+    // Default: Innskutt kapital = porteføljestørrelse (hvis ikke manuelt satt)
+    const capitalValue = AppState.capitalManuallySet ? (AppState.inputCapital || 0) : initialPortfolioSize;
+    capitalSlider.value = String(capitalValue);
+    capitalOut.textContent = formatNOK(capitalValue);
+    
+    // Når brukeren drar i innskutt kapital-slideren, marker den som manuelt satt (frigjort)
+    let isDragging = false;
+    capitalSlider.addEventListener("mousedown", () => {
+      isDragging = true;
+      // Marker som manuelt satt så snart brukeren begynner å dra
+      AppState.capitalManuallySet = true;
+    });
+    capitalSlider.addEventListener("input", () => {
+      const v = Number(capitalSlider.value);
+      capitalOut.textContent = formatNOK(v);
+      AppState.inputCapital = v;
+      // Marker som manuelt satt når brukeren interagerer med slideren
+      AppState.capitalManuallySet = true;
+      updateTopSummaries();
+    });
+    capitalSlider.addEventListener("mouseup", () => {
+      isDragging = false;
+    });
+    capitalSlider.addEventListener("mouseleave", () => {
+      isDragging = false;
+    });
+    
+    AppState.inputCapital = capitalValue;
+    capitalCol.appendChild(capitalSlider);
+    capitalRow.appendChild(capitalCol);
+    capitalRow.appendChild(capitalOut);
+    thirdLeft.appendChild(capitalRow);
+
     // Beregn og oppdater
     function parseEquityShareFromSelection() {
       const label = AppState.stockShareOption || "65% Aksjer";
@@ -2231,6 +2312,8 @@ function renderPlaceholder(root) {
           AppState.stockTaxPct = v;
         } else if (labelText.includes("Kapitalskatt")) {
           AppState.capitalTaxPct = v;
+        } else if (labelText.includes("Skatt fondskonto første år")) {
+          AppState.fundTaxFirstYearPct = v;
         }
         updateTopSummaries();
         isUpdating = false;
@@ -2246,6 +2329,8 @@ function renderPlaceholder(root) {
             AppState.stockTaxPct = v;
           } else if (labelText.includes("Kapitalskatt")) {
             AppState.capitalTaxPct = v;
+          } else if (labelText.includes("Skatt fondskonto første år")) {
+            AppState.fundTaxFirstYearPct = v;
           }
           updateTopSummaries();
         }
@@ -2256,6 +2341,8 @@ function renderPlaceholder(root) {
         AppState.stockTaxPct = v;
       } else if (labelText.includes("Kapitalskatt")) {
         AppState.capitalTaxPct = v;
+      } else if (labelText.includes("Skatt fondskonto første år")) {
+        AppState.fundTaxFirstYearPct = v;
       }
       const suffix = document.createElement("div");
       suffix.textContent = "%";
@@ -2272,6 +2359,7 @@ function renderPlaceholder(root) {
 
     makePercentInput("Utbytteskatt / Skatt aksjer (%)", AppState.stockTaxPct || 37.84);
     makePercentInput("Kapitalskatt (%)", AppState.capitalTaxPct || 22);
+    makePercentInput("Skatt fondskonto første år (%)", AppState.fundTaxFirstYearPct || 37.84);
 
     // Ny slider: Rentekostnader (0–10%, default 5%)
     const intLabel = document.createElement("div");
@@ -2355,82 +2443,6 @@ function renderPlaceholder(root) {
     repaymentRow.appendChild(repaymentCol);
     repaymentRow.appendChild(repaymentOut);
     thirdRight.appendChild(repaymentRow);
-
-    // Ny slider: Innskutt kapital (0–porteføljestørrelse, default = porteføljestørrelse)
-    const capitalLabel = document.createElement("div");
-    capitalLabel.className = "section-label";
-    capitalLabel.textContent = "Innskutt kapital";
-    capitalLabel.style.fontSize = "0.75rem";
-    thirdRight.appendChild(capitalLabel);
-
-    const capitalRow = document.createElement("div");
-    capitalRow.style.display = "grid";
-    capitalRow.style.gridTemplateColumns = "1fr 140px";
-    capitalRow.style.alignItems = "center";
-    capitalRow.style.gap = "12px";
-    const capitalCol = document.createElement("div");
-    capitalCol.style.display = "flex";
-    capitalCol.style.alignItems = "center";
-    const capitalSlider = document.createElement("input");
-    capitalSlider.type = "range";
-    capitalSlider.className = "asset-range";
-    capitalSlider.id = "input-capital-slider";
-    capitalSlider.min = "0";
-    capitalSlider.max = "50000000";
-    capitalSlider.step = "50000";
-    
-    // Default: Innskutt kapital = porteføljestørrelse (hvis ikke allerede satt manuelt)
-    const initialPortfolioSize = AppState.portfolioSize || 10000000;
-    const initialCapitalValue = AppState.capitalManuallySet ? (AppState.inputCapital || 0) : initialPortfolioSize;
-    capitalSlider.value = String(initialCapitalValue);
-    capitalSlider.style.width = "100%";
-    
-    // Sett maksverdi basert på porteføljestørrelse
-    capitalSlider.max = String(initialPortfolioSize);
-    
-    const capitalOut = document.createElement("div");
-    capitalOut.className = "asset-amount";
-    capitalOut.style.width = "140px";
-    capitalOut.style.fontSize = "1rem";
-    capitalOut.style.padding = "10px 12px";
-    capitalOut.style.textAlign = "center";
-    // Initialiser capitalManuallySet hvis den ikke eksisterer
-    if (AppState.capitalManuallySet === undefined) {
-      AppState.capitalManuallySet = false;
-    }
-    
-    // Default: Innskutt kapital = porteføljestørrelse (hvis ikke manuelt satt)
-    const capitalValue = AppState.capitalManuallySet ? (AppState.inputCapital || 0) : initialPortfolioSize;
-    capitalSlider.value = String(capitalValue);
-    capitalOut.textContent = formatNOK(capitalValue);
-    
-    // Når brukeren drar i innskutt kapital-slideren, marker den som manuelt satt (frigjort)
-    let isDragging = false;
-    capitalSlider.addEventListener("mousedown", () => {
-      isDragging = true;
-      // Marker som manuelt satt så snart brukeren begynner å dra
-      AppState.capitalManuallySet = true;
-    });
-    capitalSlider.addEventListener("input", () => {
-      const v = Number(capitalSlider.value);
-      capitalOut.textContent = formatNOK(v);
-      AppState.inputCapital = v;
-      // Marker som manuelt satt når brukeren interagerer med slideren
-      AppState.capitalManuallySet = true;
-      updateTopSummaries();
-    });
-    capitalSlider.addEventListener("mouseup", () => {
-      isDragging = false;
-    });
-    capitalSlider.addEventListener("mouseleave", () => {
-      isDragging = false;
-    });
-    
-    AppState.inputCapital = capitalValue;
-    capitalCol.appendChild(capitalSlider);
-    capitalRow.appendChild(capitalCol);
-    capitalRow.appendChild(capitalOut);
-    thirdRight.appendChild(capitalRow);
 
     // Gi samlet høyde slik at de to boksene når ned til like over Output-knappen
     function sizeThird() {
@@ -3322,18 +3334,9 @@ function updateTopSummaries() {
 
       const gain = Math.max(0, Math.round(portfolio - capital));
       
-      // Hent aksjeandel for beregning av skatt på venstre side
-      let equitySharePctLeft = 65;
-      if (typeof AppState.stockSharePercent === 'number') equitySharePctLeft = AppState.stockSharePercent;
-      else if (AppState.stockShareOption) {
-        const m = String(AppState.stockShareOption).match(/(\d+)%/);
-        if (m) equitySharePctLeft = Number(m[1]);
-        if (/Renter/i.test(String(AppState.stockShareOption))) equitySharePctLeft = 0;
-      }
-      const aksjeAndelLeft = equitySharePctLeft / 100;
-      // Beregn skatt: Gevinst × ((Aksjeandel × 0,3784) + ((1 - Aksjeandel) × 0,22))
-      // Hvis aksjeandel > 80%, bruk utbytteskatt (37,84%) på hele gevinsten
-      const taxRateLeft = equitySharePctLeft > 80 ? 0.3784 : ((aksjeAndelLeft * 0.3784) + ((1 - aksjeAndelLeft) * 0.22));
+      // Beregn skatt for venstre side: Gevinst × Skatt fondskonto første år (%)
+      const fundTaxFirstYearPct = AppState.fundTaxFirstYearPct || 37.84;
+      const taxRateLeft = fundTaxFirstYearPct / 100; // Konverter prosent til desimal
       const taxLeft = Math.round(gain * taxRateLeft);
 
       const elLP = document.getElementById("fk-left-portfolio");
@@ -3363,10 +3366,13 @@ function updateTopSummaries() {
           const m = String(AppState.stockShareOption).match(/(\d+)%/);
           if (m) equitySharePctR = Number(m[1]);
         }
+        // Hent skattesatser fra Input-fanen
+        const stockTaxRate = (AppState.stockTaxPct || 37.84) / 100; // Konverter prosent til desimal
+        const capitalTaxRate = (AppState.capitalTaxPct || 22.00) / 100; // Konverter prosent til desimal
         const equityShareR = Math.max(0, Math.min(1, equitySharePctR / 100));
         const interestShareR = 1 - equityShareR;
-        // Hvis aksjeandel > 80%, bruk utbytteskatt (37,84%) på hele gevinsten
-        const rateRight = equitySharePctR > 80 ? 0.3784 : (equityShareR * 0.3784 + interestShareR * 0.22);
+        // Hvis aksjeandel > 80%, bruk utbytteskatt på hele gevinsten
+        const rateRight = equitySharePctR > 80 ? stockTaxRate : (equityShareR * stockTaxRate + interestShareR * capitalTaxRate);
         const taxRight = Math.round(gain * rateRight);
         if (elRT) { elRT.textContent = formatNOK(taxRight); elRT.style.color = "#D32F2F"; }
         // På høyre side (øverste blokk) skal "Netto portefølje" vise Porteføljestørrelse
@@ -3383,6 +3389,83 @@ function updateTopSummaries() {
       if (elRightFutureLabel) elRightFutureLabel.textContent = `Verdi portefølje om ${yearsForLabels} år:`;
       const elRightGainFutureLabel = document.getElementById('fk-right-gain-future-label');
       if (elRightGainFutureLabel) elRightGainFutureLabel.textContent = `Gevinst om ${yearsForLabels} år`;
+      
+      // Beregn og oppdater den fremtidige skatten i venstre tabell
+      const elTaxFuture = document.getElementById("fk-left-tax-future");
+      const elNetFuture = document.getElementById("fk-left-net-future");
+      const elFuture = document.getElementById("fk-left-future");
+      const elGainFuture = document.getElementById("fk-left-gain-future");
+      const elShield = document.getElementById("fk-left-shield");
+      const elExcess = document.getElementById("fk-left-excess");
+      
+      if (elTaxFuture || elNetFuture) {
+        // Hent netto portefølje (allerede beregnet)
+        const net = Math.max(0, Math.round(portfolio - taxLeft));
+        
+        // Hent antall år
+        let years = 0;
+        const yearsSlider = document.getElementById('input-years-slider');
+        if (yearsSlider && yearsSlider.value) {
+          years = Number(yearsSlider.value);
+        } else if (isFinite(AppState.yearsCount)) {
+          years = Number(AppState.yearsCount);
+        }
+        
+        // Hent forventet avkastning
+        let expectedReturnPct = 0;
+        const inputExpectedReturn = document.getElementById('expected-return-out');
+        if (inputExpectedReturn) {
+          const txt = (inputExpectedReturn.textContent || "").replace('%','').trim().replace(',', '.');
+          const v = Number(txt);
+          if (isFinite(v)) expectedReturnPct = v;
+        }
+        if (!isFinite(expectedReturnPct) || expectedReturnPct === 0) {
+          if (isFinite(AppState.expectedReturnPct)) {
+            expectedReturnPct = Number(AppState.expectedReturnPct);
+          }
+        }
+        
+        // Beregn fremtidsverdi
+        const r = expectedReturnPct / 100;
+        const future = Math.round(net * Math.pow(1 + r, years));
+        if (elFuture) elFuture.textContent = formatNOK(future);
+        
+        // Beregn gevinst om x år
+        const gainFuture = Math.max(0, future - net);
+        if (elGainFuture) elGainFuture.textContent = formatNOK(gainFuture);
+        
+        // Beregn skjermingsgrunnlag
+        let shieldRate = 0;
+        const shieldSlider = document.getElementById('shield-rate-slider');
+        if (shieldSlider && shieldSlider.value) shieldRate = Number(shieldSlider.value);
+        else if (isFinite(AppState.shieldRatePct)) shieldRate = Number(AppState.shieldRatePct);
+        
+        let equitySharePct = 65;
+        if (typeof AppState.stockSharePercent === 'number') equitySharePct = AppState.stockSharePercent;
+        else if (AppState.stockShareOption) {
+          const m = String(AppState.stockShareOption).match(/(\d+)%/);
+          if (m) equitySharePct = Number(m[1]);
+        }
+        const shieldBase = Math.round((net * (equitySharePct / 100) * Math.pow(1 + shieldRate / 100, years)) - (net * (equitySharePct / 100)));
+        if (elShield) elShield.textContent = formatNOK(shieldBase);
+        
+        // Beregn avkastning utover skjerming
+        const excess = Math.max(0, gainFuture - shieldBase);
+        if (elExcess) elExcess.textContent = formatNOK(excess);
+        
+        // Beregn skatt (fremtid) med dynamiske skattesatser fra Input-fanen
+        const stockTaxRate = (AppState.stockTaxPct || 37.84) / 100; // Konverter prosent til desimal
+        const capitalTaxRate = (AppState.capitalTaxPct || 22.00) / 100; // Konverter prosent til desimal
+        const equityShare = Math.max(0, Math.min(1, equitySharePct / 100));
+        const interestShare = 1 - equityShare; // renteandel
+        // Hvis aksjeandel > 80%, bruk utbytteskatt på hele avkastningen
+        const effectiveTaxRate = equitySharePct > 80 ? stockTaxRate : (equityShare * stockTaxRate + interestShare * capitalTaxRate);
+        const taxFuture = Math.round(excess * effectiveTaxRate);
+        if (elTaxFuture) { elTaxFuture.textContent = formatNOK(taxFuture); elTaxFuture.style.color = "#D32F2F"; }
+        
+        // Netto portefølje (fremtid) = Fremtidsverdi − Skatt (fremtid)
+        if (elNetFuture) elNetFuture.textContent = formatNOK(Math.max(0, future - taxFuture));
+      }
     }
   } catch (_) {}
 
