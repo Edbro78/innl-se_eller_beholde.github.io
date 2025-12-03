@@ -4450,9 +4450,9 @@ function drawBarChart() {
   const niceTick = niceNumber(niceRange / 5, true);
 
   // SVG dimensjoner
-  const margin = { top: 90, right: 60, bottom: 120, left: 200 };
+  const margin = { top: 40, right: 60, bottom: 180, left: 200 };
   const width = 1800;
-  const height = 1125;
+  const height = 1300;
   const chartWidth = width - margin.left - margin.right;
   const chartHeight = height - margin.top - margin.bottom;
 
@@ -4463,9 +4463,13 @@ function drawBarChart() {
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
   svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
   svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
+  svg.setAttribute("width", width);
+  svg.setAttribute("height", height);
   svg.style.width = "100%";
   svg.style.maxWidth = "1800px";
   svg.style.height = "auto";
+  svg.style.aspectRatio = `${width} / ${height}`;
+  svg.style.overflow = "visible";
 
   const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
   g.setAttribute("transform", `translate(${margin.left},${margin.top})`);
@@ -4664,9 +4668,9 @@ function drawDividendDifferenceChart() {
   const niceTick = niceNumber(niceRange / 5, true);
 
   // SVG dimensjoner
-  const margin = { top: 40, right: 60, bottom: 120, left: 200 };
+  const margin = { top: 40, right: 60, bottom: 180, left: 200 };
   const width = 1800;
-  const height = 1125;
+  const height = 1300;
   const chartWidth = width - margin.left - margin.right;
   const chartHeight = height - margin.top - margin.bottom;
 
@@ -4677,9 +4681,13 @@ function drawDividendDifferenceChart() {
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
   svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
   svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
+  svg.setAttribute("width", width);
+  svg.setAttribute("height", height);
   svg.style.width = "100%";
   svg.style.maxWidth = "1800px";
   svg.style.height = "auto";
+  svg.style.aspectRatio = `${width} / ${height}`;
+  svg.style.overflow = "visible";
 
   const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
   g.setAttribute("transform", `translate(${margin.left},${margin.top})`);
