@@ -481,7 +481,7 @@ p { /* Avsnitt */
 }
 /* Chart modal - større størrelse */
 #chart-modal .modal-panel {
-  max-width: 66.5vw;
+  max-width: 79.8vw;
   width: calc(100% - 64px);
   margin: 32px auto;
   padding: 32px;
@@ -554,7 +554,7 @@ p { /* Avsnitt */
 }
 #dividend-chart-modal #dividend-chart-container {
   width: 100%;
-  min-height: 70vh;
+  min-height: 84vh;
   height: auto;
   display: flex;
   align-items: flex-start;
@@ -569,6 +569,90 @@ p { /* Avsnitt */
   background: var(--BG_CARD);
   color: var(--text-primary);
   border: 1px solid var(--BORDER_LIGHT);
+}
+/* Equity share chart modal - identisk med chart-modal */
+#equity-share-chart-modal .modal-panel {
+  max-width: 79.8vw;
+  width: calc(100% - 64px);
+  margin: 32px auto;
+  padding: 32px;
+  max-height: 85vh;
+  overflow: hidden;
+}
+#equity-share-chart-modal #equity-share-chart-title {
+  text-align: center;
+  font-size: calc(0.875rem * 1.2);
+  font-weight: 700;
+  color: var(--GRAY_TEXT_DARK);
+  margin: 0 0 1rem 0;
+}
+#equity-share-chart-modal #equity-share-chart-container {
+  width: 100%;
+  min-height: 70vh;
+  height: auto;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  overflow: auto;
+  padding-bottom: 20px;
+  position: relative;
+  resize: both;
+}
+/* Interest cost chart modal - identisk med equity-share-chart-modal */
+#interest-cost-chart-modal .modal-panel {
+  max-width: 79.8vw;
+  width: calc(100% - 64px);
+  margin: 32px auto;
+  padding: 32px;
+  max-height: 85vh;
+  overflow: hidden;
+}
+#interest-cost-chart-modal #interest-cost-chart-title {
+  text-align: center;
+  font-size: calc(0.875rem * 1.2);
+  font-weight: 700;
+  color: var(--GRAY_TEXT_DARK);
+  margin: 0 0 1rem 0;
+}
+#interest-cost-chart-modal #interest-cost-chart-container {
+  width: 100%;
+  min-height: 70vh;
+  height: auto;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  overflow: auto;
+  padding-bottom: 20px;
+  position: relative;
+  resize: both;
+}
+/* Tax rate change chart modal - identisk med interest-cost-chart-modal */
+#tax-rate-change-chart-modal .modal-panel {
+  max-width: 79.8vw;
+  width: calc(100% - 64px);
+  margin: 32px auto;
+  padding: 32px;
+  max-height: 85vh;
+  overflow: hidden;
+}
+#tax-rate-change-chart-modal #tax-rate-change-chart-title {
+  text-align: center;
+  font-size: calc(0.875rem * 1.2);
+  font-weight: 700;
+  color: var(--GRAY_TEXT_DARK);
+  margin: 0 0 1rem 0;
+}
+#tax-rate-change-chart-modal #tax-rate-change-chart-container {
+  width: 100%;
+  min-height: 84vh;
+  height: auto;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  overflow: auto;
+  padding-bottom: 20px;
+  position: relative;
+  resize: both;
 }
 .modal-panel h3 {
   margin-top: 0;
@@ -1203,6 +1287,24 @@ p { /* Avsnitt */
 .modal-close:hover { background: var(--secondary); }
 /* Chart modal dark mode */
 #chart-modal .modal-panel {
+  background: var(--BG_CARD);
+  color: var(--text-primary);
+  border: 1px solid var(--BORDER_LIGHT);
+}
+/* Equity share chart modal dark mode */
+#equity-share-chart-modal .modal-panel {
+  background: var(--BG_CARD);
+  color: var(--text-primary);
+  border: 1px solid var(--BORDER_LIGHT);
+}
+/* Interest cost chart modal dark mode - identisk med equity-share */
+#interest-cost-chart-modal .modal-panel {
+  background: var(--BG_CARD);
+  color: var(--text-primary);
+  border: 1px solid var(--BORDER_LIGHT);
+}
+/* Tax rate change chart modal dark mode - identisk med interest-cost-chart-modal */
+#tax-rate-change-chart-modal .modal-panel {
   background: var(--BG_CARD);
   color: var(--text-primary);
   border: 1px solid var(--BORDER_LIGHT);

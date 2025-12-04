@@ -30,6 +30,13 @@ document.addEventListener("DOMContentLoaded", () => {
   
   // Dividend chart modal init
   initDividendChartUI();
+  initTaxRateChangeChartUI();
+  
+  // Equity share chart modal init
+  initEquityShareChartUI();
+  
+  // Interest cost chart modal init
+  initInterestCostChartUI();
 
   // Bygg stepper (uten å vise "Nullstille")
   const allSteps = [
@@ -326,6 +333,33 @@ function renderPlaceholder(root) {
   
   // For Forside-fanen: vis 6 fliser med knapp
   if (title === "Forside") {
+    // Sett defaultverdier tilsvarende Input-fanen hvis de ikke allerede er satt
+    if (AppState.portfolioSize === undefined) AppState.portfolioSize = 10000000;
+    if (AppState.yearsCount === undefined) AppState.yearsCount = 10;
+    if (AppState.stockSharePercent === undefined) AppState.stockSharePercent = 65;
+    if (AppState.stockShareOption === undefined) AppState.stockShareOption = "65% Aksjer";
+    if (AppState.expEquity === undefined) AppState.expEquity = 8.0;
+    if (AppState.expBonds === undefined) AppState.expBonds = 5.0;
+    if (AppState.expKpi === undefined) AppState.expKpi = 0.0;
+    if (AppState.advisoryFeePct === undefined) AppState.advisoryFeePct = 0.0;
+    if (AppState.interestCostPct === undefined) AppState.interestCostPct = 5.0;
+    if (AppState.shieldRatePct === undefined) AppState.shieldRatePct = 3.9;
+    if (AppState.capitalTaxPct === undefined) AppState.capitalTaxPct = 22.0;
+    if (AppState.stockTaxPct === undefined) AppState.stockTaxPct = 37.84;
+    if (AppState.inputCapital === undefined) AppState.inputCapital = 0;
+    if (AppState.repaymentProfileYears === undefined) AppState.repaymentProfileYears = 20;
+    
+    // Beregn og sett forventet avkastning basert på defaultverdier
+    const expEquity = AppState.expEquity || 8.0;
+    const expBonds = AppState.expBonds || 5.0;
+    const fee = AppState.advisoryFeePct || 0.0;
+    const kpi = AppState.expKpi || 0.0;
+    const equitySharePct = AppState.stockSharePercent || 65;
+    const equityShare = equitySharePct / 100;
+    const grossExpected = equityShare * expEquity + (1 - equityShare) * expBonds;
+    const expectedReturnPct = grossExpected - fee - kpi;
+    AppState.expectedReturnPct = expectedReturnPct;
+    
     root.innerHTML = "";
     
     // Container for alle fliser
@@ -534,20 +568,43 @@ function renderPlaceholder(root) {
         row.style.display = "flex";
         row.style.alignItems = "center";
         row.style.justifyContent = "space-between";
-        row.style.lineHeight = "1.3"; // Redusert linjehøyde
-        row.style.fontSize = "0.75rem"; // Redusert font-størrelse
+        row.style.lineHeight = "1.3";
+        row.style.fontSize = "0.75rem";
+        row.style.fontFamily = '"Inter", "Segoe UI", "Helvetica Neue", Arial, system-ui, sans-serif';
         const label = document.createElement("span");
         label.textContent = opts.placeholder ? "" : text;
         if (opts.labelId) label.id = opts.labelId;
-        if (opts.bold) label.style.fontWeight = "700";
-        if (opts.red) label.style.color = "#D32F2F";
-        label.style.fontSize = opts.bold ? "0.875rem" : "0.75rem"; // Redusert font-størrelser
+        label.style.fontFamily = '"Inter", "Segoe UI", "Helvetica Neue", Arial, system-ui, sans-serif';
+        label.style.lineHeight = "1.3";
+        if (opts.bold) {
+          label.style.fontWeight = "700";
+          label.style.fontSize = "0.875rem";
+        } else {
+          label.style.fontWeight = "400";
+          label.style.fontSize = "0.75rem";
+        }
+        if (opts.red) {
+          label.style.color = "#D32F2F";
+          label.style.fontWeight = "400"; // Rød tekst skal ha font-weight 400
+        }
         const value = document.createElement("span");
         value.textContent = opts.placeholder ? "" : "";
         if (opts.id) value.id = opts.id;
-        value.style.minWidth = "6rem"; // Redusert bredde
+        value.style.fontFamily = '"Inter", "Segoe UI", "Helvetica Neue", Arial, system-ui, sans-serif';
+        value.style.lineHeight = "1.3";
+        value.style.minWidth = "6rem";
         value.style.textAlign = "right";
-        value.style.fontSize = opts.bold ? "0.875rem" : "0.75rem"; // Redusert font-størrelser
+        if (opts.bold) {
+          value.style.fontWeight = "700";
+          value.style.fontSize = "0.875rem";
+        } else {
+          value.style.fontWeight = "400";
+          value.style.fontSize = "0.75rem";
+        }
+        if (opts.red) {
+          value.style.color = "#D32F2F";
+          value.style.fontWeight = "400"; // Rød tekst skal ha font-weight 400
+        }
         row.appendChild(label);
         row.appendChild(value);
         return row;
@@ -665,7 +722,11 @@ function renderPlaceholder(root) {
         if (elCR) elCR.textContent = formatNOK(capital);
         if (elG) elG.textContent = formatNOK(gain);
         if (elGR) elGR.textContent = formatNOK(gain);
-        if (elT) { elT.textContent = formatNOK(tax); elT.style.color = "#D32F2F"; }
+        if (elT) { 
+          elT.textContent = formatNOK(tax); 
+          elT.style.color = "#D32F2F"; 
+          elT.style.fontWeight = "400"; // Rød tekst skal ha font-weight 400
+        }
 
         // Netto portefølje = Portefølje - Skatt
         const net = Math.max(0, Math.round(portfolio - tax));
@@ -794,7 +855,11 @@ function renderPlaceholder(root) {
         // Hvis aksjeandel > 80%, bruk utbytteskatt på hele avkastningen
         const effectiveTaxRate = equitySharePct > 80 ? stockTaxRate : (equityShare * stockTaxRate + interestShare * capitalTaxRate);
         const taxFuture = Math.round(excess * effectiveTaxRate);
-        if (elTaxFuture) { elTaxFuture.textContent = formatNOK(taxFuture); elTaxFuture.style.color = "#D32F2F"; }
+        if (elTaxFuture) { 
+          elTaxFuture.textContent = formatNOK(taxFuture); 
+          elTaxFuture.style.color = "#D32F2F"; 
+          elTaxFuture.style.fontWeight = "400"; // Rød tekst skal ha font-weight 400
+        }
 
         // Netto portefølje (fremtid) = Fremtidsverdi − Skatt (fremtid)
         const elNetFuture = document.getElementById("fk-left-net-future");
@@ -825,19 +890,30 @@ function renderPlaceholder(root) {
         row.style.display = "flex";
         row.style.alignItems = "center";
         row.style.justifyContent = "space-between";
-        row.style.lineHeight = "1.3"; // Redusert linjehøyde
-        row.style.fontSize = "0.75rem"; // Redusert font-størrelse
-        // Legg til klasse på rad-div-en hvis det er "Avkastning"-linjen
-        if (opts.id === "inv-left-return") {
-          row.className = "row-hide-return";
+        row.style.lineHeight = "1.3";
+        row.style.fontSize = "0.75rem";
+        row.style.fontFamily = '"Inter", "Segoe UI", "Helvetica Neue", Arial, system-ui, sans-serif';
+        // Skjul hele raden hvis hidden er satt, men behold plassen
+        if (opts.hidden) {
+          row.style.visibility = "hidden";
         }
         const label = document.createElement("span");
         label.textContent = opts.placeholder ? "" : text;
         if (opts.labelId) label.id = opts.labelId;
-        if (opts.bold) label.style.fontWeight = "700";
-        if (opts.red) label.style.color = "#D32F2F";
+        label.style.fontFamily = '"Inter", "Segoe UI", "Helvetica Neue", Arial, system-ui, sans-serif';
+        label.style.lineHeight = "1.3";
+        if (opts.bold) {
+          label.style.fontWeight = "700";
+          label.style.fontSize = "0.875rem";
+        } else {
+          label.style.fontWeight = "400";
+          label.style.fontSize = "0.75rem";
+        }
+        if (opts.red) {
+          label.style.color = "#D32F2F";
+          label.style.fontWeight = "400"; // Rød tekst skal ha font-weight 400
+        }
         if (opts.italic) label.style.fontStyle = "italic";
-        label.style.fontSize = opts.bold ? "0.875rem" : "0.75rem"; // Redusert font-størrelser
         // Skjul "X" i tomme linjer - behold linjen men gjør teksten usynlig
         if (text === "X") {
           label.style.visibility = "hidden";
@@ -845,11 +921,22 @@ function renderPlaceholder(root) {
         const value = document.createElement("span");
         value.textContent = opts.placeholder ? "" : "";
         if (opts.id) value.id = opts.id;
-        value.style.minWidth = "6rem"; // Redusert bredde
+        value.style.fontFamily = '"Inter", "Segoe UI", "Helvetica Neue", Arial, system-ui, sans-serif';
+        value.style.lineHeight = "1.3";
+        value.style.minWidth = "6rem";
         value.style.textAlign = "right";
-        value.style.fontSize = opts.bold ? "0.875rem" : "0.75rem"; // Redusert font-størrelser
+        if (opts.bold) {
+          value.style.fontWeight = "700";
+          value.style.fontSize = "0.875rem";
+        } else {
+          value.style.fontWeight = "400";
+          value.style.fontSize = "0.75rem";
+        }
         // Sett rødfarge på verdien også hvis red er satt
-        if (opts.red) value.style.color = "#D32F2F";
+        if (opts.red) {
+          value.style.color = "#D32F2F";
+          value.style.fontWeight = "400"; // Rød tekst skal ha font-weight 400
+        }
         row.appendChild(label);
         row.appendChild(value);
         return row;
@@ -864,18 +951,18 @@ function renderPlaceholder(root) {
 
       // Venstre boks: 23 linjer
       left.appendChild(makeRow("Portefølje", { id: "inv-left-portfolio" }));
-      left.appendChild(makeRow("Innskutt kapital", { id: "inv-left-capital" }));
       left.appendChild(makeRow("Forventet avkastning", { id: "inv-left-expected" }));
+      left.appendChild(makeRow("Innskutt kapital", { id: "inv-left-capital", hidden: true }));
       left.appendChild(makeRow("X", { id: "inv-left-empty1" }));
       left.appendChild(makeRow("Uttak til renter og avdrag", { red: true, id: "inv-left-payment" }));
       left.appendChild(makeDivider());
       left.appendChild(makeRow("Verdi ved periodens slutt", { bold: true, id: "inv-left-endvalue" }));
       left.appendChild(makeRow("X", { id: "inv-left-empty6" }));
-      left.appendChild(makeRow("Avkastning", { italic: true, id: "inv-left-return" }));
-      left.appendChild(makeRow("Rest innskutt kapital", { italic: true, id: "inv-left-rest-capital" }));
-      left.appendChild(makeRow("Avkastning utover skjerming", { italic: true, id: "inv-left-excess" }));
+      left.appendChild(makeRow("Avkastning:", { id: "inv-left-avkastning-diff" }));
+      left.appendChild(makeRow("X", { id: "inv-left-empty-avkastning-skatt" }));
+      left.appendChild(makeRow("Rest innskutt kapital", { italic: true, id: "inv-left-rest-capital", hidden: true }));
       left.appendChild(makeRow("X", { id: "inv-left-empty7" }));
-      left.appendChild(makeRow("Skatt", { red: true, id: "inv-left-tax" }));
+      left.appendChild(makeRow("Skatt", { id: "inv-left-tax" }));
       left.appendChild(makeDivider());
       left.appendChild(makeRow("Netto portefølje etter skatt", { id: "inv-left-net" }));
       left.appendChild(makeRow("X", { id: "inv-left-empty9" }));
@@ -906,15 +993,29 @@ function renderPlaceholder(root) {
       right.appendChild(makeDivider());
       right.appendChild(makeRow("Avkastning utover lånekostnad", { bold: true, id: "inv-right-excess-return" }));
       
-      // Legg til "Antall år"-knapp i venstre hjørne nederst i høyre boksen
+      // Legg til knapper nederst i høyre boksen med sticky posisjonering for zoom-stabilitet
+      // Legg til padding-bottom for å gi plass til knappene
+      right.style.paddingBottom = "calc(0.5rem + 2.5rem + 0.5rem)";
       right.style.position = "relative";
+      
+      // Wrapper for knappene som er sticky nederst
+      const buttonWrapper = document.createElement("div");
+      buttonWrapper.style.cssText = `
+        position: sticky;
+        bottom: 0.5rem;
+        left: 0;
+        display: flex;
+        gap: 0.75rem;
+        margin-top: 3rem;
+        z-index: 100;
+        width: fit-content;
+      `;
+      
+      // Legg til "Antall år"-knapp
       const chartIcon = document.createElement("button");
       chartIcon.id = "chart-icon";
       chartIcon.setAttribute("aria-label", "Åpne grafikk");
       chartIcon.style.cssText = `
-        position: absolute;
-        bottom: 0.5rem;
-        left: 0.5rem;
         background: var(--BG_SECONDARY, #f8f9fa);
         border: 1px solid var(--BORDER_LIGHT, #e5e7eb);
         cursor: pointer;
@@ -924,11 +1025,12 @@ function renderPlaceholder(root) {
         display: flex;
         align-items: center;
         justify-content: center;
-        z-index: 100;
         font-size: calc(0.75rem * 1.2);
         font-weight: 500;
         color: var(--GRAY_TEXT_DARK, #1f2937);
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
+        white-space: nowrap;
+        flex-shrink: 0;
       `;
       chartIcon.textContent = "Antall år";
       chartIcon.addEventListener("mouseenter", () => {
@@ -947,7 +1049,94 @@ function renderPlaceholder(root) {
         openChartModal();
       });
       
-      right.appendChild(chartIcon);
+      buttonWrapper.appendChild(chartIcon);
+      
+      // Legg til "Aksjeandel"-knapp rett til høyre for "Antall år"-knappen
+      const equityShareIcon = document.createElement("button");
+      equityShareIcon.id = "chart-icon-equity-share";
+      equityShareIcon.setAttribute("aria-label", "Åpne grafikk for aksjeandel");
+      equityShareIcon.style.cssText = `
+        background: var(--BG_SECONDARY, #f8f9fa);
+        border: 1px solid var(--BORDER_LIGHT, #e5e7eb);
+        cursor: pointer;
+        padding: 0.5rem 0.75rem;
+        border-radius: 6px;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: calc(0.75rem * 1.2);
+        font-weight: 500;
+        color: var(--GRAY_TEXT_DARK, #1f2937);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
+        white-space: nowrap;
+        flex-shrink: 0;
+      `;
+      equityShareIcon.textContent = "Aksjeandel";
+      equityShareIcon.addEventListener("mouseenter", () => {
+        equityShareIcon.style.background = "var(--BG_HOVER, #e9ecef)";
+        equityShareIcon.style.borderColor = "var(--BORDER_MEDIUM, #d1d5db)";
+        equityShareIcon.style.transform = "translateY(-1px)";
+        equityShareIcon.style.boxShadow = "0 4px 12px rgba(0, 0, 0, 0.15), 0 2px 4px rgba(0, 0, 0, 0.1)";
+      });
+      equityShareIcon.addEventListener("mouseleave", () => {
+        equityShareIcon.style.background = "var(--BG_SECONDARY, #f8f9fa)";
+        equityShareIcon.style.borderColor = "var(--BORDER_LIGHT, #e5e7eb)";
+        equityShareIcon.style.transform = "translateY(0)";
+        equityShareIcon.style.boxShadow = "0 2px 8px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08)";
+      });
+      equityShareIcon.addEventListener("click", () => {
+        if (window.openEquityShareChartModal) {
+          window.openEquityShareChartModal();
+        }
+      });
+      
+      buttonWrapper.appendChild(equityShareIcon);
+      
+      // Legg til "Rentekostnad"-knapp rett til høyre for "Aksjeandel"-knappen
+      const interestCostIcon = document.createElement("button");
+      interestCostIcon.id = "chart-icon-interest-cost";
+      interestCostIcon.setAttribute("aria-label", "Åpne grafikk for rentekostnad");
+      interestCostIcon.style.cssText = `
+        background: var(--BG_SECONDARY, #f8f9fa);
+        border: 1px solid var(--BORDER_LIGHT, #e5e7eb);
+        cursor: pointer;
+        padding: 0.5rem 0.75rem;
+        border-radius: 6px;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: calc(0.75rem * 1.2);
+        font-weight: 500;
+        color: var(--GRAY_TEXT_DARK, #1f2937);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
+        white-space: nowrap;
+        flex-shrink: 0;
+      `;
+      interestCostIcon.textContent = "Rentekostnad";
+      interestCostIcon.addEventListener("mouseenter", () => {
+        interestCostIcon.style.background = "var(--BG_HOVER, #e9ecef)";
+        interestCostIcon.style.borderColor = "var(--BORDER_MEDIUM, #d1d5db)";
+        interestCostIcon.style.transform = "translateY(-1px)";
+        interestCostIcon.style.boxShadow = "0 4px 12px rgba(0, 0, 0, 0.15), 0 2px 4px rgba(0, 0, 0, 0.1)";
+      });
+      interestCostIcon.addEventListener("mouseleave", () => {
+        interestCostIcon.style.background = "var(--BG_SECONDARY, #f8f9fa)";
+        interestCostIcon.style.borderColor = "var(--BORDER_LIGHT, #e5e7eb)";
+        interestCostIcon.style.transform = "translateY(0)";
+        interestCostIcon.style.boxShadow = "0 2px 8px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08)";
+      });
+      interestCostIcon.addEventListener("click", () => {
+        if (window.openInterestCostChartModal) {
+          window.openInterestCostChartModal();
+        }
+      });
+      
+      buttonWrapper.appendChild(interestCostIcon);
+      
+      // Legg til wrapper som siste element i høyre boks
+      right.appendChild(buttonWrapper);
       
       // Sett inn porteføljestørrelse og andre verdier
       // VIKTIG: Kall updateInvestLoanCalc etter at alle elementer er opprettet
@@ -1055,10 +1244,9 @@ function renderPlaceholder(root) {
             years = Number(AppState.yearsCount);
           }
           
-          // Beregn og oppdater "Avkastning" = Verdi ved periodens slutt - Restlån ved periodens slutt
+          // Beregn restlån ved periodens slutt
           const elRemainingLoan = document.getElementById("inv-right-remaining-loan");
-          const elReturn = document.getElementById("inv-left-return");
-          if (elRemainingLoan && elReturn) {
+          if (elRemainingLoan) {
             // Beregn restlån først
             // Hent avdragsprofil for å sjekke om lånet er nedbetalt
             let repaymentYearsForCalc1 = 20; // default
@@ -1093,18 +1281,8 @@ function renderPlaceholder(root) {
               elDebtSettle.style.color = "#D32F2F";
             }
             
-            // Hent "Verdi ved periodens slutt" fra DOM (beregnet i updateInvestLoanCalc())
-            const elEndValue = document.getElementById("inv-left-endvalue");
-            let futureValue = 0;
-            if (elEndValue && elEndValue.textContent) {
-              // Parse verdien fra tekst
-              const endValueText = elEndValue.textContent.trim().replace(/[^\d,-]/g, '').replace(/\s/g, '').replace(',', '');
-              futureValue = parseFloat(endValueText) || 0;
-            }
-            
-            // Beregn avkastning
-            const returnValue = futureValue - remainingLoan;
-            elReturn.textContent = formatNOK(Math.round(returnValue));
+            // "Avkastning:" beregnes i updateInvestLoanCalc() som kalles etter at UI er opprettet
+            // Dette sikrer konsistent beregning med riktig forventet avkastning basert på aksjeandel
             
             // Beregn og oppdater "Rest innskutt kapital" med SLUTTVERDI-funksjonen
             const elRestCapital = document.getElementById("inv-left-rest-capital");
@@ -1149,17 +1327,25 @@ function renderPlaceholder(root) {
                   elRestCapital.textContent = formatNOK(restCapitalValue);
                 }
                 
-                // Beregn og oppdater "Avkastning utover skjerming" = Verdi ved periodens slutt - Rest innskutt kapital
-                let excessValue = 0;
-                const elExcess = document.getElementById("inv-left-excess");
-                if (elExcess && futureValue > 0) {
-                  excessValue = Math.max(0, Math.round(futureValue - restCapitalValue));
-                  elExcess.textContent = formatNOK(excessValue);
-                }
-                
-                // Beregn og oppdater "Skatt" = Avkastning utover skjerming × ((Aksjeandel × 0,3784) + ((1 - Aksjeandel) × 0,22))
+                // Beregn og oppdater "Skatt" basert på "Avkastning:"-linjen × ((Aksjeandel × 0,3784) + ((1 - Aksjeandel) × 0,22))
                 const elTax = document.getElementById("inv-left-tax");
                 if (elTax) {
+                  // Hent verdien fra "Avkastning:"-linjen
+                  let avkastningDiffValue = 0;
+                  const elAvkastningDiff = document.getElementById("inv-left-avkastning-diff");
+                  if (elAvkastningDiff && elAvkastningDiff.textContent) {
+                    let avkastningText = elAvkastningDiff.textContent.trim();
+                    // Sjekk om verdien er negativ (kan ha minus-tegn eller Unicode minus U+2212)
+                    const isNegative = avkastningText.includes('-') || avkastningText.includes('−');
+                    // Fjern alle tegn bortsett fra tall
+                    avkastningText = avkastningText.replace(/[^\d]/g, '');
+                    avkastningDiffValue = parseFloat(avkastningText) || 0;
+                    // Legg til minus hvis verdien var negativ
+                    if (isNegative) {
+                      avkastningDiffValue = -Math.abs(avkastningDiffValue);
+                    }
+                  }
+                  
                   // Hent aksjeandel fra Input-fanen
                   let equitySharePct = 65; // default
                   if (typeof AppState.stockSharePercent === 'number') {
@@ -1177,10 +1363,26 @@ function renderPlaceholder(root) {
                   const stockTaxRate = (AppState.stockTaxPct ?? 37.84) / 100; // Konverter prosent til desimal
                   const capitalTaxRate = (AppState.capitalTaxPct ?? 22.00) / 100; // Konverter prosent til desimal
                   
-                  // Beregn skatt: Avkastning utover skjerming × ((Aksjeandel × Utbytteskatt) + ((1 - Aksjeandel) × Kapitalskatt))
+                  // Beregn skatt: -Avkastning × ((Aksjeandel × Utbytteskatt) + ((1 - Aksjeandel) × Kapitalskatt))
+                  // Hvis avkastning er negativ, blir skatt positiv (skattefordel, grønn)
+                  // Hvis avkastning er positiv, blir skatt negativ (skattekostnad, rød)
                   const taxRate = (aksjeAndel * stockTaxRate) + ((1 - aksjeAndel) * capitalTaxRate);
-                  const taxAmount = excessValue * taxRate;
-                  elTax.textContent = formatNOK(Math.round(taxAmount));
+                  const taxAmount = -avkastningDiffValue * taxRate;
+                  const roundedTax = Math.round(taxAmount);
+                  elTax.textContent = formatNOK(roundedTax);
+                  
+                  // Sett farge: grønn hvis positiv (skattefordel), rød hvis negativ (skattekostnad)
+                  const taxColor = roundedTax >= 0 ? "#0C8F4A" : "#D32F2F"; // Grønn eller rød
+                  elTax.style.color = taxColor;
+                  
+                  // Oppdater også etiketten "Skatt" med samme farge
+                  const taxRow = elTax.parentElement;
+                  if (taxRow) {
+                    const taxLabel = taxRow.querySelector('span:first-child');
+                    if (taxLabel) {
+                      taxLabel.style.color = taxColor;
+                    }
+                  }
                 }
               }
             } else if (elRemainingLoan) {
@@ -1428,10 +1630,19 @@ function renderPlaceholder(root) {
 
         const label = document.createElement("div");
         label.textContent = labelText;
+        label.style.fontFamily = '"Inter", "Segoe UI", "Helvetica Neue", Arial, system-ui, sans-serif';
+        label.style.lineHeight = "1.3";
         label.style.color = isCost ? costColor : "var(--GRAY_TEXT_DARK)";
-        label.style.fontWeight = isStrong ? "700" : "400";
-        label.style.fontSize = isStrong ? "0.875rem" : "0.75rem"; // Redusert font-størrelser
-        label.style.lineHeight = "1.3"; // Tett linjehøyde
+        if (isCost) {
+          label.style.fontWeight = "400"; // Rød tekst skal ha font-weight 400
+          label.style.fontSize = "0.75rem";
+        } else if (isStrong) {
+          label.style.fontWeight = "700";
+          label.style.fontSize = "0.875rem";
+        } else {
+          label.style.fontWeight = "400";
+          label.style.fontSize = "0.75rem";
+        }
         if (isIndented) {
           label.style.paddingLeft = "0.75rem"; // Redusert indentation
         }
@@ -1444,13 +1655,22 @@ function renderPlaceholder(root) {
           value.id = id;
           value.className = "asset-amount";
           value.textContent = ""; // fylles senere
+          value.style.fontFamily = '"Inter", "Segoe UI", "Helvetica Neue", Arial, system-ui, sans-serif';
+          value.style.lineHeight = "1.3";
           value.style.width = "7rem"; // Redusert for mer kompakt layout
-          value.style.fontSize = isStrong ? "0.875rem" : "0.75rem";
-          value.style.fontWeight = isStrong ? "700" : "400";
+          if (isCost) {
+            value.style.fontWeight = "400"; // Rød tekst skal ha font-weight 400
+            value.style.fontSize = "0.75rem";
+            value.style.color = costColor;
+          } else if (isStrong) {
+            value.style.fontWeight = "700";
+            value.style.fontSize = "0.875rem";
+          } else {
+            value.style.fontWeight = "400";
+            value.style.fontSize = "0.75rem";
+          }
           value.style.padding = "0.25rem 0.4rem"; // Redusert padding
           value.style.textAlign = "right";
-          value.style.color = isCost ? costColor : "inherit"; // Sett rødfarge på verdien også hvis kostnad
-          value.style.lineHeight = "1.3"; // Tett linjehøyde
           // Gjør "hvite boksen" usynlig, men behold plassering og størrelse
           value.style.background = "transparent";
           value.style.border = "none";
@@ -1546,16 +1766,26 @@ function renderPlaceholder(root) {
 
         const label = document.createElement("div");
         label.textContent = labelText;
-        label.style.fontWeight = isStrong ? "700" : "400";
+        label.style.fontFamily = '"Inter", "Segoe UI", "Helvetica Neue", Arial, system-ui, sans-serif';
+        label.style.lineHeight = "1.3";
         if (isCost) {
           label.style.color = costColor;
+          label.style.fontWeight = "400"; // Rød tekst skal ha font-weight 400
+          label.style.fontSize = "0.75rem";
         } else if (isPositive) {
           label.style.color = positiveColor;
+          label.style.fontWeight = "400";
+          label.style.fontSize = "0.75rem";
         } else {
           label.style.color = "var(--GRAY_TEXT_DARK)";
+          if (isStrong) {
+            label.style.fontWeight = "700";
+            label.style.fontSize = "0.875rem";
+          } else {
+            label.style.fontWeight = "400";
+            label.style.fontSize = "0.75rem";
+          }
         }
-        label.style.fontSize = isStrong ? "0.875rem" : "0.75rem"; // Redusert font-størrelser
-        label.style.lineHeight = "1.3"; // Tett linjehøyde
         if (isIndented) {
           label.style.paddingLeft = "0.75rem"; // Redusert indentation
         }
@@ -1567,19 +1797,28 @@ function renderPlaceholder(root) {
           const value = document.createElement("div");
           value.id = id;
           value.textContent = "";
+          value.style.fontFamily = '"Inter", "Segoe UI", "Helvetica Neue", Arial, system-ui, sans-serif';
+          value.style.lineHeight = "1.3";
           value.style.border = "1px solid var(--BORDER_LIGHT)";
           value.style.borderRadius = "0.5rem";
           value.style.width = "7rem";
-          value.style.fontSize = isStrong ? "0.875rem" : "0.75rem";
-          value.style.fontWeight = isStrong ? "700" : "400";
-          value.style.padding = "0.25rem 0.4rem"; // Redusert padding
-          value.style.textAlign = "right";
-          value.style.lineHeight = "1.3"; // Tett linjehøyde
           if (isCost) {
             value.style.color = costColor;
+            value.style.fontWeight = "400"; // Rød tekst skal ha font-weight 400
+            value.style.fontSize = "0.75rem";
           } else if (isPositive) {
             value.style.color = positiveColor;
+            value.style.fontWeight = "400";
+            value.style.fontSize = "0.75rem";
+          } else if (isStrong) {
+            value.style.fontWeight = "700";
+            value.style.fontSize = "0.875rem";
+          } else {
+            value.style.fontWeight = "400";
+            value.style.fontSize = "0.75rem";
           }
+          value.style.padding = "0.25rem 0.4rem"; // Redusert padding
+          value.style.textAlign = "right";
           // Gjør "hvite boksen" usynlig, men behold plassering og størrelse
           value.style.background = "transparent";
           value.style.border = "none";
@@ -1626,15 +1865,29 @@ function renderPlaceholder(root) {
         try { updateDividendLoanCalc(); } catch (_) {}
       }
       
-      // Legg til "Antall år"-knapp i venstre hjørne nederst i høyre boksen
+      // Legg til knapp nederst i høyre boksen med sticky posisjonering for zoom-stabilitet
+      // Legg til padding-bottom for å gi plass til knappen
+      right.style.paddingBottom = "calc(0.5rem + 2.5rem + 0.5rem)";
       right.style.position = "relative";
+      
+      // Wrapper for knappen som er sticky nederst
+      const buttonWrapper = document.createElement("div");
+      buttonWrapper.style.cssText = `
+        position: sticky;
+        bottom: 0.5rem;
+        left: 0;
+        display: flex;
+        gap: 0.75rem;
+        margin-top: 3rem;
+        z-index: 100;
+        width: fit-content;
+      `;
+      
+      // Legg til "Antall år"-knapp
       const chartIcon = document.createElement("button");
       chartIcon.id = "chart-icon-dividend";
       chartIcon.setAttribute("aria-label", "Åpne grafikk");
       chartIcon.style.cssText = `
-        position: absolute;
-        bottom: 0.5rem;
-        left: 0.5rem;
         background: var(--BG_SECONDARY, #f8f9fa);
         border: 1px solid var(--BORDER_LIGHT, #e5e7eb);
         cursor: pointer;
@@ -1644,11 +1897,12 @@ function renderPlaceholder(root) {
         display: flex;
         align-items: center;
         justify-content: center;
-        z-index: 100;
         font-size: calc(0.75rem * 1.2);
         font-weight: 500;
         color: var(--GRAY_TEXT_DARK, #1f2937);
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
+        white-space: nowrap;
+        flex-shrink: 0;
       `;
       chartIcon.textContent = "Antall år";
       chartIcon.addEventListener("mouseenter", () => {
@@ -1668,7 +1922,53 @@ function renderPlaceholder(root) {
           window.openDividendChartModal();
         }
       });
-      right.appendChild(chartIcon);
+      
+      buttonWrapper.appendChild(chartIcon);
+      
+      // Legg til "Endring skatt"-knapp rett til høyre for "Antall år"-knappen
+      const taxChangeIcon = document.createElement("button");
+      taxChangeIcon.id = "chart-icon-tax-change";
+      taxChangeIcon.setAttribute("aria-label", "Åpne grafikk for endring skatt");
+      taxChangeIcon.style.cssText = `
+        background: var(--BG_SECONDARY, #f8f9fa);
+        border: 1px solid var(--BORDER_LIGHT, #e5e7eb);
+        cursor: pointer;
+        padding: 0.5rem 0.75rem;
+        border-radius: 6px;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: calc(0.75rem * 1.2);
+        font-weight: 500;
+        color: var(--GRAY_TEXT_DARK, #1f2937);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
+        white-space: nowrap;
+        flex-shrink: 0;
+      `;
+      taxChangeIcon.textContent = "Endring skatt";
+      taxChangeIcon.addEventListener("mouseenter", () => {
+        taxChangeIcon.style.background = "var(--BG_HOVER, #e9ecef)";
+        taxChangeIcon.style.borderColor = "var(--BORDER_MEDIUM, #d1d5db)";
+        taxChangeIcon.style.transform = "translateY(-1px)";
+        taxChangeIcon.style.boxShadow = "0 4px 12px rgba(0, 0, 0, 0.15), 0 2px 4px rgba(0, 0, 0, 0.1)";
+      });
+      taxChangeIcon.addEventListener("mouseleave", () => {
+        taxChangeIcon.style.background = "var(--BG_SECONDARY, #f8f9fa)";
+        taxChangeIcon.style.borderColor = "var(--BORDER_LIGHT, #e5e7eb)";
+        taxChangeIcon.style.transform = "translateY(0)";
+        taxChangeIcon.style.boxShadow = "0 2px 8px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08)";
+      });
+      taxChangeIcon.addEventListener("click", () => {
+        if (window.openTaxRateChangeChartModal) {
+          window.openTaxRateChangeChartModal();
+        }
+      });
+      
+      buttonWrapper.appendChild(taxChangeIcon);
+      
+      // Legg til wrapper som siste element i høyre boks
+      right.appendChild(buttonWrapper);
     }
 
     const stretchToBottom = () => {
@@ -2717,11 +3017,11 @@ function calculateCUMIPMT(rate, nper, pv, start_period, end_period, type = 0) {
 function calculateFV(rate, nper, pmt, pv, type = 0) {
   if (rate === 0) {
     // Hvis rente er 0, er sluttverdien bare nåverdi pluss summen av betalinger
-    return -(pv + pmt * nper);
+    return pv + pmt * nper;
   }
   
   const fvif = Math.pow(1 + rate, nper); // Future Value Interest Factor
-  let fv = -(pv * fvif + pmt * (1 + rate * type) * (fvif - 1) / rate);
+  let fv = pv * fvif + pmt * (1 + rate * type) * (fvif - 1) / rate;
   
   return fv;
 }
@@ -2735,7 +3035,15 @@ function updateInvestLoanCalc() {
   // Hent verdier fra AppState / Input-fanen
   const sumAssets = (AppState.assets || []).reduce((s, x) => s + (x.amount || 0), 0);
   const portfolio = isFinite(AppState.portfolioSize) ? Number(AppState.portfolioSize) : sumAssets;
-  const years = Math.max(0, Number(AppState.yearsCount || 0));
+  // Hent antall år fra slideren hvis tilgjengelig, ellers fra AppState
+  let years = 0;
+  const yearsSlider = document.getElementById('input-years-slider');
+  if (yearsSlider && yearsSlider.value) {
+    years = Number(yearsSlider.value);
+  } else if (isFinite(AppState.yearsCount)) {
+    years = Number(AppState.yearsCount);
+  }
+  years = Math.max(0, years);
   const interestPct = isFinite(AppState.interestCostPct) ? Number(AppState.interestCostPct) : 5.0;
   const equitySharePct = typeof AppState.stockSharePercent === 'number' ? AppState.stockSharePercent : 0;
 
@@ -2929,14 +3237,15 @@ function updateInvestLoanCalc() {
     // Antall_utbet: Antall år fra input-fanen
     const fvNper = years;
     // Utbetaling: Fra "Uttak til renter og avdrag" (samme boks, litt lengre opp)
-    const fvPmt = annualPayment > 0 ? annualPayment : 0;
-    // Nåverdi: Porteføljestørrelse med minus først (negativ for investering)
-    const fvPv = -portfolio;
+    // I Excel SLUTTVERDI skal utbetalinger være negative
+    const fvPmt = annualPayment > 0 ? -annualPayment : 0;
+    // Nåverdi: Porteføljestørrelse (positiv i Excel SLUTTVERDI)
+    const fvPv = portfolio;
     // Type: 0 (betaling i slutten av perioden)
     const fvType = 0;
     
     // Beregn verdi ved periodens slutt med SLUTTVERDI
-    futureValue = Math.abs(calculateFV(fvRate, fvNper, fvPmt, fvPv, fvType));
+    futureValue = calculateFV(fvRate, fvNper, fvPmt, fvPv, fvType);
     elEndValue.textContent = formatNOK(Math.round(futureValue));
     
     // Beregn og oppdater "Netto portefølje etter skatt" = Verdi ved periodens slutt - Skatt
@@ -2992,12 +3301,22 @@ function updateInvestLoanCalc() {
     }
   }
   
-  // Beregn og oppdater "Avkastning" = Verdi ved periodens slutt - Restlån ved periodens slutt
-  const elInvReturn = document.getElementById('inv-left-return');
-  if (elInvReturn) {
-    // Bruk de beregnede verdiene direkte
-    const returnValue = futureValue - remainingLoan;
-    elInvReturn.textContent = formatNOK(Math.round(returnValue));
+  // Beregn og oppdater "Avkastning:" = Verdi ved periodens slutt - Restlån ved periodens slutt
+  const elAvkastningDiff = document.getElementById('inv-left-avkastning-diff');
+  if (elAvkastningDiff) {
+    const diffValue = futureValue - remainingLoan;
+    const roundedDiff = Math.round(diffValue);
+    let formattedDiff;
+    if (roundedDiff < 0) {
+      const absValue = Math.abs(roundedDiff);
+      const absFormatted = formatNOK(absValue);
+      const cleanFormatted = absFormatted.replace(/^[\s\u00A0\-−]+/, '').trim();
+      formattedDiff = '−' + cleanFormatted;
+    } else {
+      formattedDiff = formatNOK(roundedDiff);
+    }
+    elAvkastningDiff.textContent = formattedDiff;
+    elAvkastningDiff.innerHTML = formattedDiff;
   }
   
   // Beregn og oppdater "Rest innskutt kapital" med SLUTTVERDI-funksjonen
@@ -3048,18 +3367,26 @@ function updateInvestLoanCalc() {
       elRestCapital.textContent = formatNOK(restCapitalValue);
     }
     
-    // Beregn og oppdater "Avkastning utover skjerming" = Verdi ved periodens slutt - Rest innskutt kapital
-    let excessValue = 0;
-    const elExcess = document.getElementById('inv-left-excess');
-    if (elExcess && futureValue > 0) {
-      excessValue = Math.max(0, Math.round(futureValue - restCapitalValue));
-      elExcess.textContent = formatNOK(excessValue);
-    }
-    
-    // Beregn og oppdater "Skatt" = Avkastning utover skjerming × ((Aksjeandel × 0,3784) + ((Aksjeandel - 1) × 0,22))
+    // Beregn og oppdater "Skatt" basert på "Avkastning:"-linjen × ((Aksjeandel × 0,3784) + ((1 - Aksjeandel) × 0,22))
     let taxAmount = 0; // Deklarer utenfor if-blokken for å kunne bruke den senere
     const elTax = document.getElementById('inv-left-tax');
-    if (elTax && excessValue > 0) {
+    if (elTax) {
+      // Hent verdien fra "Avkastning:"-linjen
+      let avkastningDiffValue = 0;
+      const elAvkastningDiff = document.getElementById('inv-left-avkastning-diff');
+      if (elAvkastningDiff && elAvkastningDiff.textContent) {
+        let avkastningText = elAvkastningDiff.textContent.trim();
+        // Sjekk om verdien er negativ (kan ha minus-tegn eller Unicode minus U+2212)
+        const isNegative = avkastningText.includes('-') || avkastningText.includes('−');
+        // Fjern alle tegn bortsett fra tall
+        avkastningText = avkastningText.replace(/[^\d]/g, '');
+        avkastningDiffValue = parseFloat(avkastningText) || 0;
+        // Legg til minus hvis verdien var negativ
+        if (isNegative) {
+          avkastningDiffValue = -Math.abs(avkastningDiffValue);
+        }
+      }
+      
       // Hent aksjeandel fra Input-fanen
       let equitySharePct = 65; // default
       if (typeof AppState.stockSharePercent === 'number') {
@@ -3077,13 +3404,36 @@ function updateInvestLoanCalc() {
       const stockTaxRate = (AppState.stockTaxPct ?? 37.84) / 100; // Konverter prosent til desimal
       const capitalTaxRate = (AppState.capitalTaxPct ?? 22.00) / 100; // Konverter prosent til desimal
       
-      // Beregn skatt: Avkastning utover skjerming × ((Aksjeandel × Utbytteskatt) + ((1 - Aksjeandel) × Kapitalskatt))
+      // Beregn skatt: -Avkastning × ((Aksjeandel × Utbytteskatt) + ((1 - Aksjeandel) × Kapitalskatt))
+      // Hvis avkastning er negativ, blir skatt positiv (skattefordel, grønn)
+      // Hvis avkastning er positiv, blir skatt negativ (skattekostnad, rød)
       const taxRate = (aksjeAndel * stockTaxRate) + ((1 - aksjeAndel) * capitalTaxRate);
-      taxAmount = excessValue * taxRate;
-      elTax.textContent = formatNOK(Math.round(taxAmount));
-      elTax.style.color = "#D32F2F";
+      taxAmount = -avkastningDiffValue * taxRate;
+      // Ekstra sjekk: Hvis avkastning er negativ, må skatt være positiv
+      if (avkastningDiffValue < 0 && taxAmount < 0) {
+        taxAmount = Math.abs(taxAmount);
+      }
+      // Ekstra sjekk: Hvis avkastning er positiv, må skatt være negativ
+      if (avkastningDiffValue > 0 && taxAmount > 0) {
+        taxAmount = -taxAmount;
+      }
+      const roundedTax = Math.round(taxAmount);
+      elTax.textContent = formatNOK(roundedTax);
       
-      // Beregn og oppdater "Netto portefølje etter skatt" = Verdi ved periodens slutt - Skatt
+      // Sett farge: grønn hvis positiv (skattefordel), rød hvis negativ (skattekostnad)
+      const taxColor = roundedTax >= 0 ? "#0C8F4A" : "#D32F2F"; // Grønn eller rød
+      elTax.style.color = taxColor;
+      
+      // Oppdater også etiketten "Skatt" med samme farge
+      const taxRow = elTax.parentElement;
+      if (taxRow) {
+        const taxLabel = taxRow.querySelector('span:first-child');
+        if (taxLabel) {
+          taxLabel.style.color = taxColor;
+        }
+      }
+      
+      // Beregn og oppdater "Netto portefølje etter skatt" = Verdi ved periodens slutt + Skatt
       // Hent "Verdi ved periodens slutt" fra DOM (den er allerede beregnet tidligere i funksjonen)
       const elNetPortfolio = document.getElementById('inv-left-net');
       if (elNetPortfolio) {
@@ -3096,10 +3446,11 @@ function updateInvestLoanCalc() {
             futureValueForNet = parseFloat(endValueText) || 0;
           }
         }
-        if (futureValueForNet > 0) {
-          const netPortfolioAfterTax = Math.max(0, Math.round(futureValueForNet - taxAmount));
-          elNetPortfolio.textContent = formatNOK(netPortfolioAfterTax);
-        }
+        // Beregn "Netto portefølje etter skatt" = Verdi ved periodens slutt + Skatt
+        // Hvis skatt er positiv (fordel), legger vi den til. Hvis skatt er negativ (kostnad), trekker vi den fra.
+        // Dette kan bli negativt, så vi fjerner Math.max(0, ...)
+        const netPortfolioAfterTax = Math.round(futureValueForNet + taxAmount);
+        elNetPortfolio.textContent = formatNOK(netPortfolioAfterTax);
       }
     } else if (elTax) {
       elTax.textContent = formatNOK(0);
@@ -3112,31 +3463,37 @@ function updateInvestLoanCalc() {
         // Hent "Verdi ved periodens slutt" fra DOM hvis tilgjengelig
         const elEndValue = document.getElementById('inv-left-endvalue');
         if (elEndValue && elEndValue.textContent) {
-          const endValueText = elEndValue.textContent.trim().replace(/[^\d,-]/g, '').replace(/\s/g, '').replace(',', '');
-          const futureValueFromDOM = parseFloat(endValueText) || 0;
-          if (futureValueFromDOM > 0) {
-            elNetPortfolio.textContent = formatNOK(Math.round(futureValueFromDOM));
-          } else {
-            elNetPortfolio.textContent = formatNOK(0);
+          let endValueText = elEndValue.textContent.trim();
+          // Sjekk om verdien er negativ (kan ha minus-tegn eller Unicode minus U+2212)
+          const isNegative = endValueText.includes('-') || endValueText.includes('−');
+          // Fjern alle tegn bortsett fra tall
+          endValueText = endValueText.replace(/[^\d]/g, '');
+          let futureValueFromDOM = parseFloat(endValueText) || 0;
+          // Legg til minus hvis verdien var negativ
+          if (isNegative) {
+            futureValueFromDOM = -Math.abs(futureValueFromDOM);
           }
+          // Beregn "Netto portefølje etter skatt" = Verdi ved periodens slutt + Skatt
+          // Hvis skatt er positiv (fordel), legger vi den til. Hvis skatt er negativ (kostnad), trekker vi den fra.
+          const netPortfolioAfterTax = Math.round(futureValueFromDOM + taxAmount);
+          elNetPortfolio.textContent = formatNOK(netPortfolioAfterTax);
         } else {
+          // Hvis ingen verdi, sett til 0 minus skatt (som er 0)
           elNetPortfolio.textContent = formatNOK(0);
         }
       }
     }
   }
   
-  // Beregn og oppdater "Netto portefølje etter skatt" = Verdi ved periodens slutt - Skatt
+  // Beregn og oppdater "Netto portefølje etter skatt" = Verdi ved periodens slutt + Skatt
+  // Hvis skatt er positiv (fordel), legger vi den til. Hvis skatt er negativ (kostnad), trekker vi den fra.
+  // Dette kan bli negativt, så vi fjerner Math.max(0, ...) og sjekken på futureValue > 0
   // Hvis ikke allerede satt ovenfor
   const elNetPortfolio = document.getElementById('inv-left-net');
   if (elNetPortfolio && (!elNetPortfolio.textContent || !elNetPortfolio.textContent.trim())) {
     // Hvis ikke allerede satt, beregn den nå
-    if (futureValue > 0) {
-      const netPortfolioAfterTax = Math.max(0, Math.round(futureValue - taxAmount));
-      elNetPortfolio.textContent = formatNOK(netPortfolioAfterTax);
-    } else {
-      elNetPortfolio.textContent = formatNOK(0);
-    }
+    const netPortfolioAfterTax = Math.round(futureValue + taxAmount);
+    elNetPortfolio.textContent = formatNOK(netPortfolioAfterTax);
   }
   
   // Beregn og oppdater "Netto avkastning" i venstre boks = Netto portefølje etter skatt + Oppgjør gjeld + Fradrag rentekostnader
@@ -3154,8 +3511,9 @@ function updateInvestLoanCalc() {
       if (isNegative && netPortfolioAfterTax > 0) netPortfolioAfterTax = -netPortfolioAfterTax;
     } else {
       // Fallback: beregn fra futureValue og taxAmount
+      // Hvis skatt er positiv (fordel), legger vi den til. Hvis skatt er negativ (kostnad), trekker vi den fra.
       const taxAmountValue = (taxAmount !== undefined && taxAmount !== null) ? taxAmount : 0;
-      netPortfolioAfterTax = Math.max(0, Math.round(futureValue - taxAmountValue));
+      netPortfolioAfterTax = Math.round(futureValue + taxAmountValue);
       // Oppdater også DOM-elementet
       if (elNetPortfolio) {
         elNetPortfolio.textContent = formatNOK(netPortfolioAfterTax);
@@ -3461,7 +3819,32 @@ function updateTopSummaries() {
   if (elD) elD.textContent = `${stockPct.toFixed(0).replace('.', ',')} %`;
 
   // Forventet avkastning (%)
-  const exp = typeof AppState.expectedReturnPct === 'number' ? AppState.expectedReturnPct : 0;
+  let exp = typeof AppState.expectedReturnPct === 'number' ? AppState.expectedReturnPct : 0;
+  
+  // Hvis forventet avkastning ikke er satt eller er 0, beregn den basert på nåværende verdier
+  if (!exp || exp === 0) {
+    const expEquity = isFinite(AppState.expEquity) ? Number(AppState.expEquity) : 8.0;
+    const expBonds = isFinite(AppState.expBonds) ? Number(AppState.expBonds) : 5.0;
+    const fee = isFinite(AppState.advisoryFeePct) ? Number(AppState.advisoryFeePct) : 0;
+    const kpi = isFinite(AppState.expKpi) ? Number(AppState.expKpi) : 0;
+    
+    // Hent aksjeandel
+    let equitySharePct = typeof AppState.stockSharePercent === 'number' ? AppState.stockSharePercent : 65;
+    if (equitySharePct <= 0 && AppState.stockShareOption) {
+      const m = String(AppState.stockShareOption).match(/(\d+)%/);
+      equitySharePct = m ? Number(m[1]) : 65;
+      if (/Renter/i.test(String(AppState.stockShareOption))) equitySharePct = 0;
+    }
+    if (!equitySharePct || equitySharePct <= 0) equitySharePct = 65; // Standard 65% hvis ikke satt
+    
+    const equityShare = equitySharePct / 100;
+    const grossExpected = equityShare * expEquity + (1 - equityShare) * expBonds;
+    exp = grossExpected - fee - kpi;
+    
+    // Oppdater AppState med den beregnede verdien
+    AppState.expectedReturnPct = exp;
+  }
+  
   const elE = document.getElementById('sum-equity');
   if (elE) elE.textContent = `${exp.toFixed(2).replace('.', ',')} %`;
 
@@ -3518,7 +3901,11 @@ function updateTopSummaries() {
       if (elRightCap) elRightCap.textContent = formatNOK(capital);
       if (elLG) elLG.textContent = formatNOK(gain);
       if (elRG) elRG.textContent = formatNOK(gain);
-      if (elLT) { elLT.textContent = formatNOK(taxLeft); elLT.style.color = "#D32F2F"; }
+      if (elLT) { 
+        elLT.textContent = formatNOK(taxLeft); 
+        elLT.style.color = "#D32F2F"; 
+        elLT.style.fontWeight = "400"; // Rød tekst skal ha font-weight 400
+      }
       if (elLNet) elLNet.textContent = formatNOK(Math.max(0, Math.round(portfolio - taxLeft)));
         if (elNRNow) elNRNow.textContent = formatNOK(Math.round(portfolio));
 
@@ -3538,7 +3925,11 @@ function updateTopSummaries() {
         // Hvis aksjeandel > 80%, bruk utbytteskatt på hele gevinsten
         const rateRight = equitySharePctR > 80 ? stockTaxRate : (equityShareR * stockTaxRate + interestShareR * capitalTaxRate);
         const taxRight = Math.round(gain * rateRight);
-        if (elRT) { elRT.textContent = formatNOK(taxRight); elRT.style.color = "#D32F2F"; }
+        if (elRT) { 
+          elRT.textContent = formatNOK(taxRight); 
+          elRT.style.color = "#D32F2F"; 
+          elRT.style.fontWeight = "400"; // Rød tekst skal ha font-weight 400
+        }
         // På høyre side (øverste blokk) skal "Netto portefølje" vise Porteføljestørrelse
         if (elNRNow) elNRNow.textContent = formatNOK(Math.round(portfolio));
       }
@@ -3716,12 +4107,11 @@ function updateTopSummaries() {
       elInvAnnualPayment.style.color = "#D32F2F";
     }
     
-    // "Verdi ved periodens slutt" beregnes i updateInvestLoanCalc() som kalles tidligere i funksjonen
+    // "Verdi ved periodens slutt" og "Avkastning" beregnes i updateInvestLoanCalc() som kalles tidligere i funksjonen
     // for å unngå duplisert logikk og sikre konsistent oppdatering
-    // Beregn og oppdater "Restlån ved periodens slutt" og "Avkastning" hvis nødvendig
+    // Beregn og oppdater "Restlån ved periodens slutt" hvis nødvendig (avkastning er allerede beregnet)
     const elInvRemainingLoan = document.getElementById("inv-right-remaining-loan");
-    const elInvReturn = document.getElementById("inv-left-return");
-    if (elInvRemainingLoan && elInvReturn && annualPayment > 0) {
+    if (elInvRemainingLoan && annualPayment > 0) {
       // Hent verdier for beregning
       let years = 10;
       const yearsSliderEl = document.getElementById('input-years-slider');
@@ -3768,15 +4158,7 @@ function updateTopSummaries() {
       }
       elInvRemainingLoan.textContent = formatNOK(Math.round(remainingLoan));
       
-      // Beregn avkastning = Verdi ved periodens slutt - Restlån ved periodens slutt
-      const elInvEndValueForReturn = document.getElementById("inv-left-endvalue");
-      if (elInvEndValueForReturn && elInvEndValueForReturn.textContent) {
-        // Hent "Verdi ved periodens slutt" fra DOM (beregnet i updateInvestLoanCalc())
-        const endValueText = elInvEndValueForReturn.textContent.trim().replace(/[^\d,-]/g, '').replace(/\s/g, '').replace(',', '');
-        const futureValue = parseFloat(endValueText) || 0;
-        const returnValue = futureValue - remainingLoan;
-        elInvReturn.textContent = formatNOK(Math.round(returnValue));
-      }
+      // Avkastning er allerede beregnet i updateInvestLoanCalc() som kalles tidligere i funksjonen
       
       // Beregn og oppdater "Rest innskutt kapital" med SLUTTVERDI-funksjonen
       const elInvRestCapital = document.getElementById("inv-left-rest-capital");
@@ -3821,23 +4203,25 @@ function updateTopSummaries() {
           elInvRestCapital.textContent = formatNOK(restCapitalValue);
         }
         
-        // Beregn og oppdater "Avkastning utover skjerming" = Verdi ved periodens slutt - Rest innskutt kapital
-        let excessValue = 0;
-        const elInvExcess = document.getElementById("inv-left-excess");
-        const elInvEndValue = document.getElementById("inv-left-endvalue");
-        if (elInvExcess && elInvEndValue && elInvEndValue.textContent) {
-          // Hent "Verdi ved periodens slutt" fra DOM (beregnet i updateInvestLoanCalc())
-          const endValueText = elInvEndValue.textContent.trim().replace(/[^\d,-]/g, '').replace(/\s/g, '').replace(',', '');
-          const futureValue = parseFloat(endValueText) || 0;
-          if (futureValue > 0) {
-            excessValue = Math.max(0, Math.round(futureValue - restCapitalValue));
-            elInvExcess.textContent = formatNOK(excessValue);
-          }
-        }
-        
-        // Beregn og oppdater "Skatt" = Avkastning utover skjerming × ((Aksjeandel × 0,3784) + ((1 - Aksjeandel) × 0,22))
+        // Beregn og oppdater "Skatt" basert på "Avkastning:"-linjen × ((Aksjeandel × 0,3784) + ((1 - Aksjeandel) × 0,22))
         const elInvTax = document.getElementById("inv-left-tax");
         if (elInvTax) {
+          // Hent verdien fra "Avkastning:"-linjen
+          let avkastningDiffValue = 0;
+          const elAvkastningDiff = document.getElementById("inv-left-avkastning-diff");
+          if (elAvkastningDiff && elAvkastningDiff.textContent) {
+            let avkastningText = elAvkastningDiff.textContent.trim();
+            // Sjekk om verdien er negativ (kan ha minus-tegn eller Unicode minus U+2212)
+            const isNegative = avkastningText.includes('-') || avkastningText.includes('−');
+            // Fjern alle tegn bortsett fra tall
+            avkastningText = avkastningText.replace(/[^\d]/g, '');
+            avkastningDiffValue = parseFloat(avkastningText) || 0;
+            // Legg til minus hvis verdien var negativ
+            if (isNegative) {
+              avkastningDiffValue = -Math.abs(avkastningDiffValue);
+            }
+          }
+          
           // Hent aksjeandel fra Input-fanen
           let equitySharePct = 65; // default
           if (typeof AppState.stockSharePercent === 'number') {
@@ -3855,10 +4239,26 @@ function updateTopSummaries() {
           const stockTaxRate = (AppState.stockTaxPct ?? 37.84) / 100; // Konverter prosent til desimal
           const capitalTaxRate = (AppState.capitalTaxPct ?? 22.00) / 100; // Konverter prosent til desimal
           
-          // Beregn skatt: Avkastning utover skjerming × ((Aksjeandel × Utbytteskatt) + ((1 - Aksjeandel) × Kapitalskatt))
+          // Beregn skatt: -Avkastning × ((Aksjeandel × Utbytteskatt) + ((1 - Aksjeandel) × Kapitalskatt))
+          // Hvis avkastning er negativ, blir skatt positiv (skattefordel, grønn)
+          // Hvis avkastning er positiv, blir skatt negativ (skattekostnad, rød)
           const taxRate = (aksjeAndel * stockTaxRate) + ((1 - aksjeAndel) * capitalTaxRate);
-          const taxAmount = excessValue * taxRate;
-          elInvTax.textContent = formatNOK(Math.round(taxAmount));
+          const taxAmount = -avkastningDiffValue * taxRate;
+          const roundedTax = Math.round(taxAmount);
+          elInvTax.textContent = formatNOK(roundedTax);
+          
+          // Sett farge: grønn hvis positiv (skattefordel), rød hvis negativ (skattekostnad)
+          const taxColor = roundedTax >= 0 ? "#0C8F4A" : "#D32F2F"; // Grønn eller rød
+          elInvTax.style.color = taxColor;
+          
+          // Oppdater også etiketten "Skatt" med samme farge
+          const taxRow = elInvTax.parentElement;
+          if (taxRow) {
+            const taxLabel = taxRow.querySelector('span:first-child');
+            if (taxLabel) {
+              taxLabel.style.color = taxColor;
+            }
+          }
         }
       }
     } else if (elInvRemainingLoan && annualPayment > 0 && !elInvReturn) {
@@ -3929,24 +4329,9 @@ function updateTopSummaries() {
     }
     
     // "Verdi ved periodens slutt" er allerede oppdatert tidligere i denne funksjonen
+    // "Avkastning" er også allerede oppdatert tidligere i denne funksjonen (linje 3298-3304)
     // Denne ekstra oppdateringen er ikke lenger nødvendig siden oppdateringen alltid skjer
-    // tidligere i funksjonen (linje 2762-2803)
-    
-    // Oppdater "Avkastning" hvis ikke allerede oppdatert
-    const elInvReturnUpdate = document.getElementById("inv-left-return");
-    const elInvEndValueUpdate = document.getElementById("inv-left-endvalue");
-    const elInvRemainingLoanUpdate = document.getElementById("inv-right-remaining-loan");
-    if (elInvReturnUpdate && elInvEndValueUpdate && elInvRemainingLoanUpdate) {
-      // Hent verdiene fra tekst (hvis de allerede er satt)
-      const endValueText = elInvEndValueUpdate.textContent.trim().replace(/[^\d,-]/g, '').replace(/\s/g, '').replace(',', '');
-      const remainingLoanText = elInvRemainingLoanUpdate.textContent.trim().replace(/[^\d,-]/g, '').replace(/\s/g, '').replace(',', '');
-      const endValueNum = parseFloat(endValueText) || 0;
-      const remainingLoanNum = parseFloat(remainingLoanText) || 0;
-      if (endValueNum > 0 || remainingLoanNum > 0) {
-        const returnValue = endValueNum - remainingLoanNum;
-        elInvReturnUpdate.textContent = formatNOK(Math.round(returnValue));
-      }
-    }
+    // tidligere i funksjonen
     
     if (elInvRightRate) {
       let interestCost = 5.0;
@@ -4161,9 +4546,8 @@ function generateOutputText() {
     { id: "inv-left-expected", label: "Forventet avkastning" },
     { id: "inv-left-payment", label: "Uttak til renter og avdrag" },
     { id: "inv-left-endvalue", label: "Verdi ved periodens slutt" },
-    { id: "inv-left-return", label: "Avkastning" },
+    { id: "inv-left-avkastning-diff", label: "Avkastning:" },
     { id: "inv-left-rest-capital", label: "Rest innskutt kapital" },
-    { id: "inv-left-excess", label: "Avkastning utover skjerming" },
     { id: "inv-left-tax", label: "Skatt" },
     { id: "inv-left-net", label: "Netto portefølje etter skatt" },
     { id: "inv-left-debt-settle", label: "Oppgjør gjeld" },
@@ -4336,6 +4720,11 @@ function initChartUI() {
   }
 
   function openChartModal() {
+    // Toggle: hvis modal allerede er åpen, lukk den
+    if (!modal.hasAttribute("hidden")) {
+      closeChartModal();
+      return;
+    }
     modal.removeAttribute("hidden");
     // Reset størrelse når modal åpnes
     if (chartContainer) {
@@ -4370,20 +4759,29 @@ function initChartUI() {
   window.openChartModal = openChartModal;
 }
 
-// Beregn netto avkastning for et gitt antall år
-function calculateNetReturnForYears(years) {
+// Beregn netto avkastning for en gitt aksjeandel-grad (basert på nedbetale lån-beregninger)
+function calculateNetReturnForEquityShare(equitySharePercent) {
   // Hent verdier fra AppState / Input-fanen
   const sumAssets = (AppState.assets || []).reduce((s, x) => s + (x.amount || 0), 0);
   const portfolio = isFinite(AppState.portfolioSize) ? Number(AppState.portfolioSize) : sumAssets;
   const interestPct = isFinite(AppState.interestCostPct) ? Number(AppState.interestCostPct) : 5.0;
-  const equitySharePct = typeof AppState.stockSharePercent === 'number' ? AppState.stockSharePercent : 0;
 
-  // Beregn forventet avkastning
+  // Hent antall år
+  let years = 10;
+  const yearsSliderEl = document.getElementById('input-years-slider');
+  if (yearsSliderEl && yearsSliderEl.value) {
+    const v = Number(yearsSliderEl.value);
+    if (isFinite(v) && v > 0) years = v;
+  } else if (isFinite(AppState.yearsCount)) {
+    years = Number(AppState.yearsCount);
+  }
+
+  // Beregn forventet avkastning med den gitte aksjeandel-graden
   const expEquity = isFinite(AppState.expEquity) ? Number(AppState.expEquity) : 8.0;
   const expBonds = isFinite(AppState.expBonds) ? Number(AppState.expBonds) : 5.0;
   const fee = isFinite(AppState.advisoryFeePct) ? Number(AppState.advisoryFeePct) : 0;
   const kpi = isFinite(AppState.expKpi) ? Number(AppState.expKpi) : 0;
-  const equityShare = equitySharePct / 100;
+  const equityShare = equitySharePercent / 100;
   const grossExpected = equityShare * expEquity + (1 - equityShare) * expBonds;
   const expectedPct = grossExpected - fee - kpi;
 
@@ -4404,11 +4802,16 @@ function calculateNetReturnForYears(years) {
   const annualPayment = Math.abs(calculatePMT(rate, nper, pv, 0, 0));
 
   // Beregn verdi ved periodens slutt
+  // Når lånet er nedbetalt (years > repaymentYears), skal ikke annualPayment trekkes fra
+  // I år repaymentYears (f.eks. år 20) betales lånet fortsatt, så annualPayment skal trekkes fra
   const fvRate = expectedPct / 100;
   const fvNper = years;
-  const fvPmt = annualPayment;
-  const fvPv = -portfolio;
-  const futureValue = Math.abs(calculateFV(fvRate, fvNper, fvPmt, fvPv, 0));
+  // I Excel SLUTTVERDI skal utbetalinger være negative, eller 0 hvis lånet er nedbetalt
+  const fvPmt = (years <= repaymentYears && annualPayment > 0) ? -annualPayment : 0;
+  // Nåverdi: Porteføljestørrelse (positiv i Excel SLUTTVERDI)
+  const fvPv = portfolio;
+  const fvType = 0;
+  const futureValue = calculateFV(fvRate, fvNper, fvPmt, fvPv, fvType);
 
   // Beregn restlån
   let remainingLoan = 0;
@@ -4447,12 +4850,305 @@ function calculateNetReturnForYears(years) {
     restCapitalValue = Math.max(0, -calculateFV(restRate, restNper, restPmt, restPv, 0));
   }
 
-  // Beregn avkastning utover skjerming
-  const excessValue = Math.max(0, futureValue - restCapitalValue);
+  // Beregn avkastning = Verdi ved periodens slutt - Restlån ved periodens slutt
+  // Dette kan bli negativt, så vi fjerner Math.max(0, ...)
+  const excessValue = futureValue - remainingLoan;
+
+  // Beregn skatt med den gitte aksjeandel-graden
+  // Hvis avkastning er negativ, blir skatt positiv (skattefordel, grønn)
+  // Hvis avkastning er positiv, blir skatt negativ (skattekostnad, rød)
+  let taxAmount = 0;
+  if (excessValue !== 0) {
+    const aksjeAndel = equitySharePercent / 100;
+    const stockTaxRate = (AppState.stockTaxPct ?? 37.84) / 100;
+    const capitalTaxRate = (AppState.capitalTaxPct ?? 22.00) / 100;
+    const taxRate = (aksjeAndel * stockTaxRate) + ((1 - aksjeAndel) * capitalTaxRate);
+    // Beregn skatt: -Avkastning × skattesats
+    taxAmount = -excessValue * taxRate;
+    // Ekstra sjekk: Hvis avkastning er negativ, må skatt være positiv
+    if (excessValue < 0 && taxAmount < 0) {
+      taxAmount = Math.abs(taxAmount);
+    }
+    // Ekstra sjekk: Hvis avkastning er positiv, må skatt være negativ
+    if (excessValue > 0 && taxAmount > 0) {
+      taxAmount = -taxAmount;
+    }
+  }
+
+  // Beregn netto portefølje etter skatt = Verdi ved periodens slutt + Skatt
+  // Hvis skatt er positiv (fordel), legger vi den til. Hvis skatt er negativ (kostnad), trekker vi den fra.
+  // Dette kan bli negativt, så vi fjerner Math.max(0, ...)
+  const netPortfolioAfterTax = futureValue + taxAmount;
+
+  // Beregn fradrag rentekostnader
+  // Når lånet er nedbetalt (years >= repaymentYears), beregner vi renter for hele nedbetalingsperioden
+  // Når lånet ikke er nedbetalt (years < repaymentYears), beregner vi renter for perioden 1 til years
+  let totalInterest = 0;
+  if (years > 0) {
+    const cumRate = interestPct / 100;
+    const cumNper = repaymentYears;
+    const cumPv = portfolio;
+    const startPeriod = 1;
+    // Hvis lånet er nedbetalt, beregn renter for hele nedbetalingsperioden
+    // Hvis lånet ikke er nedbetalt, beregn renter for perioden 1 til years
+    const endPeriod = years <= repaymentYears ? years : repaymentYears;
+    totalInterest = calculateCUMIPMT(cumRate, cumNper, cumPv, startPeriod, endPeriod, 0);
+  }
+  const interestDeduction = Math.abs(totalInterest) * ((AppState.capitalTaxPct ?? 22.00) / 100);
+
+  // Beregn netto avkastning (Avkastning utover lånekostnad)
+  const debtSettle = remainingLoan > 0 ? -remainingLoan : 0;
+  const netReturn = netPortfolioAfterTax + debtSettle + interestDeduction;
+
+  return netReturn;
+}
+
+// Beregn netto avkastning (Avkastning utover lånekostnad) for en gitt rentekostnad
+function calculateNetReturnForInterestCost(interestCostPercent) {
+  // Hent verdier fra AppState / Input-fanen
+  const sumAssets = (AppState.assets || []).reduce((s, x) => s + (x.amount || 0), 0);
+  const portfolio = isFinite(AppState.portfolioSize) ? Number(AppState.portfolioSize) : sumAssets;
+  const interestPct = interestCostPercent; // Bruk den gitte rentekostnaden
+
+  // Hent antall år
+  let years = 10;
+  const yearsSliderEl = document.getElementById('input-years-slider');
+  if (yearsSliderEl && yearsSliderEl.value) {
+    const v = Number(yearsSliderEl.value);
+    if (isFinite(v) && v > 0) years = v;
+  } else if (isFinite(AppState.yearsCount)) {
+    years = Number(AppState.yearsCount);
+  }
+
+  // Beregn forventet avkastning (bruk nåværende aksjeandel fra Input)
+  const expEquity = isFinite(AppState.expEquity) ? Number(AppState.expEquity) : 8.0;
+  const expBonds = isFinite(AppState.expBonds) ? Number(AppState.expBonds) : 5.0;
+  const fee = isFinite(AppState.advisoryFeePct) ? Number(AppState.advisoryFeePct) : 0;
+  const kpi = isFinite(AppState.expKpi) ? Number(AppState.expKpi) : 0;
+  
+  // Hent aksjeandel fra Input
+  let equitySharePct = 65;
+  if (typeof AppState.stockSharePercent === 'number') {
+    equitySharePct = AppState.stockSharePercent;
+  } else if (AppState.stockShareOption) {
+    const m = String(AppState.stockShareOption).match(/(\d+)%/);
+    if (m) equitySharePct = Number(m[1]);
+    if (/Renter/i.test(String(AppState.stockShareOption))) equitySharePct = 0;
+  }
+  
+  const equityShare = equitySharePct / 100;
+  const grossExpected = equityShare * expEquity + (1 - equityShare) * expBonds;
+  const expectedPct = grossExpected - fee - kpi;
+
+  // Hent avdragsprofil
+  let repaymentYears = 20;
+  const repaymentSliderEl = document.getElementById('repayment-profile-slider');
+  if (repaymentSliderEl && repaymentSliderEl.value) {
+    const v = Number(repaymentSliderEl.value);
+    if (isFinite(v) && v > 0) repaymentYears = v;
+  } else if (isFinite(AppState.repaymentProfileYears)) {
+    repaymentYears = Number(AppState.repaymentProfileYears);
+  }
+
+  // Beregn årlig betaling med den gitte rentekostnaden
+  const rate = interestPct / 100;
+  const nper = repaymentYears;
+  const pv = portfolio;
+  const annualPayment = Math.abs(calculatePMT(rate, nper, pv, 0, 0));
+
+  // Beregn verdi ved periodens slutt
+  // Når lånet er nedbetalt (years > repaymentYears), skal ikke annualPayment trekkes fra
+  // I år repaymentYears (f.eks. år 20) betales lånet fortsatt, så annualPayment skal trekkes fra
+  const fvRate = expectedPct / 100;
+  const fvNper = years;
+  // I Excel SLUTTVERDI skal utbetalinger være negative, eller 0 hvis lånet er nedbetalt
+  const fvPmt = (years <= repaymentYears && annualPayment > 0) ? -annualPayment : 0;
+  // Nåverdi: Porteføljestørrelse (positiv i Excel SLUTTVERDI)
+  const fvPv = portfolio;
+  const fvType = 0;
+  const futureValue = calculateFV(fvRate, fvNper, fvPmt, fvPv, fvType);
+
+  // Beregn restlån med den gitte rentekostnaden
+  let remainingLoan = 0;
+  if (years < repaymentYears) {
+    const remainingYears = repaymentYears - years;
+    const pvRate = interestPct / 100;
+    const pvNper = remainingYears;
+    const pvPmt = -annualPayment;
+    remainingLoan = Math.abs(calculatePV(pvRate, pvNper, pvPmt, 0, 0));
+  }
+
+  // Beregn rest innskutt kapital
+  let capital = 0;
+  const capitalSliderEl = document.getElementById('input-capital-slider');
+  if (capitalSliderEl && capitalSliderEl.value) {
+    const v = Number(capitalSliderEl.value);
+    if (isFinite(v)) capital = v;
+  } else if (isFinite(AppState.inputCapital)) {
+    capital = Number(AppState.inputCapital);
+  }
+
+  let restCapitalValue = 0;
+  if (capital > 0) {
+    let shieldRatePct = 3.9;
+    const shieldSliderEl = document.getElementById('shield-rate-slider');
+    if (shieldSliderEl && shieldSliderEl.value) {
+      const v = Number(shieldSliderEl.value);
+      if (isFinite(v)) shieldRatePct = v;
+    } else if (isFinite(AppState.shieldRatePct)) {
+      shieldRatePct = Number(AppState.shieldRatePct);
+    }
+    const restRate = shieldRatePct / 100;
+    const restNper = years;
+    const restPmt = -annualPayment;
+    const restPv = capital;
+    restCapitalValue = Math.max(0, -calculateFV(restRate, restNper, restPmt, restPv, 0));
+  }
+
+  // Beregn avkastning = Verdi ved periodens slutt - Restlån ved periodens slutt
+  // Dette kan bli negativt, så vi fjerner Math.max(0, ...)
+  const excessValue = futureValue - remainingLoan;
 
   // Beregn skatt
+  // Hvis avkastning er negativ, blir skatt positiv (skattefordel, grønn)
+  // Hvis avkastning er positiv, blir skatt negativ (skattekostnad, rød)
   let taxAmount = 0;
-  if (excessValue > 0) {
+  if (excessValue !== 0) {
+    const aksjeAndel = equitySharePct / 100;
+    const stockTaxRate = (AppState.stockTaxPct ?? 37.84) / 100;
+    const capitalTaxRate = (AppState.capitalTaxPct ?? 22.00) / 100;
+    const taxRate = (aksjeAndel * stockTaxRate) + ((1 - aksjeAndel) * capitalTaxRate);
+    // Beregn skatt: -Avkastning × skattesats
+    taxAmount = -excessValue * taxRate;
+    // Ekstra sjekk: Hvis avkastning er negativ, må skatt være positiv
+    if (excessValue < 0 && taxAmount < 0) {
+      taxAmount = Math.abs(taxAmount);
+    }
+    // Ekstra sjekk: Hvis avkastning er positiv, må skatt være negativ
+    if (excessValue > 0 && taxAmount > 0) {
+      taxAmount = -taxAmount;
+    }
+  }
+
+  // Beregn netto portefølje etter skatt = Verdi ved periodens slutt + Skatt
+  // Hvis skatt er positiv (fordel), legger vi den til. Hvis skatt er negativ (kostnad), trekker vi den fra.
+  // Dette kan bli negativt, så vi fjerner Math.max(0, ...)
+  const netPortfolioAfterTax = futureValue + taxAmount;
+
+  // Beregn fradrag rentekostnader med den gitte rentekostnaden
+  // Når lånet er nedbetalt (years > repaymentYears), beregner vi renter for hele nedbetalingsperioden
+  // Når lånet ikke er nedbetalt (years <= repaymentYears), beregner vi renter for perioden 1 til years
+  let totalInterest = 0;
+  if (years > 0) {
+    const cumRate = interestPct / 100;
+    const cumNper = repaymentYears;
+    const cumPv = portfolio;
+    const startPeriod = 1;
+    // Hvis lånet er nedbetalt, beregn renter for hele nedbetalingsperioden
+    // Hvis lånet ikke er nedbetalt, beregn renter for perioden 1 til years
+    const endPeriod = years <= repaymentYears ? years : repaymentYears;
+    totalInterest = calculateCUMIPMT(cumRate, cumNper, cumPv, startPeriod, endPeriod, 0);
+  }
+  const interestDeduction = Math.abs(totalInterest) * ((AppState.capitalTaxPct ?? 22.00) / 100);
+
+  // Beregn netto avkastning (Avkastning utover lånekostnad)
+  const debtSettle = remainingLoan > 0 ? -remainingLoan : 0;
+  const netReturn = netPortfolioAfterTax + debtSettle + interestDeduction;
+
+  return netReturn;
+}
+
+// Beregn netto avkastning for et gitt antall år
+function calculateNetReturnForYears(years) {
+  // Hent verdier fra AppState / Input-fanen
+  const sumAssets = (AppState.assets || []).reduce((s, x) => s + (x.amount || 0), 0);
+  const portfolio = isFinite(AppState.portfolioSize) ? Number(AppState.portfolioSize) : sumAssets;
+  const interestPct = isFinite(AppState.interestCostPct) ? Number(AppState.interestCostPct) : 5.0;
+  const equitySharePct = typeof AppState.stockSharePercent === 'number' ? AppState.stockSharePercent : 0;
+
+  // Beregn forventet avkastning
+  const expEquity = isFinite(AppState.expEquity) ? Number(AppState.expEquity) : 8.0;
+  const expBonds = isFinite(AppState.expBonds) ? Number(AppState.expBonds) : 5.0;
+  const fee = isFinite(AppState.advisoryFeePct) ? Number(AppState.advisoryFeePct) : 0;
+  const kpi = isFinite(AppState.expKpi) ? Number(AppState.expKpi) : 0;
+  const equityShare = equitySharePct / 100;
+  const grossExpected = equityShare * expEquity + (1 - equityShare) * expBonds;
+  const expectedPct = grossExpected - fee - kpi;
+
+  // Hent avdragsprofil
+  let repaymentYears = 20;
+  const repaymentSliderEl = document.getElementById('repayment-profile-slider');
+  if (repaymentSliderEl && repaymentSliderEl.value) {
+    const v = Number(repaymentSliderEl.value);
+    if (isFinite(v) && v > 0) repaymentYears = v;
+  } else if (isFinite(AppState.repaymentProfileYears)) {
+    repaymentYears = Number(AppState.repaymentProfileYears);
+  }
+
+  // Beregn årlig betaling
+  const rate = interestPct / 100;
+  const nper = repaymentYears;
+  const pv = portfolio;
+  const annualPayment = Math.abs(calculatePMT(rate, nper, pv, 0, 0));
+
+  // Beregn verdi ved periodens slutt
+  // Når lånet er nedbetalt (years > repaymentYears), skal ikke annualPayment trekkes fra
+  // I år repaymentYears (f.eks. år 20) betales lånet fortsatt, så annualPayment skal trekkes fra
+  const fvRate = expectedPct / 100;
+  const fvNper = years;
+  // I Excel SLUTTVERDI skal utbetalinger være negative, eller 0 hvis lånet er nedbetalt
+  const fvPmt = (years <= repaymentYears && annualPayment > 0) ? -annualPayment : 0;
+  // Nåverdi: Porteføljestørrelse (positiv i Excel SLUTTVERDI)
+  const fvPv = portfolio;
+  const fvType = 0;
+  const futureValue = calculateFV(fvRate, fvNper, fvPmt, fvPv, fvType);
+
+  // Beregn restlån
+  let remainingLoan = 0;
+  if (years < repaymentYears) {
+    const remainingYears = repaymentYears - years;
+    const pvRate = interestPct / 100;
+    const pvNper = remainingYears;
+    const pvPmt = -annualPayment;
+    remainingLoan = Math.abs(calculatePV(pvRate, pvNper, pvPmt, 0, 0));
+  }
+
+  // Beregn rest innskutt kapital
+  let capital = 0;
+  const capitalSliderEl = document.getElementById('input-capital-slider');
+  if (capitalSliderEl && capitalSliderEl.value) {
+    const v = Number(capitalSliderEl.value);
+    if (isFinite(v)) capital = v;
+  } else if (isFinite(AppState.inputCapital)) {
+    capital = Number(AppState.inputCapital);
+  }
+
+  let restCapitalValue = 0;
+  if (capital > 0) {
+    let shieldRatePct = 3.9;
+    const shieldSliderEl = document.getElementById('shield-rate-slider');
+    if (shieldSliderEl && shieldSliderEl.value) {
+      const v = Number(shieldSliderEl.value);
+      if (isFinite(v)) shieldRatePct = v;
+    } else if (isFinite(AppState.shieldRatePct)) {
+      shieldRatePct = Number(AppState.shieldRatePct);
+    }
+    const restRate = shieldRatePct / 100;
+    const restNper = years;
+    const restPmt = -annualPayment;
+    const restPv = capital;
+    restCapitalValue = Math.max(0, -calculateFV(restRate, restNper, restPmt, restPv, 0));
+  }
+
+  // Beregn avkastning = Verdi ved periodens slutt - Restlån ved periodens slutt
+  // Dette kan bli negativt, så vi fjerner Math.max(0, ...)
+  const excessValue = futureValue - remainingLoan;
+
+  // Beregn skatt basert på avkastning
+  // Hvis avkastning er negativ, blir skatt positiv (skattefordel, grønn)
+  // Hvis avkastning er positiv, blir skatt negativ (skattekostnad, rød)
+  let taxAmount = 0;
+  if (excessValue !== 0) {
     let equitySharePctForTax = 65;
     if (typeof AppState.stockSharePercent === 'number') {
       equitySharePctForTax = AppState.stockSharePercent;
@@ -4465,11 +5161,22 @@ function calculateNetReturnForYears(years) {
     const stockTaxRate = (AppState.stockTaxPct ?? 37.84) / 100;
     const capitalTaxRate = (AppState.capitalTaxPct ?? 22.00) / 100;
     const taxRate = (aksjeAndel * stockTaxRate) + ((1 - aksjeAndel) * capitalTaxRate);
-    taxAmount = excessValue * taxRate;
+    // Beregn skatt: -Avkastning × skattesats
+    taxAmount = -excessValue * taxRate;
+    // Ekstra sjekk: Hvis avkastning er negativ, må skatt være positiv
+    if (excessValue < 0 && taxAmount < 0) {
+      taxAmount = Math.abs(taxAmount);
+    }
+    // Ekstra sjekk: Hvis avkastning er positiv, må skatt være negativ
+    if (excessValue > 0 && taxAmount > 0) {
+      taxAmount = -taxAmount;
+    }
   }
 
-  // Beregn netto portefølje etter skatt
-  const netPortfolioAfterTax = Math.max(0, futureValue - taxAmount);
+  // Beregn netto portefølje etter skatt = Verdi ved periodens slutt + Skatt
+  // Hvis skatt er positiv (fordel), legger vi den til. Hvis skatt er negativ (kostnad), trekker vi den fra.
+  // Dette kan bli negativt, så vi fjerner Math.max(0, ...)
+  const netPortfolioAfterTax = futureValue + taxAmount;
 
   // Beregn fradrag rentekostnader
   let totalInterest = 0;
@@ -4800,6 +5507,65 @@ function calculateDifferenceForYears(years) {
   return sum - rSum;
 }
 
+// Beregn forskjell mellom å beholde Vs. å utbetale for en gitt skattesats
+function calculateDifferenceForTaxRate(taxRatePercent) {
+  // Hent verdier fra AppState / Input-fanen
+  const sumAssets = (AppState.assets || []).reduce((s, x) => s + (x.amount || 0), 0);
+  const portfolio = isFinite(AppState.portfolioSize) ? Number(AppState.portfolioSize) : sumAssets;
+  const interestPct = isFinite(AppState.interestCostPct) ? Number(AppState.interestCostPct) : 5.0;
+  
+  // Hent antall år
+  let years = 10;
+  const yearsSliderEl = document.getElementById('input-years-slider');
+  if (yearsSliderEl && yearsSliderEl.value) {
+    const v = Number(yearsSliderEl.value);
+    if (isFinite(v) && v > 0) years = v;
+  } else if (isFinite(AppState.yearsCount)) {
+    years = Number(AppState.yearsCount);
+  }
+
+  // Hent forventet avkastning fra Input-fanen
+  const inputExpectedReturn = document.getElementById('expected-return-out');
+  let expectedReturnPct = 0;
+  if (inputExpectedReturn) {
+    const expectedText = inputExpectedReturn.textContent.trim().replace(',', '.').replace('%', '');
+    expectedReturnPct = parseFloat(expectedText) || 0;
+  } else {
+    // Fallback: beregn selv
+    const expEquity = isFinite(AppState.expEquity) ? Number(AppState.expEquity) : 8.0;
+    const expBonds = isFinite(AppState.expBonds) ? Number(AppState.expBonds) : 5.0;
+    const fee = isFinite(AppState.advisoryFeePct) ? Number(AppState.advisoryFeePct) : 0;
+    const kpi = isFinite(AppState.expKpi) ? Number(AppState.expKpi) : 0;
+    const equitySharePct = typeof AppState.stockSharePercent === 'number' ? AppState.stockSharePercent : 65;
+    const equityShare = equitySharePct / 100;
+    const grossExpected = equityShare * expEquity + (1 - equityShare) * expBonds;
+    expectedReturnPct = grossExpected - fee - kpi;
+  }
+
+  // Beregn verdier for venstre boks (beholde)
+  const r = expectedReturnPct / 100;
+  const endValue = portfolio * Math.pow(1 + r, years);
+  // Bruk den gitte skattesatsen i stedet for AppState.stockTaxPct
+  const dividendTaxRate = taxRatePercent / 100;
+  const dividendTax = portfolio * dividendTaxRate;
+  const dividendNet = portfolio - dividendTax;
+  const remainingPortfolio = endValue - portfolio;
+  const interestRate = interestPct / 100;
+  const interestCostsTotal = (dividendNet * interestRate) * years;
+  
+  // Sum venstre = Restportefølje + Lån - rentekostnader
+  const sum = remainingPortfolio + dividendNet - interestCostsTotal;
+  
+  // Beregn verdier for høyre boks (utbetale)
+  const rInterestCostsTotal = (dividendNet * interestRate) * years;
+  
+  // Sum høyre = Lån + rentekostnader
+  const rSum = dividendNet + rInterestCostsTotal;
+  
+  // Forskjell = Sum venstre - Sum høyre
+  return sum - rSum;
+}
+
 // Tegn søylediagram for forskjell mellom å beholde Vs. å utbetale
 function drawDividendDifferenceChart() {
   const chartContainer = document.getElementById("dividend-chart-container");
@@ -5043,6 +5809,278 @@ function drawDividendDifferenceChart() {
   chartContainer.appendChild(svg);
 }
 
+// Tegn søylediagram for forskjell mellom å beholde Vs. å utbetale for ulike skattesatser
+function drawTaxRateChangeChart() {
+  const chartContainer = document.getElementById("tax-rate-change-chart-container");
+  if (!chartContainer) return;
+
+  // De 9 ulike skattesatsene
+  const taxRateOptions = [
+    { label: "0%", percent: 0 },
+    { label: "5%", percent: 5 },
+    { label: "10%", percent: 10 },
+    { label: "22%", percent: 22 },
+    { label: "25%", percent: 25 },
+    { label: "30%", percent: 30 },
+    { label: "35%", percent: 35 },
+    { label: "37,84%", percent: 37.84 },
+    { label: "51,5%", percent: 51.5 }
+  ];
+
+  // Beregn forskjell for hver skattesats
+  const data = [];
+  taxRateOptions.forEach(option => {
+    const difference = calculateDifferenceForTaxRate(option.percent);
+    data.push({ label: option.label, percent: option.percent, value: difference });
+  });
+
+  // Finn min og max verdier
+  const values = data.map(d => d.value);
+  const minValue = Math.min(...values);
+  const maxValue = Math.max(...values);
+  
+  // Automatisk Y-akse: hvis ingen negative verdier, start fra 0 eller minValue
+  // Legg til maksimalt 10% padding på toppen og bunnen
+  let niceMin, niceMax;
+  
+  // Beregn maksimalt tillatt range (10% over/under)
+  const maxAllowed = maxValue * 1.1; // Maksimalt 10% over høyeste tall
+  const minAllowed = minValue < 0 ? minValue * 1.1 : Math.max(0, minValue * 0.9); // Maksimalt 10% under laveste tall
+  
+  if (minValue >= 0) {
+    // Ingen negative verdier - start fra 0 eller lavere
+    niceMin = 0;
+    niceMax = maxAllowed; // Maksimalt 10% over høyeste tall
+  } else if (maxValue <= 0) {
+    // Alle verdier er negative - slutt ved 0 eller høyere
+    niceMin = minAllowed; // Maksimalt 10% under laveste tall
+    niceMax = 0;
+  } else {
+    // Både positive og negative verdier - sentrer rundt null med maksimalt 10% padding
+    const maxAbs = Math.max(Math.abs(minValue), Math.abs(maxValue));
+    niceMin = Math.min(-maxAbs * 1.1, minAllowed);
+    niceMax = Math.min(maxAbs * 1.1, maxAllowed);
+  }
+  
+  // Bruk niceNumber for å få pene verdier, men respekter maksimalt tillatt range
+  let range = niceMax - niceMin;
+  const niceRange = niceNumber(range, false);
+  niceMin = Math.floor(niceMin / niceRange) * niceRange;
+  let calculatedMax = Math.ceil(niceMax / niceRange) * niceRange;
+  
+  // Sikre at niceMax ikke overstiger maxAllowed (10% over høyeste tall)
+  niceMax = Math.min(calculatedMax, maxAllowed);
+  // Sikre at niceMin ikke går under minAllowed (10% under laveste tall)
+  if (minValue < 0) {
+    niceMin = Math.max(niceMin, minAllowed);
+  }
+  
+  // Beregn niceTick basert på range for faste runde intervall
+  range = niceMax - niceMin;
+  const niceTick = niceNumber(range / 10, true);
+
+  // Fjern alle eksisterende SVG-elementer først for å sikre ren start
+  const existingSvgs = chartContainer.querySelectorAll("svg");
+  existingSvgs.forEach(svg => svg.remove());
+
+  // SVG dimensjoner - bruk faste verdier for konsistent visning
+  // Hvis containeren har inline width/height fra resize, bruk dem, ellers bruk standard
+  let containerWidth = 1800;
+  let containerHeight = 1300;
+  
+  const inlineWidth = chartContainer.style.width;
+  const inlineHeight = chartContainer.style.height;
+  
+  if (inlineWidth && inlineWidth !== "") {
+    containerWidth = parseFloat(inlineWidth) || 1800;
+  } else {
+    const rect = chartContainer.getBoundingClientRect();
+    // Begrens til fornuftige verdier for å unngå at den vokser uendelig
+    containerWidth = rect.width > 0 && rect.width < 10000 ? rect.width : 1800;
+  }
+  
+  if (inlineHeight && inlineHeight !== "") {
+    containerHeight = parseFloat(inlineHeight) || 1300;
+  } else {
+    const rect = chartContainer.getBoundingClientRect();
+    // Begrens til fornuftige verdier for å unngå at den vokser uendelig
+    containerHeight = rect.height > 0 && rect.height < 10000 ? rect.height : 1300;
+  }
+  
+  const margin = { top: 40, right: 60, bottom: 240, left: 200 };
+  const width = Math.max(800, containerWidth);
+  const height = Math.max(600, containerHeight);
+  const chartWidth = width - margin.left - margin.right;
+  const chartHeight = height - margin.top - margin.bottom;
+
+  // Opprett SVG
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+  svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
+  svg.setAttribute("width", width);
+  svg.setAttribute("height", height);
+  svg.style.width = "100%";
+  svg.style.maxWidth = `${width}px`;
+  svg.style.height = "auto";
+  svg.style.aspectRatio = `${width} / ${height}`;
+  svg.style.overflow = "visible";
+
+  const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+  g.setAttribute("transform", `translate(${margin.left},${margin.top})`);
+
+  // Y-akse linje
+  const yAxisLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
+  yAxisLine.setAttribute("x1", 0);
+  yAxisLine.setAttribute("y1", 0);
+  yAxisLine.setAttribute("x2", 0);
+  yAxisLine.setAttribute("y2", chartHeight);
+  yAxisLine.setAttribute("stroke", "var(--BORDER_LIGHT, #e5e7eb)");
+  yAxisLine.setAttribute("stroke-width", "3");
+  g.appendChild(yAxisLine);
+
+  // Y-akse ticks og labels - start fra 0 og gå i faste runde intervall oppover og nedover
+  const ticks = [];
+  
+  // Start fra 0 og gå nedover
+  for (let tick = 0; tick >= niceMin; tick -= niceTick) {
+    ticks.push(tick);
+  }
+  
+  // Gå oppover fra 0
+  for (let tick = niceTick; tick <= niceMax; tick += niceTick) {
+    ticks.push(tick);
+  }
+  
+  // Sorter ticks for riktig rekkefølge
+  ticks.sort((a, b) => a - b);
+  
+  // Fjern duplikater
+  const uniqueTicks = [...new Set(ticks)];
+  
+  uniqueTicks.forEach(tick => {
+    const y = chartHeight - ((tick - niceMin) / (niceMax - niceMin)) * chartHeight;
+    
+    // Tick linje
+    const tickLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    tickLine.setAttribute("x1", -8);
+    tickLine.setAttribute("y1", y);
+    tickLine.setAttribute("x2", 0);
+    tickLine.setAttribute("y2", y);
+    tickLine.setAttribute("stroke", "var(--BORDER_LIGHT, #e5e7eb)");
+    tickLine.setAttribute("stroke-width", "1.5");
+    g.appendChild(tickLine);
+
+    // Label
+    const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    label.setAttribute("x", -20);
+    label.setAttribute("y", y);
+    label.setAttribute("text-anchor", "end");
+    label.setAttribute("dominant-baseline", "middle");
+    label.setAttribute("font-size", "18");
+    label.setAttribute("fill", "var(--GRAY_TEXT_SECONDARY, #6b7280)");
+    label.textContent = formatNOK(Math.round(tick));
+    g.appendChild(label);
+  });
+
+  // Beregn null-linje posisjon (Y-akse sentrert rundt null)
+  const zeroY = chartHeight - ((0 - niceMin) / (niceMax - niceMin)) * chartHeight;
+
+  // Null-linje (X-akse ved y = 0)
+  const xAxisLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
+  xAxisLine.setAttribute("x1", 0);
+  xAxisLine.setAttribute("y1", zeroY);
+  xAxisLine.setAttribute("x2", chartWidth);
+  xAxisLine.setAttribute("y2", zeroY);
+  xAxisLine.setAttribute("stroke", "var(--BORDER_LIGHT, #e5e7eb)");
+  xAxisLine.setAttribute("stroke-width", "3");
+  g.appendChild(xAxisLine);
+
+  // X-akse labels
+  const barWidth = chartWidth / 9; // 9 søyler
+  data.forEach((d, i) => {
+    const x = (i + 0.5) * barWidth;
+    const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    label.setAttribute("x", x);
+    label.setAttribute("y", chartHeight + 30);
+    label.setAttribute("text-anchor", "middle");
+    label.setAttribute("font-size", "22");
+    label.setAttribute("fill", "var(--GRAY_TEXT_SECONDARY, #6b7280)");
+    label.textContent = d.label;
+    g.appendChild(label);
+  });
+
+  // X-akse forklaring
+  const xAxisLabel = document.createElementNS("http://www.w3.org/2000/svg", "text");
+  xAxisLabel.setAttribute("x", chartWidth / 2);
+  xAxisLabel.setAttribute("y", chartHeight + 75);
+  xAxisLabel.setAttribute("text-anchor", "middle");
+  xAxisLabel.setAttribute("font-size", "24");
+  xAxisLabel.setAttribute("fill", "var(--GRAY_TEXT_SECONDARY, #6b7280)");
+  xAxisLabel.textContent = "Skattesats";
+  g.appendChild(xAxisLabel);
+
+  // Søyler - negative (røde, nedover) og positive (grønne, oppover)
+  data.forEach((d, i) => {
+    const barHeight = Math.abs((d.value / (niceMax - niceMin)) * chartHeight);
+    const x = i * barWidth + barWidth * 0.1;
+    const width = barWidth * 0.8;
+    
+    let y, height;
+    let fillColor;
+    
+    if (d.value >= 0) {
+      // Positive verdier - grønne søyler oppover fra null-linjen
+      y = zeroY - barHeight;
+      height = barHeight;
+      fillColor = "#0C8F4A"; // Grønn
+    } else {
+      // Negative verdier - røde søyler nedover fra null-linjen
+      y = zeroY;
+      height = barHeight;
+      fillColor = "#D32F2F"; // Rød
+    }
+    
+    const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+    rect.setAttribute("x", x);
+    rect.setAttribute("y", y);
+    rect.setAttribute("width", width);
+    rect.setAttribute("height", height);
+    rect.setAttribute("fill", fillColor);
+    rect.setAttribute("stroke", "none");
+    rect.setAttribute("rx", "6");
+    rect.setAttribute("ry", "6");
+    rect.style.cursor = "pointer";
+    rect.style.transition = "opacity 0.2s";
+
+    // Hover effekt
+    rect.addEventListener("mouseenter", () => {
+      rect.style.opacity = "0.8";
+      // Vis tooltip
+      const tooltip = document.createElementNS("http://www.w3.org/2000/svg", "text");
+      tooltip.setAttribute("x", x + width / 2);
+      tooltip.setAttribute("y", d.value >= 0 ? y - 8 : y + height + 20);
+      tooltip.setAttribute("text-anchor", "middle");
+      tooltip.setAttribute("font-size", "22");
+      tooltip.setAttribute("fill", "var(--text-primary, #1f2937)");
+      tooltip.setAttribute("font-weight", "bold");
+      tooltip.setAttribute("id", `tooltip-${i}`);
+      tooltip.textContent = formatNOK(Math.round(d.value));
+      g.appendChild(tooltip);
+    });
+
+    rect.addEventListener("mouseleave", () => {
+      rect.style.opacity = "1";
+      const tooltip = g.querySelector(`#tooltip-${i}`);
+      if (tooltip) tooltip.remove();
+    });
+
+    g.appendChild(rect);
+  });
+
+  svg.appendChild(g);
+  chartContainer.appendChild(svg);
+}
+
 // Dividend difference chart modal
 function initDividendChartUI() {
   const modal = document.getElementById("dividend-chart-modal");
@@ -5093,12 +6131,17 @@ function initDividendChartUI() {
   }
 
   function openDividendChartModal() {
+    // Toggle: hvis modal allerede er åpen, lukk den
+    if (!modal.hasAttribute("hidden")) {
+      closeDividendChartModal();
+      return;
+    }
     modal.removeAttribute("hidden");
     // Reset størrelse når modal åpnes
     if (chartContainer) {
       chartContainer.style.width = "";
       chartContainer.style.height = "";
-      chartContainer.style.minHeight = "70vh";
+      chartContainer.style.minHeight = "84vh";
     }
     drawDividendDifferenceChart();
     document.addEventListener("keydown", onKeyDown);
@@ -5125,4 +6168,770 @@ function initDividendChartUI() {
 
   // Eksponer openDividendChartModal globalt så ikonet kan kalle den
   window.openDividendChartModal = openDividendChartModal;
+}
+
+// Tax rate change chart modal
+function initTaxRateChangeChartUI() {
+  const modal = document.getElementById("tax-rate-change-chart-modal");
+  const chartContainer = document.getElementById("tax-rate-change-chart-container");
+  const resizeHandle = document.getElementById("tax-rate-change-chart-resize-handle");
+  if (!modal || !chartContainer) return;
+
+  // Resize funksjonalitet
+  if (resizeHandle) {
+    let isResizing = false;
+    let startX, startY, startWidth, startHeight;
+
+    resizeHandle.addEventListener("mousedown", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      isResizing = true;
+      const rect = chartContainer.getBoundingClientRect();
+      startX = e.clientX;
+      startY = e.clientY;
+      startWidth = rect.width;
+      startHeight = rect.height;
+      document.addEventListener("mousemove", handleResize);
+      document.addEventListener("mouseup", stopResize);
+      chartContainer.style.userSelect = "none";
+    });
+
+    function handleResize(e) {
+      if (!isResizing) return;
+      const deltaX = e.clientX - startX;
+      const deltaY = e.clientY - startY;
+      const newWidth = Math.max(400, startWidth + deltaX);
+      const newHeight = Math.max(300, startHeight + deltaY);
+      chartContainer.style.width = `${newWidth}px`;
+      chartContainer.style.height = `${newHeight}px`;
+      chartContainer.style.minHeight = `${newHeight}px`;
+    }
+
+    function stopResize() {
+      isResizing = false;
+      document.removeEventListener("mousemove", handleResize);
+      document.removeEventListener("mouseup", stopResize);
+      chartContainer.style.userSelect = "";
+      // Re-tegn grafikken med ny størrelse når resize er ferdig
+      setTimeout(() => {
+        drawTaxRateChangeChart();
+      }, 10);
+    }
+  }
+
+  function openTaxRateChangeChartModal() {
+    // Toggle: hvis modal allerede er åpen, lukk den
+    if (!modal.hasAttribute("hidden")) {
+      closeTaxRateChangeChartModal();
+      return;
+    }
+    modal.removeAttribute("hidden");
+    // Reset størrelse når modal åpnes - fjern alle inline styles som kan påvirke størrelse
+    if (chartContainer) {
+      chartContainer.style.width = "";
+      chartContainer.style.height = "";
+      chartContainer.style.minHeight = "84vh";
+      chartContainer.style.maxWidth = "";
+      chartContainer.style.maxHeight = "";
+      // Fjern alle SVG-elementer først for å sikre ren start
+      const existingSvgs = chartContainer.querySelectorAll("svg");
+      existingSvgs.forEach(svg => svg.remove());
+    }
+    // Vent litt for å sikre at containeren har fått riktig størrelse
+    setTimeout(() => {
+      drawTaxRateChangeChart();
+    }, 50);
+    document.addEventListener("keydown", onKeyDown);
+  }
+
+  function closeTaxRateChangeChartModal() {
+    modal.setAttribute("hidden", "");
+    document.removeEventListener("keydown", onKeyDown);
+  }
+
+  function onKeyDown(e) {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      closeTaxRateChangeChartModal();
+    }
+  }
+
+  modal.addEventListener("click", (e) => {
+    const t = e.target;
+    if (t && (t.getAttribute && t.getAttribute("data-close") === "true")) {
+      closeTaxRateChangeChartModal();
+    }
+  });
+
+  // Eksponer openTaxRateChangeChartModal globalt så ikonet kan kalle den
+  window.openTaxRateChangeChartModal = openTaxRateChangeChartModal;
+}
+
+// Equity share chart modal og grafikk (identisk med chart-modal)
+function initEquityShareChartUI() {
+  const modal = document.getElementById("equity-share-chart-modal");
+  const chartContainer = document.getElementById("equity-share-chart-container");
+  const resizeHandle = document.getElementById("equity-share-chart-resize-handle");
+  if (!modal || !chartContainer) return;
+
+  // Resize funksjonalitet
+  if (resizeHandle) {
+    let isResizing = false;
+    let startX, startY, startWidth, startHeight;
+
+    resizeHandle.addEventListener("mousedown", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      isResizing = true;
+      const rect = chartContainer.getBoundingClientRect();
+      startX = e.clientX;
+      startY = e.clientY;
+      startWidth = rect.width;
+      startHeight = rect.height;
+      document.addEventListener("mousemove", handleResize);
+      document.addEventListener("mouseup", stopResize);
+      chartContainer.style.userSelect = "none";
+    });
+
+    function handleResize(e) {
+      if (!isResizing) return;
+      const deltaX = e.clientX - startX;
+      const deltaY = e.clientY - startY;
+      const newWidth = Math.max(400, startWidth + deltaX);
+      const newHeight = Math.max(300, startHeight + deltaY);
+      chartContainer.style.width = `${newWidth}px`;
+      chartContainer.style.height = `${newHeight}px`;
+      chartContainer.style.minHeight = `${newHeight}px`;
+    }
+
+    function stopResize() {
+      isResizing = false;
+      document.removeEventListener("mousemove", handleResize);
+      document.removeEventListener("mouseup", stopResize);
+      chartContainer.style.userSelect = "";
+      // Re-tegn grafikken med ny størrelse når resize er ferdig
+      setTimeout(() => {
+        drawEquityShareBarChart();
+      }, 10);
+    }
+  }
+
+  function openEquityShareChartModal() {
+    // Toggle: hvis modal allerede er åpen, lukk den
+    if (!modal.hasAttribute("hidden")) {
+      closeEquityShareChartModal();
+      return;
+    }
+    modal.removeAttribute("hidden");
+    // Reset størrelse når modal åpnes
+    if (chartContainer) {
+      chartContainer.style.width = "";
+      chartContainer.style.height = "";
+      chartContainer.style.minHeight = "70vh";
+    }
+    drawEquityShareBarChart();
+    document.addEventListener("keydown", onKeyDown);
+  }
+
+  function closeEquityShareChartModal() {
+    modal.setAttribute("hidden", "");
+    document.removeEventListener("keydown", onKeyDown);
+  }
+
+  function onKeyDown(e) {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      closeEquityShareChartModal();
+    }
+  }
+
+  modal.addEventListener("click", (e) => {
+    const t = e.target;
+    if (t && (t.getAttribute && t.getAttribute("data-close") === "true")) {
+      closeEquityShareChartModal();
+    }
+  });
+
+  // Eksponer openEquityShareChartModal globalt så ikonet kan kalle den
+  window.openEquityShareChartModal = openEquityShareChartModal;
+}
+
+function drawEquityShareBarChart() {
+  const chartContainer = document.getElementById("equity-share-chart-container");
+  if (!chartContainer) return;
+
+  // De syv ulike gradene av aksjeandel
+  const equityShareOptions = [
+    { label: "100% Renter", percent: 0 },
+    { label: "20% Aksjer", percent: 20 },
+    { label: "45% Aksjer", percent: 45 },
+    { label: "55% Aksjer", percent: 55 },
+    { label: "65% Aksjer", percent: 65 },
+    { label: "85% Aksjer", percent: 85 },
+    { label: "100% Aksjer", percent: 100 }
+  ];
+
+  // Beregn netto avkastning (Avkastning utover lånekostnad) for hver aksjeandel-grad
+  const data = [];
+  equityShareOptions.forEach(option => {
+    const netReturn = calculateNetReturnForEquityShare(option.percent);
+    data.push({ label: option.label, value: netReturn });
+  });
+
+  // Finn min og max verdier
+  const values = data.map(d => d.value);
+  const minValue = Math.min(...values);
+  const maxValue = Math.max(...values);
+  
+  // Automatisk Y-akse: hvis ingen negative verdier, start fra 0 eller minValue
+  // Legg til maksimalt 10% padding på toppen og bunnen
+  let niceMin, niceMax;
+  
+  // Beregn maksimalt tillatt range (10% over/under)
+  const maxAllowed = maxValue * 1.1; // Maksimalt 10% over høyeste tall
+  const minAllowed = minValue < 0 ? minValue * 1.1 : Math.max(0, minValue * 0.9); // Maksimalt 10% under laveste tall
+  
+  if (minValue >= 0) {
+    // Ingen negative verdier - start fra 0 eller lavere
+    niceMin = 0;
+    niceMax = maxAllowed; // Maksimalt 10% over høyeste tall
+  } else if (maxValue <= 0) {
+    // Alle verdier er negative - slutt ved 0 eller høyere
+    niceMin = minAllowed; // Maksimalt 10% under laveste tall
+    niceMax = 0;
+  } else {
+    // Både positive og negative verdier - sentrer rundt null med maksimalt 10% padding
+    const maxAbs = Math.max(Math.abs(minValue), Math.abs(maxValue));
+    niceMin = Math.min(-maxAbs * 1.1, minAllowed);
+    niceMax = Math.min(maxAbs * 1.1, maxAllowed);
+  }
+  
+  // Bruk niceNumber for å få pene verdier, men respekter maksimalt tillatt range
+  let range = niceMax - niceMin;
+  const niceRange = niceNumber(range, false);
+  niceMin = Math.floor(niceMin / niceRange) * niceRange;
+  let calculatedMax = Math.ceil(niceMax / niceRange) * niceRange;
+  
+  // Sikre at niceMax ikke overstiger maxAllowed (10% over høyeste tall)
+  niceMax = Math.min(calculatedMax, maxAllowed);
+  // Sikre at niceMin ikke går under minAllowed (10% under laveste tall)
+  if (minValue < 0) {
+    niceMin = Math.max(niceMin, minAllowed);
+  }
+  
+  // Beregn niceTick basert på range for faste runde intervall
+  range = niceMax - niceMin;
+  const niceTick = niceNumber(range / 10, true);
+
+  // SVG dimensjoner - bruk container-størrelse hvis satt, ellers standard
+  const containerRect = chartContainer.getBoundingClientRect();
+  const containerWidth = containerRect.width > 0 ? containerRect.width : 1800;
+  const containerHeight = containerRect.height > 0 ? containerRect.height : 1300;
+  
+  const margin = { top: 40, right: 60, bottom: 180, left: 200 };
+  const width = Math.max(800, containerWidth);
+  const height = Math.max(600, containerHeight);
+  const chartWidth = width - margin.left - margin.right;
+  const chartHeight = height - margin.top - margin.bottom;
+
+  // Behold resize-handle, fjern bare SVG
+  const existingSvg = chartContainer.querySelector("svg");
+  if (existingSvg) {
+    existingSvg.remove();
+  }
+
+  // Opprett SVG
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+  svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
+  svg.setAttribute("width", width);
+  svg.setAttribute("height", height);
+  svg.style.width = "100%";
+  svg.style.maxWidth = `${width}px`;
+  svg.style.height = "auto";
+  svg.style.aspectRatio = `${width} / ${height}`;
+  svg.style.overflow = "visible";
+
+  const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+  g.setAttribute("transform", `translate(${margin.left},${margin.top})`);
+
+
+  // Y-akse linje
+  const yAxisLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
+  yAxisLine.setAttribute("x1", 0);
+  yAxisLine.setAttribute("y1", 0);
+  yAxisLine.setAttribute("x2", 0);
+  yAxisLine.setAttribute("y2", chartHeight);
+  yAxisLine.setAttribute("stroke", "var(--BORDER_LIGHT, #e5e7eb)");
+  yAxisLine.setAttribute("stroke-width", "3");
+  g.appendChild(yAxisLine);
+
+  // Y-akse ticks og labels - start fra 0 og gå i faste runde intervall oppover og nedover
+  const ticks = [];
+  
+  // Start fra 0 og gå nedover
+  for (let tick = 0; tick >= niceMin; tick -= niceTick) {
+    ticks.push(tick);
+  }
+  
+  // Gå oppover fra 0
+  for (let tick = niceTick; tick <= niceMax; tick += niceTick) {
+    ticks.push(tick);
+  }
+  
+  // Sorter ticks for riktig rekkefølge
+  ticks.sort((a, b) => a - b);
+  
+  // Fjern duplikater
+  const uniqueTicks = [...new Set(ticks)];
+  
+  uniqueTicks.forEach(tick => {
+    const y = chartHeight - ((tick - niceMin) / (niceMax - niceMin)) * chartHeight;
+    
+    // Tick linje
+    const tickLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    tickLine.setAttribute("x1", -8);
+    tickLine.setAttribute("y1", y);
+    tickLine.setAttribute("x2", 0);
+    tickLine.setAttribute("y2", y);
+    tickLine.setAttribute("stroke", "var(--BORDER_LIGHT, #e5e7eb)");
+    tickLine.setAttribute("stroke-width", "1.5");
+    g.appendChild(tickLine);
+
+    // Label
+    const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    label.setAttribute("x", -20);
+    label.setAttribute("y", y);
+    label.setAttribute("text-anchor", "end");
+    label.setAttribute("dominant-baseline", "middle");
+    label.setAttribute("font-size", "18");
+    label.setAttribute("fill", "var(--GRAY_TEXT_SECONDARY, #6b7280)");
+    label.textContent = formatNOK(Math.round(tick));
+    g.appendChild(label);
+  });
+
+  // Beregn null-linje posisjon (Y-akse sentrert rundt null)
+  const zeroY = chartHeight - ((0 - niceMin) / (niceMax - niceMin)) * chartHeight;
+
+  // Null-linje (X-akse ved y = 0)
+  const xAxisLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
+  xAxisLine.setAttribute("x1", 0);
+  xAxisLine.setAttribute("y1", zeroY);
+  xAxisLine.setAttribute("x2", chartWidth);
+  xAxisLine.setAttribute("y2", zeroY);
+  xAxisLine.setAttribute("stroke", "var(--BORDER_LIGHT, #e5e7eb)");
+  xAxisLine.setAttribute("stroke-width", "3");
+  g.appendChild(xAxisLine);
+
+  // X-akse labels - "100% Renter" på to linjer, resten bare prosent
+  const barWidth = chartWidth / 7;
+  data.forEach((d, i) => {
+    const x = (i + 0.5) * barWidth;
+    const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    label.setAttribute("x", x);
+    label.setAttribute("y", chartHeight + 30);
+    label.setAttribute("text-anchor", "middle");
+    label.setAttribute("font-size", "22");
+    label.setAttribute("fill", "var(--GRAY_TEXT_SECONDARY, #6b7280)");
+    
+    // Del opp label i prosent og ord
+    const parts = d.label.split(" ");
+    const percentPart = parts[0]; // F.eks. "100%" eller "20%"
+    const wordPart = parts.slice(1).join(" "); // F.eks. "Renter" eller "Aksjer"
+    
+    if (d.label === "100% Renter") {
+      // Første label: "100% Renter" på to linjer
+      const tspan1 = document.createElementNS("http://www.w3.org/2000/svg", "tspan");
+      tspan1.setAttribute("x", x);
+      tspan1.setAttribute("dy", "0");
+      tspan1.textContent = percentPart;
+      label.appendChild(tspan1);
+      
+      const tspan2 = document.createElementNS("http://www.w3.org/2000/svg", "tspan");
+      tspan2.setAttribute("x", x);
+      tspan2.setAttribute("dy", "1.2em");
+      tspan2.textContent = wordPart;
+      label.appendChild(tspan2);
+    } else {
+      // Resten: bare prosenten
+      label.textContent = percentPart;
+    }
+    
+    g.appendChild(label);
+  });
+
+  // X-akse forklaring
+  const xAxisLabel = document.createElementNS("http://www.w3.org/2000/svg", "text");
+  xAxisLabel.setAttribute("x", chartWidth / 2);
+  xAxisLabel.setAttribute("y", chartHeight + 80);
+  xAxisLabel.setAttribute("text-anchor", "middle");
+  xAxisLabel.setAttribute("font-size", "24");
+  xAxisLabel.setAttribute("fill", "var(--GRAY_TEXT_SECONDARY, #6b7280)");
+  xAxisLabel.textContent = "Aksjeandel";
+  g.appendChild(xAxisLabel);
+
+  // Søyler - negative (røde, nedover) og positive (grønne, oppover)
+  data.forEach((d, i) => {
+    const barHeight = Math.abs((d.value / (niceMax - niceMin)) * chartHeight);
+    const x = i * barWidth + barWidth * 0.1;
+    const width = barWidth * 0.8;
+    
+    let y, height;
+    let fillColor;
+    
+    if (d.value >= 0) {
+      // Positiv søyle - går oppover fra null-linjen (grønn)
+      y = zeroY - barHeight;
+      height = barHeight;
+      fillColor = "#0C8F4A"; // Grønn
+    } else {
+      // Negativ søyle - går nedover fra null-linjen (rød)
+      y = zeroY;
+      height = barHeight;
+      fillColor = "#D32F2F"; // Rød
+    }
+
+    const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+    rect.setAttribute("x", x);
+    rect.setAttribute("y", y);
+    rect.setAttribute("width", width);
+    rect.setAttribute("height", height);
+    rect.setAttribute("fill", fillColor);
+    rect.setAttribute("stroke", "none");
+    rect.setAttribute("rx", "6");
+    rect.setAttribute("ry", "6");
+    rect.style.cursor = "pointer";
+    rect.style.transition = "opacity 0.2s";
+
+    // Hover effekt
+    rect.addEventListener("mouseenter", () => {
+      rect.style.opacity = "0.8";
+      // Vis tooltip
+      const tooltip = document.createElementNS("http://www.w3.org/2000/svg", "text");
+      tooltip.setAttribute("x", x + width / 2);
+      tooltip.setAttribute("y", d.value >= 0 ? y - 8 : y + height + 20);
+      tooltip.setAttribute("text-anchor", "middle");
+      tooltip.setAttribute("font-size", "22");
+      tooltip.setAttribute("fill", "var(--text-primary, #1f2937)");
+      tooltip.setAttribute("font-weight", "bold");
+      tooltip.setAttribute("id", `tooltip-${i}`);
+      tooltip.textContent = formatNOK(Math.round(d.value));
+      g.appendChild(tooltip);
+    });
+
+    rect.addEventListener("mouseleave", () => {
+      rect.style.opacity = "1";
+      const tooltip = g.querySelector(`#tooltip-${i}`);
+      if (tooltip) tooltip.remove();
+    });
+
+    g.appendChild(rect);
+  });
+
+  svg.appendChild(g);
+  chartContainer.appendChild(svg);
+}
+
+// Interest cost chart modal og grafikk (100% identisk med equity-share-chart-modal)
+function initInterestCostChartUI() {
+  const modal = document.getElementById("interest-cost-chart-modal");
+  const chartContainer = document.getElementById("interest-cost-chart-container");
+  const resizeHandle = document.getElementById("interest-cost-chart-resize-handle");
+  if (!modal || !chartContainer) return;
+
+  if (resizeHandle) {
+    let isResizing = false;
+    let startX, startY, startWidth, startHeight;
+
+    resizeHandle.addEventListener("mousedown", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      isResizing = true;
+      const rect = chartContainer.getBoundingClientRect();
+      startX = e.clientX;
+      startY = e.clientY;
+      startWidth = rect.width;
+      startHeight = rect.height;
+      document.addEventListener("mousemove", handleResize);
+      document.addEventListener("mouseup", stopResize);
+      chartContainer.style.userSelect = "none";
+    });
+
+    function handleResize(e) {
+      if (!isResizing) return;
+      const deltaX = e.clientX - startX;
+      const deltaY = e.clientY - startY;
+      const newWidth = Math.max(400, startWidth + deltaX);
+      const newHeight = Math.max(300, startHeight + deltaY);
+      chartContainer.style.width = `${newWidth}px`;
+      chartContainer.style.height = `${newHeight}px`;
+      chartContainer.style.minHeight = `${newHeight}px`;
+    }
+
+    function stopResize() {
+      isResizing = false;
+      document.removeEventListener("mousemove", handleResize);
+      document.removeEventListener("mouseup", stopResize);
+      chartContainer.style.userSelect = "";
+      setTimeout(() => {
+        drawInterestCostBarChart();
+      }, 10);
+    }
+  }
+
+  function openInterestCostChartModal() {
+    if (!modal.hasAttribute("hidden")) {
+      closeInterestCostChartModal();
+      return;
+    }
+    modal.removeAttribute("hidden");
+    if (chartContainer) {
+      chartContainer.style.width = "";
+      chartContainer.style.height = "";
+      chartContainer.style.minHeight = "70vh";
+    }
+    drawInterestCostBarChart();
+    document.addEventListener("keydown", onKeyDown);
+  }
+
+  function closeInterestCostChartModal() {
+    modal.setAttribute("hidden", "");
+    document.removeEventListener("keydown", onKeyDown);
+  }
+
+  function onKeyDown(e) {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      closeInterestCostChartModal();
+    }
+  }
+
+  modal.addEventListener("click", (e) => {
+    const t = e.target;
+    if (t && (t.getAttribute && t.getAttribute("data-close") === "true")) {
+      closeInterestCostChartModal();
+    }
+  });
+
+  window.openInterestCostChartModal = openInterestCostChartModal;
+}
+
+function drawInterestCostBarChart() {
+  const chartContainer = document.getElementById("interest-cost-chart-container");
+  if (!chartContainer) return;
+
+  // De ti ulike rentekostnadene (1% til 10%)
+  const interestCostOptions = [
+    { label: "1%", percent: 1 },
+    { label: "2%", percent: 2 },
+    { label: "3%", percent: 3 },
+    { label: "4%", percent: 4 },
+    { label: "5%", percent: 5 },
+    { label: "6%", percent: 6 },
+    { label: "7%", percent: 7 },
+    { label: "8%", percent: 8 },
+    { label: "9%", percent: 9 },
+    { label: "10%", percent: 10 }
+  ];
+
+  // Beregn netto avkastning (Avkastning utover lånekostnad) for hver rentekostnad
+  const data = [];
+  interestCostOptions.forEach(option => {
+    const netReturn = calculateNetReturnForInterestCost(option.percent);
+    data.push({ label: option.label, value: netReturn });
+  });
+
+  const values = data.map(d => d.value);
+  const minValue = Math.min(...values);
+  const maxValue = Math.max(...values);
+  
+  let niceMin, niceMax;
+  const maxAllowed = maxValue * 1.1;
+  const minAllowed = minValue < 0 ? minValue * 1.1 : Math.max(0, minValue * 0.9);
+  
+  if (minValue >= 0) {
+    niceMin = 0;
+    niceMax = maxAllowed;
+  } else if (maxValue <= 0) {
+    niceMin = minAllowed;
+    niceMax = 0;
+  } else {
+    const maxAbs = Math.max(Math.abs(minValue), Math.abs(maxValue));
+    niceMin = Math.min(-maxAbs * 1.1, minAllowed);
+    niceMax = Math.min(maxAbs * 1.1, maxAllowed);
+  }
+  
+  let range = niceMax - niceMin;
+  const niceRange = niceNumber(range, false);
+  niceMin = Math.floor(niceMin / niceRange) * niceRange;
+  let calculatedMax = Math.ceil(niceMax / niceRange) * niceRange;
+  niceMax = Math.min(calculatedMax, maxAllowed);
+  if (minValue < 0) {
+    niceMin = Math.max(niceMin, minAllowed);
+  }
+  
+  range = niceMax - niceMin;
+  const niceTick = niceNumber(range / 10, true);
+
+  const containerRect = chartContainer.getBoundingClientRect();
+  const containerWidth = containerRect.width > 0 ? containerRect.width : 1800;
+  const containerHeight = containerRect.height > 0 ? containerRect.height : 1300;
+  
+  const margin = { top: 40, right: 60, bottom: 180, left: 200 };
+  const width = Math.max(800, containerWidth);
+  const height = Math.max(600, containerHeight);
+  const chartWidth = width - margin.left - margin.right;
+  const chartHeight = height - margin.top - margin.bottom;
+
+  const existingSvg = chartContainer.querySelector("svg");
+  if (existingSvg) {
+    existingSvg.remove();
+  }
+
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+  svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
+  svg.setAttribute("width", width);
+  svg.setAttribute("height", height);
+  svg.style.width = "100%";
+  svg.style.maxWidth = `${width}px`;
+  svg.style.height = "auto";
+  svg.style.aspectRatio = `${width} / ${height}`;
+  svg.style.overflow = "visible";
+
+  const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+  g.setAttribute("transform", `translate(${margin.left},${margin.top})`);
+
+  const yAxisLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
+  yAxisLine.setAttribute("x1", 0);
+  yAxisLine.setAttribute("y1", 0);
+  yAxisLine.setAttribute("x2", 0);
+  yAxisLine.setAttribute("y2", chartHeight);
+  yAxisLine.setAttribute("stroke", "var(--BORDER_LIGHT, #e5e7eb)");
+  yAxisLine.setAttribute("stroke-width", "3");
+  g.appendChild(yAxisLine);
+
+  const ticks = [];
+  for (let tick = 0; tick >= niceMin; tick -= niceTick) {
+    ticks.push(tick);
+  }
+  for (let tick = niceTick; tick <= niceMax; tick += niceTick) {
+    ticks.push(tick);
+  }
+  ticks.sort((a, b) => a - b);
+  const uniqueTicks = [...new Set(ticks)];
+  
+  uniqueTicks.forEach(tick => {
+    const y = chartHeight - ((tick - niceMin) / (niceMax - niceMin)) * chartHeight;
+    
+    const tickLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    tickLine.setAttribute("x1", -8);
+    tickLine.setAttribute("y1", y);
+    tickLine.setAttribute("x2", 0);
+    tickLine.setAttribute("y2", y);
+    tickLine.setAttribute("stroke", "var(--BORDER_LIGHT, #e5e7eb)");
+    tickLine.setAttribute("stroke-width", "1.5");
+    g.appendChild(tickLine);
+
+    const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    label.setAttribute("x", -20);
+    label.setAttribute("y", y);
+    label.setAttribute("text-anchor", "end");
+    label.setAttribute("dominant-baseline", "middle");
+    label.setAttribute("font-size", "18");
+    label.setAttribute("fill", "var(--GRAY_TEXT_SECONDARY, #6b7280)");
+    label.textContent = formatNOK(Math.round(tick));
+    g.appendChild(label);
+  });
+
+  const zeroY = chartHeight - ((0 - niceMin) / (niceMax - niceMin)) * chartHeight;
+
+  const xAxisLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
+  xAxisLine.setAttribute("x1", 0);
+  xAxisLine.setAttribute("y1", zeroY);
+  xAxisLine.setAttribute("x2", chartWidth);
+  xAxisLine.setAttribute("y2", zeroY);
+  xAxisLine.setAttribute("stroke", "var(--BORDER_LIGHT, #e5e7eb)");
+  xAxisLine.setAttribute("stroke-width", "3");
+  g.appendChild(xAxisLine);
+
+  // X-akse labels - vis rentekostnad (1%, 2%, 3%, osv.)
+  const barWidth = chartWidth / 10;
+  data.forEach((d, i) => {
+    const x = (i + 0.5) * barWidth;
+    const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    label.setAttribute("x", x);
+    label.setAttribute("y", chartHeight + 30);
+    label.setAttribute("text-anchor", "middle");
+    label.setAttribute("font-size", "22");
+    label.setAttribute("fill", "var(--GRAY_TEXT_SECONDARY, #6b7280)");
+    label.textContent = d.label;
+    g.appendChild(label);
+  });
+
+  // X-akse forklaring
+  const xAxisLabel = document.createElementNS("http://www.w3.org/2000/svg", "text");
+  xAxisLabel.setAttribute("x", chartWidth / 2);
+  xAxisLabel.setAttribute("y", chartHeight + 80);
+  xAxisLabel.setAttribute("text-anchor", "middle");
+  xAxisLabel.setAttribute("font-size", "24");
+  xAxisLabel.setAttribute("fill", "var(--GRAY_TEXT_SECONDARY, #6b7280)");
+  xAxisLabel.textContent = "Rentekostnad";
+  g.appendChild(xAxisLabel);
+
+  data.forEach((d, i) => {
+    const barHeight = Math.abs((d.value / (niceMax - niceMin)) * chartHeight);
+    const x = i * barWidth + barWidth * 0.1;
+    const width = barWidth * 0.8;
+    
+    let y, height;
+    let fillColor;
+    
+    if (d.value >= 0) {
+      y = zeroY - barHeight;
+      height = barHeight;
+      fillColor = "#0C8F4A";
+    } else {
+      y = zeroY;
+      height = barHeight;
+      fillColor = "#D32F2F";
+    }
+
+    const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+    rect.setAttribute("x", x);
+    rect.setAttribute("y", y);
+    rect.setAttribute("width", width);
+    rect.setAttribute("height", height);
+    rect.setAttribute("fill", fillColor);
+    rect.setAttribute("stroke", "none");
+    rect.setAttribute("rx", "6");
+    rect.setAttribute("ry", "6");
+    rect.style.cursor = "pointer";
+    rect.style.transition = "opacity 0.2s";
+
+    rect.addEventListener("mouseenter", () => {
+      rect.style.opacity = "0.8";
+      const tooltip = document.createElementNS("http://www.w3.org/2000/svg", "text");
+      tooltip.setAttribute("x", x + width / 2);
+      tooltip.setAttribute("y", d.value >= 0 ? y - 8 : y + height + 20);
+      tooltip.setAttribute("text-anchor", "middle");
+      tooltip.setAttribute("font-size", "22");
+      tooltip.setAttribute("fill", "var(--text-primary, #1f2937)");
+      tooltip.setAttribute("font-weight", "bold");
+      tooltip.setAttribute("id", `tooltip-${i}`);
+      tooltip.textContent = formatNOK(Math.round(d.value));
+      g.appendChild(tooltip);
+    });
+
+    rect.addEventListener("mouseleave", () => {
+      rect.style.opacity = "1";
+      const tooltip = g.querySelector(`#tooltip-${i}`);
+      if (tooltip) tooltip.remove();
+    });
+
+    g.appendChild(rect);
+  });
+
+  svg.appendChild(g);
+  chartContainer.appendChild(svg);
 }
