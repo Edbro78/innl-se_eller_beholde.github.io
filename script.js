@@ -521,9 +521,12 @@ function renderPlaceholder(root) {
       [left, right].forEach(col => {
         col.innerHTML = "";
         col.style.display = "grid";
-        col.style.gridAutoRows = "minmax(1.75rem, auto)"; // konsistent linjehøyde
-        col.style.rowGap = "0.5rem";
+        col.style.gridAutoRows = "minmax(1.2rem, auto)"; // Redusert linjehøyde
+        col.style.rowGap = "0.25rem"; // Redusert gap
         col.style.alignContent = "start";
+        col.style.overflowY = "auto";
+        col.style.overflowX = "hidden";
+        col.style.padding = "0.5rem";
       });
 
       function makeRow(text, opts = {}) {
@@ -531,17 +534,20 @@ function renderPlaceholder(root) {
         row.style.display = "flex";
         row.style.alignItems = "center";
         row.style.justifyContent = "space-between";
-        row.style.lineHeight = "1.4";
+        row.style.lineHeight = "1.3"; // Redusert linjehøyde
+        row.style.fontSize = "0.75rem"; // Redusert font-størrelse
         const label = document.createElement("span");
         label.textContent = opts.placeholder ? "" : text;
         if (opts.labelId) label.id = opts.labelId;
         if (opts.bold) label.style.fontWeight = "700";
         if (opts.red) label.style.color = "#D32F2F";
+        label.style.fontSize = opts.bold ? "0.875rem" : "0.75rem"; // Redusert font-størrelser
         const value = document.createElement("span");
         value.textContent = opts.placeholder ? "" : "";
         if (opts.id) value.id = opts.id;
-        value.style.minWidth = "7rem";
+        value.style.minWidth = "6rem"; // Redusert bredde
         value.style.textAlign = "right";
+        value.style.fontSize = opts.bold ? "0.875rem" : "0.75rem"; // Redusert font-størrelser
         row.appendChild(label);
         row.appendChild(value);
         return row;
@@ -803,9 +809,15 @@ function renderPlaceholder(root) {
       [left, right].forEach(col => {
         col.innerHTML = "";
         col.style.display = "grid";
-        col.style.gridAutoRows = "minmax(1.75rem, auto)"; // konsistent linjehøyde
-        col.style.rowGap = "0.5rem";
+        col.style.gridAutoRows = "minmax(1.2rem, auto)"; // Redusert linjehøyde
+        col.style.rowGap = "0.25rem"; // Redusert gap
         col.style.alignContent = "start";
+        col.style.overflowY = "auto";
+        col.style.overflowX = "hidden";
+        col.style.paddingTop = "0.5rem";
+        col.style.paddingBottom = "0.5rem";
+        col.style.paddingLeft = "0.5rem";
+        col.style.paddingRight = "0.5rem";
       });
 
       function makeRow(text, opts = {}) {
@@ -813,7 +825,8 @@ function renderPlaceholder(root) {
         row.style.display = "flex";
         row.style.alignItems = "center";
         row.style.justifyContent = "space-between";
-        row.style.lineHeight = "1.4";
+        row.style.lineHeight = "1.3"; // Redusert linjehøyde
+        row.style.fontSize = "0.75rem"; // Redusert font-størrelse
         // Legg til klasse på rad-div-en hvis det er "Avkastning"-linjen
         if (opts.id === "inv-left-return") {
           row.className = "row-hide-return";
@@ -824,6 +837,7 @@ function renderPlaceholder(root) {
         if (opts.bold) label.style.fontWeight = "700";
         if (opts.red) label.style.color = "#D32F2F";
         if (opts.italic) label.style.fontStyle = "italic";
+        label.style.fontSize = opts.bold ? "0.875rem" : "0.75rem"; // Redusert font-størrelser
         // Skjul "X" i tomme linjer - behold linjen men gjør teksten usynlig
         if (text === "X") {
           label.style.visibility = "hidden";
@@ -831,8 +845,9 @@ function renderPlaceholder(root) {
         const value = document.createElement("span");
         value.textContent = opts.placeholder ? "" : "";
         if (opts.id) value.id = opts.id;
-        value.style.minWidth = "7rem";
+        value.style.minWidth = "6rem"; // Redusert bredde
         value.style.textAlign = "right";
+        value.style.fontSize = opts.bold ? "0.875rem" : "0.75rem"; // Redusert font-størrelser
         // Sett rødfarge på verdien også hvis red er satt
         if (opts.red) value.style.color = "#D32F2F";
         row.appendChild(label);
@@ -891,43 +906,42 @@ function renderPlaceholder(root) {
       right.appendChild(makeDivider());
       right.appendChild(makeRow("Avkastning utover lånekostnad", { bold: true, id: "inv-right-excess-return" }));
       
-      // Legg til grafikk-ikon i høyre hjørne av høyre boksen
+      // Legg til "Antall år"-knapp i venstre hjørne nederst i høyre boksen
       right.style.position = "relative";
       const chartIcon = document.createElement("button");
       chartIcon.id = "chart-icon";
       chartIcon.setAttribute("aria-label", "Åpne grafikk");
       chartIcon.style.cssText = `
         position: absolute;
-        top: 0px;
-        right: 0px;
-        background: transparent;
-        border: none;
+        bottom: 0.5rem;
+        left: 0.5rem;
+        background: var(--BG_SECONDARY, #f8f9fa);
+        border: 1px solid var(--BORDER_LIGHT, #e5e7eb);
         cursor: pointer;
-        padding: 6px;
+        padding: 0.5rem 0.75rem;
         border-radius: 6px;
-        transition: opacity 0.2s, transform 0.2s;
+        transition: all 0.2s;
         display: flex;
         align-items: center;
         justify-content: center;
         z-index: 100;
-        opacity: 1;
+        font-size: calc(0.75rem * 1.2);
+        font-weight: 500;
+        color: var(--GRAY_TEXT_DARK, #1f2937);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
       `;
-      chartIcon.innerHTML = `
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect x="2" y="2" width="20" height="20" rx="3" fill="white" stroke="rgba(0,0,0,0.1)" stroke-width="1"/>
-          <rect x="5" y="5" width="6" height="6" rx="1" fill="#64748b" stroke="none"/>
-          <rect x="13" y="5" width="6" height="6" rx="1" fill="#64748b" stroke="none"/>
-          <rect x="5" y="13" width="6" height="6" rx="1" fill="#64748b" stroke="none"/>
-          <rect x="13" y="13" width="6" height="6" rx="1" fill="#64748b" stroke="none"/>
-        </svg>
-      `;
+      chartIcon.textContent = "Antall år";
       chartIcon.addEventListener("mouseenter", () => {
-        chartIcon.style.opacity = "0.9";
-        chartIcon.style.transform = "scale(1.05)";
+        chartIcon.style.background = "var(--BG_HOVER, #e9ecef)";
+        chartIcon.style.borderColor = "var(--BORDER_MEDIUM, #d1d5db)";
+        chartIcon.style.transform = "translateY(-1px)";
+        chartIcon.style.boxShadow = "0 4px 12px rgba(0, 0, 0, 0.15), 0 2px 4px rgba(0, 0, 0, 0.1)";
       });
       chartIcon.addEventListener("mouseleave", () => {
-        chartIcon.style.opacity = "1";
-        chartIcon.style.transform = "scale(1)";
+        chartIcon.style.background = "var(--BG_SECONDARY, #f8f9fa)";
+        chartIcon.style.borderColor = "var(--BORDER_LIGHT, #e5e7eb)";
+        chartIcon.style.transform = "translateY(0)";
+        chartIcon.style.boxShadow = "0 2px 8px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08)";
       });
       chartIcon.addEventListener("click", () => {
         openChartModal();
@@ -1382,9 +1396,11 @@ function renderPlaceholder(root) {
       left.innerHTML = "";
       left.style.display = "flex";
       left.style.flexDirection = "column";
-      left.style.gap = "0.5rem"; // Redusert fra 0.75rem for mer kompakt layout
-      left.style.paddingTop = "1rem";
-      left.style.paddingBottom = "1rem";
+      left.style.gap = "0.25rem"; // Redusert for mer kompakt layout
+      left.style.paddingTop = "0.5rem";
+      left.style.paddingBottom = "0.5rem";
+      left.style.overflowY = "auto";
+      left.style.overflowX = "hidden";
       // Vis innhold; venstre side skal ha tallbokser for utvalgte linjer
       const showDividendLoanContent = true;
       const textOnly = false; // venstre panel viser verdier på enkelte linjer
@@ -1395,16 +1411,17 @@ function renderPlaceholder(root) {
         const div = document.createElement("div");
         div.style.height = "1px";
         div.style.background = "var(--BORDER_LIGHT)";
-        div.style.margin = "0.25rem 0"; // Bruker rem
+        div.style.margin = "0.15rem 0"; // Redusert margin
         left.appendChild(div);
       }
 
       function addCalcRow(id, labelText, isStrong, isIndented = false, isCost = false, isHeader = false) {
         const row = document.createElement("div");
         row.style.display = "grid";
-        row.style.gridTemplateColumns = "1fr 8rem"; // Redusert fra 10rem til 8rem for mer kompakt layout
+        row.style.gridTemplateColumns = "1fr 7rem"; // Redusert for mer kompakt layout
         row.style.alignItems = "center";
-        row.style.gap = "0.4rem"; // Redusert fra 0.75rem til 0.4rem for mindre luft mellom label og verdi
+        row.style.gap = "0.3rem"; // Redusert gap
+        row.style.marginBottom = "0.1rem"; // Minimal margin mellom rader
 
         // Behagelig rødfarge for kostnader (samme som i "Nedbetale lån")
         const costColor = "#D32F2F"; // En behagelig rødfarge, ikke for sterk
@@ -1413,9 +1430,10 @@ function renderPlaceholder(root) {
         label.textContent = labelText;
         label.style.color = isCost ? costColor : "var(--GRAY_TEXT_DARK)";
         label.style.fontWeight = isStrong ? "700" : "400";
-        label.style.fontSize = isStrong ? "1.125rem" : "1rem"; // Allerede rem, bra
+        label.style.fontSize = isStrong ? "0.875rem" : "0.75rem"; // Redusert font-størrelser
+        label.style.lineHeight = "1.3"; // Tett linjehøyde
         if (isIndented) {
-          label.style.paddingLeft = "1rem"; // Redusert fra 1.5rem til 1rem for mer kompakt indentation
+          label.style.paddingLeft = "0.75rem"; // Redusert indentation
         }
 
         row.appendChild(label);
@@ -1426,12 +1444,13 @@ function renderPlaceholder(root) {
           value.id = id;
           value.className = "asset-amount";
           value.textContent = ""; // fylles senere
-          value.style.width = "8rem"; // Redusert fra 10rem til 8rem for mer kompakt layout
-          value.style.fontSize = isStrong ? "1.125rem" : "1rem";
+          value.style.width = "7rem"; // Redusert for mer kompakt layout
+          value.style.fontSize = isStrong ? "0.875rem" : "0.75rem";
           value.style.fontWeight = isStrong ? "700" : "400";
-          value.style.padding = "0.5rem 0.6rem"; // Redusert fra 0.625rem 0.75rem for mer kompakt padding
+          value.style.padding = "0.25rem 0.4rem"; // Redusert padding
           value.style.textAlign = "right";
           value.style.color = isCost ? costColor : "inherit"; // Sett rødfarge på verdien også hvis kostnad
+          value.style.lineHeight = "1.3"; // Tett linjehøyde
           // Gjør "hvite boksen" usynlig, men behold plassering og størrelse
           value.style.background = "transparent";
           value.style.border = "none";
@@ -1463,7 +1482,7 @@ function renderPlaceholder(root) {
 
         // Tom luft
         const spacer = document.createElement("div");
-        spacer.style.height = "1rem";
+        spacer.style.height = "0.5rem"; // Redusert spacer
         left.appendChild(spacer);
 
         // Status om N år
@@ -1479,14 +1498,14 @@ function renderPlaceholder(root) {
         const subtleDivider = document.createElement("div");
         subtleDivider.style.height = "1px";
         subtleDivider.style.background = "var(--BORDER_LIGHT)";
-        subtleDivider.style.margin = "0.75rem 0"; // 50% økning i avstand (0.5rem * 1.5 = 0.75rem)
+        subtleDivider.style.margin = "0.4rem 0"; // Redusert margin
         subtleDivider.style.opacity = "0.5"; // Diskret
         left.appendChild(subtleDivider);
         
         const differenceRow = addCalcRow("div-difference", "Forskjell mellom å beholde Vs. å utbetale", false, false, false, false);
-        // Øk avstanden over den nederste linjen med 50%
+        // Redusert avstand over den nederste linjen
         if (differenceRow && differenceRow.parentElement) {
-          differenceRow.parentElement.style.marginTop = "0.75rem"; // 50% økning
+          differenceRow.parentElement.style.marginTop = "0.4rem"; // Redusert margin
         }
         
         // Fyll verdier for venstre panel
@@ -1498,24 +1517,27 @@ function renderPlaceholder(root) {
       right.style.display = "flex";
       right.style.flexDirection = "column";
       right.style.justifyContent = "flex-start";
-      right.style.gap = "0.5rem";
-      right.style.paddingTop = "1rem";
-      right.style.paddingBottom = "1rem";
+      right.style.gap = "0.25rem";
+      right.style.paddingTop = "0.5rem";
+      right.style.paddingBottom = "0.5rem";
+      right.style.overflowY = "auto";
+      right.style.overflowX = "hidden";
 
       function addDividerRR() {
         const div = document.createElement("div");
         div.style.height = "1px";
         div.style.background = "var(--BORDER_LIGHT)";
-        div.style.margin = "0.25rem 0";
+        div.style.margin = "0.15rem 0"; // Redusert margin
         right.appendChild(div);
       }
 
       function addCalcRowRR(id, labelText, isStrong, isCost = false, isPositive = false, isHeader = false, isIndented = false) {
         const row = document.createElement("div");
         row.style.display = "grid";
-        row.style.gridTemplateColumns = "1fr 8rem";
+        row.style.gridTemplateColumns = "1fr 7rem";
         row.style.alignItems = "center";
-        row.style.gap = "0.4rem";
+        row.style.gap = "0.3rem";
+        row.style.marginBottom = "0.1rem"; // Minimal margin mellom rader
 
         // Behagelig rødfarge for kostnader (samme som i "Nedbetale lån")
         const costColor = "#D32F2F";
@@ -1532,9 +1554,10 @@ function renderPlaceholder(root) {
         } else {
           label.style.color = "var(--GRAY_TEXT_DARK)";
         }
-        label.style.fontSize = isStrong ? "1.125rem" : "1rem";
+        label.style.fontSize = isStrong ? "0.875rem" : "0.75rem"; // Redusert font-størrelser
+        label.style.lineHeight = "1.3"; // Tett linjehøyde
         if (isIndented) {
-          label.style.paddingLeft = "1rem";
+          label.style.paddingLeft = "0.75rem"; // Redusert indentation
         }
 
         row.appendChild(label);
@@ -1545,12 +1568,13 @@ function renderPlaceholder(root) {
           value.id = id;
           value.textContent = "";
           value.style.border = "1px solid var(--BORDER_LIGHT)";
-          value.style.borderRadius = "0.75rem";
-          value.style.width = "8rem";
-          value.style.fontSize = isStrong ? "1.125rem" : "1rem";
+          value.style.borderRadius = "0.5rem";
+          value.style.width = "7rem";
+          value.style.fontSize = isStrong ? "0.875rem" : "0.75rem";
           value.style.fontWeight = isStrong ? "700" : "400";
-          value.style.padding = "0.5rem 0.6rem";
+          value.style.padding = "0.25rem 0.4rem"; // Redusert padding
           value.style.textAlign = "right";
+          value.style.lineHeight = "1.3"; // Tett linjehøyde
           if (isCost) {
             value.style.color = costColor;
           } else if (isPositive) {
@@ -1590,7 +1614,7 @@ function renderPlaceholder(root) {
         addCalcRowRR("r-div-tax", "Utbytteskatt", false, true, false, false, true);
         addCalcRowRR("r-div-net", "Netto", false, false, false, false, true);
 
-        const spacerR = document.createElement("div"); spacerR.style.height = "1rem"; right.appendChild(spacerR);
+        const spacerR = document.createElement("div"); spacerR.style.height = "0.5rem"; right.appendChild(spacerR);
 
         addCalcRowRR("r-status-header", `Status om ${(AppState.yearsCount || 0)} år`, false, false, false, true);
         addCalcRowRR("r-remaining", "Restportefølje", false, false, false, false, true);
@@ -1602,43 +1626,42 @@ function renderPlaceholder(root) {
         try { updateDividendLoanCalc(); } catch (_) {}
       }
       
-      // Legg til grafikk-ikon i høyre hjørne av høyre boksen
+      // Legg til "Antall år"-knapp i venstre hjørne nederst i høyre boksen
       right.style.position = "relative";
       const chartIcon = document.createElement("button");
       chartIcon.id = "chart-icon-dividend";
       chartIcon.setAttribute("aria-label", "Åpne grafikk");
       chartIcon.style.cssText = `
         position: absolute;
-        top: 0px;
-        right: 0px;
-        background: transparent;
-        border: none;
+        bottom: 0.5rem;
+        left: 0.5rem;
+        background: var(--BG_SECONDARY, #f8f9fa);
+        border: 1px solid var(--BORDER_LIGHT, #e5e7eb);
         cursor: pointer;
-        padding: 6px;
+        padding: 0.5rem 0.75rem;
         border-radius: 6px;
-        transition: opacity 0.2s, transform 0.2s;
+        transition: all 0.2s;
         display: flex;
         align-items: center;
         justify-content: center;
         z-index: 100;
-        opacity: 1;
+        font-size: calc(0.75rem * 1.2);
+        font-weight: 500;
+        color: var(--GRAY_TEXT_DARK, #1f2937);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
       `;
-      chartIcon.innerHTML = `
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect x="2" y="2" width="20" height="20" rx="3" fill="white" stroke="rgba(0,0,0,0.1)" stroke-width="1"/>
-          <rect x="5" y="5" width="6" height="6" rx="1" fill="#64748b" stroke="none"/>
-          <rect x="13" y="5" width="6" height="6" rx="1" fill="#64748b" stroke="none"/>
-          <rect x="5" y="13" width="6" height="6" rx="1" fill="#64748b" stroke="none"/>
-          <rect x="13" y="13" width="6" height="6" rx="1" fill="#64748b" stroke="none"/>
-        </svg>
-      `;
+      chartIcon.textContent = "Antall år";
       chartIcon.addEventListener("mouseenter", () => {
-        chartIcon.style.opacity = "0.9";
-        chartIcon.style.transform = "scale(1.05)";
+        chartIcon.style.background = "var(--BG_HOVER, #e9ecef)";
+        chartIcon.style.borderColor = "var(--BORDER_MEDIUM, #d1d5db)";
+        chartIcon.style.transform = "translateY(-1px)";
+        chartIcon.style.boxShadow = "0 4px 12px rgba(0, 0, 0, 0.15), 0 2px 4px rgba(0, 0, 0, 0.1)";
       });
       chartIcon.addEventListener("mouseleave", () => {
-        chartIcon.style.opacity = "1";
-        chartIcon.style.transform = "scale(1)";
+        chartIcon.style.background = "var(--BG_SECONDARY, #f8f9fa)";
+        chartIcon.style.borderColor = "var(--BORDER_LIGHT, #e5e7eb)";
+        chartIcon.style.transform = "translateY(0)";
+        chartIcon.style.boxShadow = "0 2px 8px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08)";
       });
       chartIcon.addEventListener("click", () => {
         if (window.openDividendChartModal) {
@@ -1704,8 +1727,8 @@ function renderPlaceholder(root) {
     window.addEventListener("resize", stretchToBottom, { passive: true });
   }
   if (title === "Input") {
-    const spacing = 0.75; // konsistent og litt tettere spacing mellom alle bokser i rem for zoom-uavhengighet
-    const horizontalSpacing = 1.25; // Mer horisontal luft mellom boksene
+    const spacing = 0.4; // Redusert spacing mellom alle bokser
+    const horizontalSpacing = 0.75; // Redusert horisontal luft mellom boksene
     // Erstatt øverste enkeltpanel med en 2-kolonne grid (vertikal deling)
     if (first && first.remove) first.remove();
     const firstContainer = document.createElement("div");
@@ -1732,8 +1755,8 @@ function renderPlaceholder(root) {
     firstLeft.style.justifyContent = "center";
     // Reduser høyden: ingen min-høyde, litt mindre vertikal padding
     firstLeft.style.minHeight = "0";
-    firstLeft.style.paddingTop = "16px";
-    firstLeft.style.paddingBottom = "16px";
+    firstLeft.style.paddingTop = "0.5rem";
+    firstLeft.style.paddingBottom = "0.5rem";
     firstContainer.appendChild(firstLeft);
     firstContainer.appendChild(firstRight);
 
@@ -1743,20 +1766,20 @@ function renderPlaceholder(root) {
     firstRight.style.alignItems = "center";
     firstRight.style.justifyContent = "center";
     firstRight.style.minHeight = "0";
-    firstRight.style.paddingTop = "16px";
-    firstRight.style.paddingBottom = "16px";
+    firstRight.style.paddingTop = "0.5rem";
+    firstRight.style.paddingBottom = "0.5rem";
 
     const yearsLabel = document.createElement("div");
     yearsLabel.className = "section-label";
     yearsLabel.textContent = "ANTALL ÅR";
     yearsLabel.style.textAlign = "center";
-    yearsLabel.style.marginBottom = "8px";
+    yearsLabel.style.marginBottom = "0.25rem";
 
     const yearsRow = document.createElement("div");
     yearsRow.style.display = "flex";
     yearsRow.style.alignItems = "center";
     yearsRow.style.justifyContent = "center";
-    yearsRow.style.gap = "1rem"; // Bruker rem for zoom-uavhengighet
+    yearsRow.style.gap = "0.5rem"; // Redusert gap
     yearsRow.style.width = "100%";
     yearsRow.style.maxWidth = "47.5rem"; // 760px / 16 = 47.5rem
 
@@ -1784,7 +1807,9 @@ function renderPlaceholder(root) {
     yearsOut.style.display = "inline-flex";
     yearsOut.style.justifyContent = "center";
     yearsOut.style.textAlign = "center";
-    yearsOut.style.minWidth = "120px";
+    yearsOut.style.minWidth = "90px";
+    yearsOut.style.fontSize = "0.75rem";
+    yearsOut.style.padding = "0.4rem 0.5rem";
 
     years.addEventListener("input", () => {
       AppState.yearsCount = Number(years.value);
@@ -1808,7 +1833,7 @@ function renderPlaceholder(root) {
     sliderRow.style.display = "flex";
     sliderRow.style.alignItems = "center";
     sliderRow.style.justifyContent = "center";
-    sliderRow.style.gap = "1rem"; // Bruker rem for zoom-uavhengighet
+    sliderRow.style.gap = "0.5rem"; // Redusert gap
     sliderRow.style.width = "100%";
     sliderRow.style.maxWidth = "47.5rem"; // 760px / 16 = 47.5rem
     const sliderCol = document.createElement("div");
@@ -1833,7 +1858,9 @@ function renderPlaceholder(root) {
     sliderOut.style.display = "inline-flex";
     sliderOut.style.justifyContent = "center";
     sliderOut.style.textAlign = "center";
-    sliderOut.style.minWidth = "180px";
+    sliderOut.style.minWidth = "140px";
+    sliderOut.style.fontSize = "0.75rem";
+    sliderOut.style.padding = "0.4rem 0.5rem";
     // lagre i appstate og oppdater toppbokser
     AppState.portfolioSize = Number(slider.value);
     slider.addEventListener("input", () => {
@@ -1881,7 +1908,7 @@ function renderPlaceholder(root) {
     sliderRow.appendChild(sliderOut);
     // Sentrer labelen
     sliderLabel.style.textAlign = "center";
-    sliderLabel.style.marginBottom = "8px";
+    sliderLabel.style.marginBottom = "0.25rem";
     firstLeft.appendChild(sliderLabel);
     firstLeft.appendChild(sliderRow);
 
@@ -1894,8 +1921,8 @@ function renderPlaceholder(root) {
     second.style.flexDirection = "column";
     second.style.alignItems = "center";
     second.style.justifyContent = "center";
-    second.style.paddingTop = "8px"; // Redusert fra 16px
-    second.style.paddingBottom = "8px"; // Redusert fra 16px
+    second.style.paddingTop = "0.5rem";
+    second.style.paddingBottom = "0.5rem";
 
     // Overskrift fjernet
 
@@ -1922,8 +1949,9 @@ function renderPlaceholder(root) {
       const btn = document.createElement("button");
       btn.type = "button";
       btn.textContent = label;
-      btn.style.padding = "16px 22px";
-      btn.style.borderRadius = "12px";
+      btn.style.padding = "0.5rem 0.75rem";
+      btn.style.borderRadius = "8px";
+      btn.style.fontSize = "0.75rem";
       btn.style.border = "1px solid var(--BORDER_LIGHT)";
       btn.style.background = idx === 4 ? "#4B6B88" : "var(--BG_CARD)"; // 65% Aksjer er standard (indeks 4)
       btn.style.color = idx === 4 ? "#ffffff" : "var(--GRAY_TEXT_DARK)";
@@ -1997,9 +2025,11 @@ function renderPlaceholder(root) {
     thirdLeft.innerHTML = "";
     thirdLeft.style.display = "flex";
     thirdLeft.style.flexDirection = "column";
-    thirdLeft.style.gap = "0.625rem"; // 10px / 16 = 0.625rem for zoom-uavhengighet
-    thirdLeft.style.paddingTop = "1rem"; // Bruker rem for zoom-uavhengighet
-    thirdLeft.style.paddingBottom = "1rem"; // Bruker rem for zoom-uavhengighet
+    thirdLeft.style.gap = "0.4rem"; // Redusert gap
+    thirdLeft.style.paddingTop = "0.5rem";
+    thirdLeft.style.paddingBottom = "0.5rem";
+    thirdLeft.style.overflowY = "auto";
+    thirdLeft.style.overflowX = "hidden";
 
     // Overskrift fjernet
 
@@ -2012,9 +2042,9 @@ function renderPlaceholder(root) {
       const row = document.createElement("div");
       // Egen layout for å sikre at slider og verdi alltid får plass
       row.style.display = "grid";
-      row.style.gridTemplateColumns = "1fr 140px";
+      row.style.gridTemplateColumns = "1fr 110px";
       row.style.alignItems = "center";
-      row.style.gap = "12px";
+      row.style.gap = "0.5rem";
       row.style.width = "100%";
       const col = document.createElement("div");
       col.style.display = "flex";
@@ -2031,9 +2061,9 @@ function renderPlaceholder(root) {
       out.className = "asset-amount";
       out.textContent = `${Number(start).toFixed(1).replace('.', ',')} %`;
       // Kompakt verdi-boks som alltid får plass
-      out.style.width = "140px";
-      out.style.fontSize = "1rem";
-      out.style.padding = "10px 12px";
+      out.style.width = "110px";
+      out.style.fontSize = "0.75rem";
+      out.style.padding = "0.4rem 0.5rem";
       out.style.textAlign = "center";
 
       input.addEventListener("input", () => {
@@ -2076,7 +2106,7 @@ function renderPlaceholder(root) {
     feesWrap.className = "fees-wrap";
     feesWrap.style.display = "flex";
     feesWrap.style.flexWrap = "nowrap"; // én horisontal rekke
-    feesWrap.style.gap = "8px";
+    feesWrap.style.gap = "0.4rem";
     feesWrap.style.overflowX = "auto";
     thirdLeft.appendChild(feesWrap);
 
@@ -2085,8 +2115,10 @@ function renderPlaceholder(root) {
     let customFeeInput = null;
     
     function setFeeActive(idx) {
+      // idx er indeks i feeOptions arrayet (0 = custom, 1-5 = knapper)
+      // feeButtons arrayet har bare knappene (ikke custom input), så indeks 0 i feeButtons = indeks 1 i feeOptions
       feeButtons.forEach((b, i) => {
-        const active = i === idx;
+        const active = (i + 1) === idx; // i+1 fordi feeButtons starter fra indeks 0, men tilsvarer feeOptions[1], feeOptions[2], etc.
         b.setAttribute("aria-pressed", active ? "true" : "false");
         b.style.background = active ? "#ffffff" : "var(--BG_CARD)";
         b.style.borderColor = active ? "#93C5FD" : "var(--BORDER_LIGHT)";
@@ -2120,14 +2152,14 @@ function renderPlaceholder(root) {
     const customInput = document.createElement("input");
     customInput.type = "text";
     customInput.value = "0,00";
-    customInput.style.width = "60px";
-    customInput.style.padding = "10px 14px";
-    customInput.style.borderRadius = "10px";
+    customInput.style.width = "50px";
+    customInput.style.padding = "0.4rem 0.5rem";
+    customInput.style.borderRadius = "6px";
     customInput.style.border = "1px solid var(--BORDER_LIGHT)";
     customInput.style.background = "#ffffff";
     customInput.style.color = "var(--GRAY_TEXT_DARK)";
     customInput.style.fontWeight = "700";
-    customInput.style.fontSize = "14px";
+    customInput.style.fontSize = "0.75rem";
     customInput.style.textAlign = "center";
     customInput.inputMode = "decimal";
     let isUpdatingCustomFee = false;
@@ -2165,13 +2197,13 @@ function renderPlaceholder(root) {
     feeOptions.slice(1).forEach((pct, idx) => {
       const b = document.createElement("button");
       b.type = "button";
-      b.style.padding = "10px 14px";
-      b.style.borderRadius = "10px";
+      b.style.padding = "0.4rem 0.5rem";
+      b.style.borderRadius = "6px";
       b.style.border = "1px solid var(--BORDER_LIGHT)";
       b.style.background = "var(--BG_CARD)";
       b.style.color = "var(--GRAY_TEXT_DARK)";
       b.style.fontWeight = "700";
-      b.style.fontSize = "14px";
+      b.style.fontSize = "0.75rem";
       b.style.cursor = "pointer";
       b.textContent = `${pct.toFixed(2).replace('.', ',')}%`;
       b.addEventListener("click", () => setFeeActive(idx + 1));
@@ -2193,20 +2225,20 @@ function renderPlaceholder(root) {
 
     // Resultatboks nederst
     const result = document.createElement("div");
-    result.style.marginTop = "12px";
+    result.style.marginTop = "0.5rem";
     result.style.border = "1px solid var(--BORDER_LIGHT)";
-    result.style.borderRadius = "12px";
-    result.style.padding = "14px 16px";
+    result.style.borderRadius = "8px";
+    result.style.padding = "0.5rem 0.75rem";
     result.style.background = "var(--BG_CARD)";
     const resLabel = document.createElement("div");
     resLabel.className = "section-label";
     resLabel.textContent = "Forventet avkastning:"; // Små bokstaver
     resLabel.style.fontSize = "0.75rem"; // 25% mindre
-    resLabel.style.margin = "0 0 6px 0";
+    resLabel.style.margin = "0 0 0.25rem 0";
     const resValue = document.createElement("div");
     resValue.id = "expected-return-out";
     resValue.style.fontWeight = "900";
-    resValue.style.fontSize = "24px";
+    resValue.style.fontSize = "1.25rem";
     resValue.textContent = "0.0%";
     result.appendChild(resLabel);
     result.appendChild(resValue);
@@ -2217,14 +2249,14 @@ function renderPlaceholder(root) {
     capitalLabel.className = "section-label";
     capitalLabel.textContent = "Innskutt kapital";
     capitalLabel.style.fontSize = "0.75rem";
-    capitalLabel.style.marginTop = "12px";
+    capitalLabel.style.marginTop = "0.5rem";
     thirdLeft.appendChild(capitalLabel);
 
     const capitalRow = document.createElement("div");
     capitalRow.style.display = "grid";
-    capitalRow.style.gridTemplateColumns = "1fr 140px";
+    capitalRow.style.gridTemplateColumns = "1fr 110px";
     capitalRow.style.alignItems = "center";
-    capitalRow.style.gap = "12px";
+    capitalRow.style.gap = "0.5rem";
     const capitalCol = document.createElement("div");
     capitalCol.style.display = "flex";
     capitalCol.style.alignItems = "center";
@@ -2247,9 +2279,9 @@ function renderPlaceholder(root) {
     
     const capitalOut = document.createElement("div");
     capitalOut.className = "asset-amount";
-    capitalOut.style.width = "140px";
-    capitalOut.style.fontSize = "1rem";
-    capitalOut.style.padding = "10px 12px";
+    capitalOut.style.width = "110px";
+    capitalOut.style.fontSize = "0.75rem";
+    capitalOut.style.padding = "0.4rem 0.5rem";
     capitalOut.style.textAlign = "center";
     // Initialiser capitalManuallySet hvis den ikke eksisterer
     if (AppState.capitalManuallySet === undefined) {
@@ -2336,9 +2368,11 @@ function renderPlaceholder(root) {
     thirdRight.innerHTML = "";
     thirdRight.style.display = "flex";
     thirdRight.style.flexDirection = "column";
-    thirdRight.style.gap = "0.625rem"; // 10px / 16 = 0.625rem for zoom-uavhengighet
-    thirdRight.style.paddingTop = "1rem"; // Bruker rem for zoom-uavhengighet
-    thirdRight.style.paddingBottom = "1rem"; // Bruker rem for zoom-uavhengighet
+    thirdRight.style.gap = "0.4rem"; // Redusert gap
+    thirdRight.style.paddingTop = "0.5rem";
+    thirdRight.style.paddingBottom = "0.5rem";
+    thirdRight.style.overflowY = "auto";
+    thirdRight.style.overflowX = "hidden";
 
     // Overskrift fjernet
 
@@ -2351,9 +2385,9 @@ function renderPlaceholder(root) {
 
     const shieldRow = document.createElement("div");
     shieldRow.style.display = "grid";
-    shieldRow.style.gridTemplateColumns = "1fr 140px";
+    shieldRow.style.gridTemplateColumns = "1fr 110px";
     shieldRow.style.alignItems = "center";
-    shieldRow.style.gap = "12px";
+    shieldRow.style.gap = "0.5rem";
     const shieldCol = document.createElement("div");
     shieldCol.style.display = "flex";
     shieldCol.style.alignItems = "center";
@@ -2365,9 +2399,9 @@ function renderPlaceholder(root) {
     shield.style.width = "100%";
     const shieldOut = document.createElement("div");
     shieldOut.className = "asset-amount";
-    shieldOut.style.width = "140px";
-    shieldOut.style.fontSize = "1rem";
-    shieldOut.style.padding = "10px 12px";
+    shieldOut.style.width = "110px";
+    shieldOut.style.fontSize = "0.75rem";
+    shieldOut.style.padding = "0.4rem 0.5rem";
     shieldOut.style.textAlign = "center";
     const shieldValue = Number(shield.value);
     shieldOut.textContent = `${shieldValue.toFixed(1).replace('.', ',')} %`;
@@ -2392,9 +2426,9 @@ function renderPlaceholder(root) {
 
       const row = document.createElement("div");
       row.style.display = "grid";
-      row.style.gridTemplateColumns = "1fr 40px";
+      row.style.gridTemplateColumns = "1fr 30px";
       row.style.alignItems = "center";
-      row.style.gap = "12px";
+      row.style.gap = "0.5rem";
       const col = document.createElement("div");
       col.style.display = "flex";
       col.style.alignItems = "center";
@@ -2403,12 +2437,12 @@ function renderPlaceholder(root) {
       input.value = Number(defaultValue).toFixed(2).replace('.', ','); // Vis med 2 desimaler
       input.style.width = "100%";
       input.style.border = "1px solid var(--BORDER_LIGHT)";
-      input.style.borderRadius = "12px";
-      input.style.padding = "12px 14px";
+      input.style.borderRadius = "8px";
+      input.style.padding = "0.4rem 0.5rem";
       input.style.background = "#ffffff";
       input.style.color = "var(--GRAY_TEXT_SECONDARY)"; // Samme farge som label
       input.style.fontWeight = "700"; // Bold
-      input.style.fontSize = "1rem"; // Samme størrelse som label (16px)
+      input.style.fontSize = "0.75rem"; // Redusert font-størrelse
       input.inputMode = "decimal";
       let isUpdating = false;
       
@@ -2462,7 +2496,7 @@ function renderPlaceholder(root) {
       suffix.textContent = "%";
       suffix.style.textAlign = "center";
       suffix.style.fontWeight = "700"; // Bold
-      suffix.style.fontSize = "1rem"; // Samme størrelse som label (16px)
+      suffix.style.fontSize = "0.75rem"; // Redusert font-størrelse
       suffix.style.color = "var(--GRAY_TEXT_SECONDARY)"; // Samme farge som label
       row.appendChild(col);
       col.appendChild(input);
@@ -2484,9 +2518,9 @@ function renderPlaceholder(root) {
 
     const intRow = document.createElement("div");
     intRow.style.display = "grid";
-    intRow.style.gridTemplateColumns = "1fr 140px";
+    intRow.style.gridTemplateColumns = "1fr 110px";
     intRow.style.alignItems = "center";
-    intRow.style.gap = "12px";
+    intRow.style.gap = "0.5rem";
     const intCol = document.createElement("div");
     intCol.style.display = "flex";
     intCol.style.alignItems = "center";
@@ -2498,9 +2532,9 @@ function renderPlaceholder(root) {
     intSlider.style.width = "100%";
     const intOut = document.createElement("div");
     intOut.className = "asset-amount";
-    intOut.style.width = "140px";
-    intOut.style.fontSize = "1rem";
-    intOut.style.padding = "10px 12px";
+    intOut.style.width = "110px";
+    intOut.style.fontSize = "0.75rem";
+    intOut.style.padding = "0.4rem 0.5rem";
     intOut.style.textAlign = "center";
     const intValue = Number(intSlider.value);
     intOut.textContent = `${intValue.toFixed(1).replace('.', ',')} %`;
@@ -2524,9 +2558,9 @@ function renderPlaceholder(root) {
 
     const repaymentRow = document.createElement("div");
     repaymentRow.style.display = "grid";
-    repaymentRow.style.gridTemplateColumns = "1fr 140px";
+    repaymentRow.style.gridTemplateColumns = "1fr 110px";
     repaymentRow.style.alignItems = "center";
-    repaymentRow.style.gap = "12px";
+    repaymentRow.style.gap = "0.5rem";
     const repaymentCol = document.createElement("div");
     repaymentCol.style.display = "flex";
     repaymentCol.style.alignItems = "center";
@@ -2541,9 +2575,9 @@ function renderPlaceholder(root) {
     repaymentSlider.style.width = "100%";
     const repaymentOut = document.createElement("div");
     repaymentOut.className = "asset-amount";
-    repaymentOut.style.width = "140px";
-    repaymentOut.style.fontSize = "1rem";
-    repaymentOut.style.padding = "10px 12px";
+    repaymentOut.style.width = "110px";
+    repaymentOut.style.fontSize = "0.75rem";
+    repaymentOut.style.padding = "0.4rem 0.5rem";
     repaymentOut.style.textAlign = "center";
     const repaymentValue = Number(repaymentSlider.value);
     repaymentOut.textContent = `${repaymentValue} år`;
@@ -4256,10 +4290,59 @@ function initDisclaimerUI() {
 function initChartUI() {
   const modal = document.getElementById("chart-modal");
   const chartContainer = document.getElementById("chart-container");
+  const resizeHandle = document.getElementById("chart-resize-handle");
   if (!modal || !chartContainer) return;
+
+  // Resize funksjonalitet
+  if (resizeHandle) {
+    let isResizing = false;
+    let startX, startY, startWidth, startHeight;
+
+    resizeHandle.addEventListener("mousedown", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      isResizing = true;
+      const rect = chartContainer.getBoundingClientRect();
+      startX = e.clientX;
+      startY = e.clientY;
+      startWidth = rect.width;
+      startHeight = rect.height;
+      document.addEventListener("mousemove", handleResize);
+      document.addEventListener("mouseup", stopResize);
+      chartContainer.style.userSelect = "none";
+    });
+
+    function handleResize(e) {
+      if (!isResizing) return;
+      const deltaX = e.clientX - startX;
+      const deltaY = e.clientY - startY;
+      const newWidth = Math.max(400, startWidth + deltaX);
+      const newHeight = Math.max(300, startHeight + deltaY);
+      chartContainer.style.width = `${newWidth}px`;
+      chartContainer.style.height = `${newHeight}px`;
+      chartContainer.style.minHeight = `${newHeight}px`;
+    }
+
+    function stopResize() {
+      isResizing = false;
+      document.removeEventListener("mousemove", handleResize);
+      document.removeEventListener("mouseup", stopResize);
+      chartContainer.style.userSelect = "";
+      // Re-tegn grafikken med ny størrelse når resize er ferdig
+      setTimeout(() => {
+        drawBarChart();
+      }, 10);
+    }
+  }
 
   function openChartModal() {
     modal.removeAttribute("hidden");
+    // Reset størrelse når modal åpnes
+    if (chartContainer) {
+      chartContainer.style.width = "";
+      chartContainer.style.height = "";
+      chartContainer.style.minHeight = "70vh";
+    }
     drawBarChart();
     document.addEventListener("keydown", onKeyDown);
   }
@@ -4442,22 +4525,63 @@ function drawBarChart() {
   const values = data.map(d => d.value);
   const minValue = Math.min(...values);
   const maxValue = Math.max(...values);
-  const range = maxValue - minValue;
+  
+  // Automatisk Y-akse: hvis ingen negative verdier, start fra 0 eller minValue
+  // Legg til maksimalt 10% padding på toppen og bunnen
+  let niceMin, niceMax;
+  
+  // Beregn maksimalt tillatt range (10% over/under)
+  const maxAllowed = maxValue * 1.1; // Maksimalt 10% over høyeste tall
+  const minAllowed = minValue < 0 ? minValue * 1.1 : Math.max(0, minValue * 0.9); // Maksimalt 10% under laveste tall
+  
+  if (minValue >= 0) {
+    // Ingen negative verdier - start fra 0 eller lavere
+    niceMin = 0;
+    niceMax = maxAllowed; // Maksimalt 10% over høyeste tall
+  } else if (maxValue <= 0) {
+    // Alle verdier er negative - slutt ved 0 eller høyere
+    niceMin = minAllowed; // Maksimalt 10% under laveste tall
+    niceMax = 0;
+  } else {
+    // Både positive og negative verdier - sentrer rundt null med maksimalt 10% padding
+    const maxAbs = Math.max(Math.abs(minValue), Math.abs(maxValue));
+    niceMin = Math.min(-maxAbs * 1.1, minAllowed);
+    niceMax = Math.min(maxAbs * 1.1, maxAllowed);
+  }
+  
+  // Bruk niceNumber for å få pene verdier, men respekter maksimalt tillatt range
+  let range = niceMax - niceMin;
   const niceRange = niceNumber(range, false);
-  const niceMin = Math.floor(minValue / niceRange) * niceRange;
-  // Bruk den faktiske maxValue som niceMax (ikke høyere)
-  const niceMax = maxValue;
-  const niceTick = niceNumber(niceRange / 5, true);
+  niceMin = Math.floor(niceMin / niceRange) * niceRange;
+  let calculatedMax = Math.ceil(niceMax / niceRange) * niceRange;
+  
+  // Sikre at niceMax ikke overstiger maxAllowed (10% over høyeste tall)
+  niceMax = Math.min(calculatedMax, maxAllowed);
+  // Sikre at niceMin ikke går under minAllowed (10% under laveste tall)
+  if (minValue < 0) {
+    niceMin = Math.max(niceMin, minAllowed);
+  }
+  
+  // Beregn niceTick basert på range for faste runde intervall
+  range = niceMax - niceMin;
+  const niceTick = niceNumber(range / 10, true);
 
-  // SVG dimensjoner
+  // SVG dimensjoner - bruk container-størrelse hvis satt, ellers standard
+  const containerRect = chartContainer.getBoundingClientRect();
+  const containerWidth = containerRect.width > 0 ? containerRect.width : 1800;
+  const containerHeight = containerRect.height > 0 ? containerRect.height : 1300;
+  
   const margin = { top: 40, right: 60, bottom: 180, left: 200 };
-  const width = 1800;
-  const height = 1300;
+  const width = Math.max(800, containerWidth);
+  const height = Math.max(600, containerHeight);
   const chartWidth = width - margin.left - margin.right;
   const chartHeight = height - margin.top - margin.bottom;
 
-  // Tøm container
-  chartContainer.innerHTML = "";
+  // Behold resize-handle, fjern bare SVG
+  const existingSvg = chartContainer.querySelector("svg");
+  if (existingSvg) {
+    existingSvg.remove();
+  }
 
   // Opprett SVG
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
@@ -4466,7 +4590,7 @@ function drawBarChart() {
   svg.setAttribute("width", width);
   svg.setAttribute("height", height);
   svg.style.width = "100%";
-  svg.style.maxWidth = "1800px";
+  svg.style.maxWidth = `${width}px`;
   svg.style.height = "auto";
   svg.style.aspectRatio = `${width} / ${height}`;
   svg.style.overflow = "visible";
@@ -4485,12 +4609,26 @@ function drawBarChart() {
   yAxisLine.setAttribute("stroke-width", "3");
   g.appendChild(yAxisLine);
 
-  // Y-akse ticks og labels
+  // Y-akse ticks og labels - start fra 0 og gå i faste runde intervall oppover og nedover
   const ticks = [];
-  for (let tick = niceMin; tick <= niceMax; tick += niceTick) {
+  
+  // Start fra 0 og gå nedover
+  for (let tick = 0; tick >= niceMin; tick -= niceTick) {
     ticks.push(tick);
   }
-  ticks.forEach(tick => {
+  
+  // Gå oppover fra 0
+  for (let tick = niceTick; tick <= niceMax; tick += niceTick) {
+    ticks.push(tick);
+  }
+  
+  // Sorter ticks for riktig rekkefølge
+  ticks.sort((a, b) => a - b);
+  
+  // Fjern duplikater
+  const uniqueTicks = [...new Set(ticks)];
+  
+  uniqueTicks.forEach(tick => {
     const y = chartHeight - ((tick - niceMin) / (niceMax - niceMin)) * chartHeight;
     
     // Tick linje
@@ -4509,18 +4647,21 @@ function drawBarChart() {
     label.setAttribute("y", y);
     label.setAttribute("text-anchor", "end");
     label.setAttribute("dominant-baseline", "middle");
-    label.setAttribute("font-size", "24");
+    label.setAttribute("font-size", "18");
     label.setAttribute("fill", "var(--GRAY_TEXT_SECONDARY, #6b7280)");
     label.textContent = formatNOK(Math.round(tick));
     g.appendChild(label);
   });
 
-  // X-akse linje
+  // Beregn null-linje posisjon (Y-akse sentrert rundt null)
+  const zeroY = chartHeight - ((0 - niceMin) / (niceMax - niceMin)) * chartHeight;
+
+  // Null-linje (X-akse ved y = 0)
   const xAxisLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
   xAxisLine.setAttribute("x1", 0);
-  xAxisLine.setAttribute("y1", chartHeight);
+  xAxisLine.setAttribute("y1", zeroY);
   xAxisLine.setAttribute("x2", chartWidth);
-  xAxisLine.setAttribute("y2", chartHeight);
+  xAxisLine.setAttribute("y2", zeroY);
   xAxisLine.setAttribute("stroke", "var(--BORDER_LIGHT, #e5e7eb)");
   xAxisLine.setAttribute("stroke-width", "3");
   g.appendChild(xAxisLine);
@@ -4549,19 +4690,33 @@ function drawBarChart() {
   xAxisLabel.textContent = "Antall år";
   g.appendChild(xAxisLabel);
 
-  // Søyler
+  // Søyler - negative (røde, nedover) og positive (grønne, oppover)
   data.forEach((d, i) => {
-    const barHeight = ((d.value - niceMin) / (niceMax - niceMin)) * chartHeight;
+    const barHeight = Math.abs((d.value / (niceMax - niceMin)) * chartHeight);
     const x = i * barWidth + barWidth * 0.1;
-    const y = chartHeight - barHeight;
     const width = barWidth * 0.8;
+    
+    let y, height;
+    let fillColor;
+    
+    if (d.value >= 0) {
+      // Positiv søyle - går oppover fra null-linjen (grønn)
+      y = zeroY - barHeight;
+      height = barHeight;
+      fillColor = "#0C8F4A"; // Grønn
+    } else {
+      // Negativ søyle - går nedover fra null-linjen (rød)
+      y = zeroY;
+      height = barHeight;
+      fillColor = "#D32F2F"; // Rød
+    }
 
     const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
     rect.setAttribute("x", x);
     rect.setAttribute("y", y);
     rect.setAttribute("width", width);
-    rect.setAttribute("height", barHeight);
-    rect.setAttribute("fill", "#3b82f6");
+    rect.setAttribute("height", height);
+    rect.setAttribute("fill", fillColor);
     rect.setAttribute("stroke", "none");
     rect.setAttribute("rx", "6");
     rect.setAttribute("ry", "6");
@@ -4574,19 +4729,19 @@ function drawBarChart() {
       // Vis tooltip
       const tooltip = document.createElementNS("http://www.w3.org/2000/svg", "text");
       tooltip.setAttribute("x", x + width / 2);
-      tooltip.setAttribute("y", y - 8);
+      tooltip.setAttribute("y", d.value >= 0 ? y - 8 : y + height + 20);
       tooltip.setAttribute("text-anchor", "middle");
       tooltip.setAttribute("font-size", "22");
       tooltip.setAttribute("fill", "var(--text-primary, #1f2937)");
       tooltip.setAttribute("font-weight", "bold");
-      tooltip.setAttribute("id", "tooltip");
+      tooltip.setAttribute("id", `tooltip-${i}`);
       tooltip.textContent = formatNOK(Math.round(d.value));
       g.appendChild(tooltip);
     });
 
     rect.addEventListener("mouseleave", () => {
       rect.style.opacity = "1";
-      const tooltip = g.querySelector("#tooltip");
+      const tooltip = g.querySelector(`#tooltip-${i}`);
       if (tooltip) tooltip.remove();
     });
 
@@ -4661,21 +4816,63 @@ function drawDividendDifferenceChart() {
   const values = data.map(d => d.value);
   const minValue = Math.min(...values);
   const maxValue = Math.max(...values);
-  const range = maxValue - minValue;
+  
+  // Automatisk Y-akse: hvis ingen negative verdier, start fra 0 eller minValue
+  // Legg til maksimalt 10% padding på toppen og bunnen
+  let niceMin, niceMax;
+  
+  // Beregn maksimalt tillatt range (10% over/under)
+  const maxAllowed = maxValue * 1.1; // Maksimalt 10% over høyeste tall
+  const minAllowed = minValue < 0 ? minValue * 1.1 : Math.max(0, minValue * 0.9); // Maksimalt 10% under laveste tall
+  
+  if (minValue >= 0) {
+    // Ingen negative verdier - start fra 0 eller lavere
+    niceMin = 0;
+    niceMax = maxAllowed; // Maksimalt 10% over høyeste tall
+  } else if (maxValue <= 0) {
+    // Alle verdier er negative - slutt ved 0 eller høyere
+    niceMin = minAllowed; // Maksimalt 10% under laveste tall
+    niceMax = 0;
+  } else {
+    // Både positive og negative verdier - sentrer rundt null med maksimalt 10% padding
+    const maxAbs = Math.max(Math.abs(minValue), Math.abs(maxValue));
+    niceMin = Math.min(-maxAbs * 1.1, minAllowed);
+    niceMax = Math.min(maxAbs * 1.1, maxAllowed);
+  }
+  
+  // Bruk niceNumber for å få pene verdier, men respekter maksimalt tillatt range
+  let range = niceMax - niceMin;
   const niceRange = niceNumber(range, false);
-  const niceMin = Math.floor(minValue / niceRange) * niceRange;
-  const niceMax = maxValue;
-  const niceTick = niceNumber(niceRange / 5, true);
+  niceMin = Math.floor(niceMin / niceRange) * niceRange;
+  let calculatedMax = Math.ceil(niceMax / niceRange) * niceRange;
+  
+  // Sikre at niceMax ikke overstiger maxAllowed (10% over høyeste tall)
+  niceMax = Math.min(calculatedMax, maxAllowed);
+  // Sikre at niceMin ikke går under minAllowed (10% under laveste tall)
+  if (minValue < 0) {
+    niceMin = Math.max(niceMin, minAllowed);
+  }
+  
+  // Beregn niceTick basert på range for faste runde intervall
+  range = niceMax - niceMin;
+  const niceTick = niceNumber(range / 10, true);
 
-  // SVG dimensjoner
+  // SVG dimensjoner - bruk container-størrelse hvis satt, ellers standard
+  const containerRect = chartContainer.getBoundingClientRect();
+  const containerWidth = containerRect.width > 0 ? containerRect.width : 1800;
+  const containerHeight = containerRect.height > 0 ? containerRect.height : 1300;
+  
   const margin = { top: 40, right: 60, bottom: 180, left: 200 };
-  const width = 1800;
-  const height = 1300;
+  const width = Math.max(800, containerWidth);
+  const height = Math.max(600, containerHeight);
   const chartWidth = width - margin.left - margin.right;
   const chartHeight = height - margin.top - margin.bottom;
 
-  // Tøm container
-  chartContainer.innerHTML = "";
+  // Behold resize-handle, fjern bare SVG
+  const existingSvg = chartContainer.querySelector("svg");
+  if (existingSvg) {
+    existingSvg.remove();
+  }
 
   // Opprett SVG
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
@@ -4684,13 +4881,14 @@ function drawDividendDifferenceChart() {
   svg.setAttribute("width", width);
   svg.setAttribute("height", height);
   svg.style.width = "100%";
-  svg.style.maxWidth = "1800px";
+  svg.style.maxWidth = `${width}px`;
   svg.style.height = "auto";
   svg.style.aspectRatio = `${width} / ${height}`;
   svg.style.overflow = "visible";
 
   const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
   g.setAttribute("transform", `translate(${margin.left},${margin.top})`);
+
 
   // Y-akse linje
   const yAxisLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
@@ -4702,12 +4900,26 @@ function drawDividendDifferenceChart() {
   yAxisLine.setAttribute("stroke-width", "3");
   g.appendChild(yAxisLine);
 
-  // Y-akse ticks og labels
+  // Y-akse ticks og labels - start fra 0 og gå i faste runde intervall oppover og nedover
   const ticks = [];
-  for (let tick = niceMin; tick <= niceMax; tick += niceTick) {
+  
+  // Start fra 0 og gå nedover
+  for (let tick = 0; tick >= niceMin; tick -= niceTick) {
     ticks.push(tick);
   }
-  ticks.forEach(tick => {
+  
+  // Gå oppover fra 0
+  for (let tick = niceTick; tick <= niceMax; tick += niceTick) {
+    ticks.push(tick);
+  }
+  
+  // Sorter ticks for riktig rekkefølge
+  ticks.sort((a, b) => a - b);
+  
+  // Fjern duplikater
+  const uniqueTicks = [...new Set(ticks)];
+  
+  uniqueTicks.forEach(tick => {
     const y = chartHeight - ((tick - niceMin) / (niceMax - niceMin)) * chartHeight;
     
     // Tick linje
@@ -4726,18 +4938,21 @@ function drawDividendDifferenceChart() {
     label.setAttribute("y", y);
     label.setAttribute("text-anchor", "end");
     label.setAttribute("dominant-baseline", "middle");
-    label.setAttribute("font-size", "24");
+    label.setAttribute("font-size", "18");
     label.setAttribute("fill", "var(--GRAY_TEXT_SECONDARY, #6b7280)");
     label.textContent = formatNOK(Math.round(tick));
     g.appendChild(label);
   });
 
-  // X-akse linje
+  // Beregn null-linje posisjon (Y-akse sentrert rundt null)
+  const zeroY = chartHeight - ((0 - niceMin) / (niceMax - niceMin)) * chartHeight;
+
+  // Null-linje (X-akse ved y = 0)
   const xAxisLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
   xAxisLine.setAttribute("x1", 0);
-  xAxisLine.setAttribute("y1", chartHeight);
+  xAxisLine.setAttribute("y1", zeroY);
   xAxisLine.setAttribute("x2", chartWidth);
-  xAxisLine.setAttribute("y2", chartHeight);
+  xAxisLine.setAttribute("y2", zeroY);
   xAxisLine.setAttribute("stroke", "var(--BORDER_LIGHT, #e5e7eb)");
   xAxisLine.setAttribute("stroke-width", "3");
   g.appendChild(xAxisLine);
@@ -4766,19 +4981,33 @@ function drawDividendDifferenceChart() {
   xAxisLabel.textContent = "Antall år";
   g.appendChild(xAxisLabel);
 
-  // Søyler (alle blå)
+  // Søyler - negative (røde, nedover) og positive (grønne, oppover)
   data.forEach((d, i) => {
-    const barHeight = ((d.value - niceMin) / (niceMax - niceMin)) * chartHeight;
+    const barHeight = Math.abs((d.value / (niceMax - niceMin)) * chartHeight);
     const x = i * barWidth + barWidth * 0.1;
-    const y = chartHeight - barHeight;
     const width = barWidth * 0.8;
+    
+    let y, height;
+    let fillColor;
+    
+    if (d.value >= 0) {
+      // Positiv søyle - går oppover fra null-linjen (grønn)
+      y = zeroY - barHeight;
+      height = barHeight;
+      fillColor = "#0C8F4A"; // Grønn
+    } else {
+      // Negativ søyle - går nedover fra null-linjen (rød)
+      y = zeroY;
+      height = barHeight;
+      fillColor = "#D32F2F"; // Rød
+    }
 
     const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
     rect.setAttribute("x", x);
     rect.setAttribute("y", y);
     rect.setAttribute("width", width);
-    rect.setAttribute("height", barHeight);
-    rect.setAttribute("fill", "#3b82f6");
+    rect.setAttribute("height", height);
+    rect.setAttribute("fill", fillColor);
     rect.setAttribute("stroke", "none");
     rect.setAttribute("rx", "6");
     rect.setAttribute("ry", "6");
@@ -4791,19 +5020,19 @@ function drawDividendDifferenceChart() {
       // Vis tooltip
       const tooltip = document.createElementNS("http://www.w3.org/2000/svg", "text");
       tooltip.setAttribute("x", x + width / 2);
-      tooltip.setAttribute("y", y - 8);
+      tooltip.setAttribute("y", d.value >= 0 ? y - 8 : y + height + 20);
       tooltip.setAttribute("text-anchor", "middle");
       tooltip.setAttribute("font-size", "22");
       tooltip.setAttribute("fill", "var(--text-primary, #1f2937)");
       tooltip.setAttribute("font-weight", "bold");
-      tooltip.setAttribute("id", "tooltip");
+      tooltip.setAttribute("id", `tooltip-${i}`);
       tooltip.textContent = formatNOK(Math.round(d.value));
       g.appendChild(tooltip);
     });
 
     rect.addEventListener("mouseleave", () => {
       rect.style.opacity = "1";
-      const tooltip = g.querySelector("#tooltip");
+      const tooltip = g.querySelector(`#tooltip-${i}`);
       if (tooltip) tooltip.remove();
     });
 
@@ -4818,10 +5047,59 @@ function drawDividendDifferenceChart() {
 function initDividendChartUI() {
   const modal = document.getElementById("dividend-chart-modal");
   const chartContainer = document.getElementById("dividend-chart-container");
+  const resizeHandle = document.getElementById("dividend-chart-resize-handle");
   if (!modal || !chartContainer) return;
+
+  // Resize funksjonalitet
+  if (resizeHandle) {
+    let isResizing = false;
+    let startX, startY, startWidth, startHeight;
+
+    resizeHandle.addEventListener("mousedown", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      isResizing = true;
+      const rect = chartContainer.getBoundingClientRect();
+      startX = e.clientX;
+      startY = e.clientY;
+      startWidth = rect.width;
+      startHeight = rect.height;
+      document.addEventListener("mousemove", handleResize);
+      document.addEventListener("mouseup", stopResize);
+      chartContainer.style.userSelect = "none";
+    });
+
+    function handleResize(e) {
+      if (!isResizing) return;
+      const deltaX = e.clientX - startX;
+      const deltaY = e.clientY - startY;
+      const newWidth = Math.max(400, startWidth + deltaX);
+      const newHeight = Math.max(300, startHeight + deltaY);
+      chartContainer.style.width = `${newWidth}px`;
+      chartContainer.style.height = `${newHeight}px`;
+      chartContainer.style.minHeight = `${newHeight}px`;
+    }
+
+    function stopResize() {
+      isResizing = false;
+      document.removeEventListener("mousemove", handleResize);
+      document.removeEventListener("mouseup", stopResize);
+      chartContainer.style.userSelect = "";
+      // Re-tegn grafikken med ny størrelse når resize er ferdig
+      setTimeout(() => {
+        drawDividendDifferenceChart();
+      }, 10);
+    }
+  }
 
   function openDividendChartModal() {
     modal.removeAttribute("hidden");
+    // Reset størrelse når modal åpnes
+    if (chartContainer) {
+      chartContainer.style.width = "";
+      chartContainer.style.height = "";
+      chartContainer.style.minHeight = "70vh";
+    }
     drawDividendDifferenceChart();
     document.addEventListener("keydown", onKeyDown);
   }

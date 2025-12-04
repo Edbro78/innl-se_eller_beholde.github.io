@@ -246,9 +246,14 @@
 
 /* Grunnoppsett */
 * { box-sizing: border-box; }
-html, body { height: 100%; }
-body {
+html, body {
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
   margin: 0;
+  padding: 0;
+}
+body {
   font-family: var(--font-sans);
   color: var(--text-primary);
   background: var(--BG_OUTER);
@@ -257,9 +262,11 @@ body {
 }
 
 .app {
-  min-height: 100vh;
+  width: 100vw;
+  height: 100vh;
   display: grid;
-  grid-template-columns: 260px 1fr;
+  grid-template-columns: 0.2fr 0.8fr;
+  overflow: hidden;
 }
 
 /* Sidebar */
@@ -269,19 +276,24 @@ body {
   display: flex;
   flex-direction: column;
   border-right: 1px solid var(--BORDER_LIGHT);
+  overflow: hidden;
+  min-width: 0;
 }
 
 .brand {
-  padding: var(--space-5) var(--space-4);
+  padding: calc(var(--space-3) * 1.75) var(--space-3) var(--space-3) var(--space-3);
   border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  flex: 0 0 auto;
+  min-height: 0;
 }
 
 .brand-title {
   margin: 0;
   font-weight: var(--weight-bold);
-  font-size: 18px;
+  font-size: calc(14px * 1.4);
   letter-spacing: 0.2px;
   color: var(--GRAY_TEXT_DARK);
+  line-height: 1.3;
 }
 
 .nav {
@@ -289,6 +301,10 @@ body {
   flex-direction: column;
   gap: var(--space-1);
   padding: var(--space-2);
+  overflow-y: auto;
+  overflow-x: hidden;
+  flex: 1 1 auto;
+  min-height: 0;
 }
 .nav-sep {
   height: 1px;
@@ -302,15 +318,15 @@ body {
   background: transparent;
   color: var(--GRAY_TEXT_SECONDARY);
   border: none;
-  border-radius: 10px;
+  border-radius: 8px;
   text-align: left;
-  padding: 12px var(--space-3);
-  font-size: 18px;
+  padding: 8px var(--space-2);
+  font-size: calc(13px * 1.2);
   font-weight: var(--weight-semibold);
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .nav-item:hover,
@@ -329,7 +345,7 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 32px; height: 32px;
+  width: 24px; height: 24px;
   border-radius: 9999px;
   background: var(--BLUE_100);
   color: var(--BLUE_500);
@@ -340,8 +356,14 @@ body {
 /* Innholdsområde */
 .content {
   background: var(--BG_OUTER);
-  padding: var(--space-6);
+  padding: calc(var(--space-3) * 1.75) calc(var(--space-3) * 2) var(--space-3) var(--space-3);
   color: var(--text-primary);
+  overflow: hidden;
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+  min-height: 0;
+  min-width: 0;
+  gap: var(--space-2);
 }
 
 .content-header {
@@ -357,35 +379,35 @@ h1 {
 
 h2 { /* Seksjonstittel */
   font-weight: var(--weight-black);
-  font-size: 24px;
+  font-size: 18px;
   margin: 0 0 var(--space-2) 0;
   color: var(--GRAY_TEXT_DARK);
 }
 
 h3 {
   font-weight: var(--weight-bold);
-  font-size: 18px;
-  margin: var(--space-4) 0 var(--space-2) 0;
+  font-size: 14px;
+  margin: var(--space-2) 0 var(--space-1) 0;
 }
 
 h4 {
   font-weight: var(--weight-bold);
-  font-size: 16px;
-  margin: var(--space-3) 0 var(--space-1) 0;
+  font-size: 13px;
+  margin: var(--space-2) 0 var(--space-1) 0;
 }
 
 .preamble { /* Innledning */
   font-weight: var(--weight-book);
-  font-size: 16px;
+  font-size: 13px;
   margin: 0;
   color: var(--GRAY_TEXT_SECONDARY);
 }
 
 p { /* Avsnitt */
   font-weight: var(--weight-book);
-  font-size: 14px;
-  line-height: 1.6;
-  margin: 0 0 var(--space-4) 0;
+  font-size: 12px;
+  line-height: 1.5;
+  margin: 0 0 var(--space-2) 0;
 }
 
 /* Fokus- og tilgjengelighet */
@@ -396,7 +418,7 @@ p { /* Avsnitt */
 
 /* Responsivitet / min. 1280x800 */
 @media (max-width: 1200px) {
-  .app { grid-template-columns: 220px 1fr; }
+  .app { grid-template-columns: 0.18fr 0.82fr; }
 }
 
 /* Responsiv: Sidebar til top-nav under 768px */
@@ -410,7 +432,7 @@ p { /* Avsnitt */
     border-bottom: 1px solid var(--BORDER_LIGHT);
   }
   .nav { flex-direction: row; flex-wrap: nowrap; overflow-x: auto; padding: 8px; gap: 8px; }
-  .nav-item { white-space: nowrap; font-size: 16px; padding: 10px 12px; }
+  .nav-item { white-space: nowrap; font-size: calc(16px * 1.2); padding: 10px 12px; }
   .nav-sep { display: none; }
 }
 
@@ -468,6 +490,10 @@ p { /* Avsnitt */
 }
 #chart-modal #chart-title {
   text-align: center;
+  font-size: calc(0.875rem * 1.2);
+  font-weight: 700;
+  color: var(--GRAY_TEXT_DARK);
+  margin: 0 0 1rem 0;
 }
 #chart-modal #chart-container {
   width: 100%;
@@ -476,17 +502,55 @@ p { /* Avsnitt */
   display: flex;
   align-items: flex-start;
   justify-content: center;
-  overflow: visible;
+  overflow: auto;
   padding-bottom: 20px;
+  position: relative;
+  resize: both;
+}
+
+.chart-resize-handle {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  width: 32px;
+  height: 32px;
+  background: var(--BG_CARD);
+  border: 1px solid var(--BORDER_LIGHT);
+  border-radius: 6px;
+  cursor: nwse-resize;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  transition: background-color 0.2s, transform 0.2s;
+  color: var(--GRAY_TEXT_SECONDARY);
+}
+
+.chart-resize-handle:hover {
+  background: var(--BLUE_100);
+  color: var(--GRAY_TEXT_DARK);
+  transform: scale(1.1);
+}
+
+.chart-resize-handle:active {
+  transform: scale(0.95);
 }
 /* Dividend chart modal - 70% av skjermen */
 #dividend-chart-modal .modal-panel {
-  max-width: 70vw;
+  max-width: 66.5vw;
   width: calc(100% - 64px);
   margin: 32px auto;
   padding: 32px;
   max-height: 85vh;
   overflow: hidden;
+}
+#dividend-chart-modal #dividend-chart-title {
+  text-align: center;
+  font-size: calc(0.875rem * 1.2);
+  font-weight: 700;
+  color: var(--GRAY_TEXT_DARK);
+  margin: 0 0 1rem 0;
 }
 #dividend-chart-modal #dividend-chart-container {
   width: 100%;
@@ -495,11 +559,10 @@ p { /* Avsnitt */
   display: flex;
   align-items: flex-start;
   justify-content: center;
-  overflow: visible;
+  overflow: auto;
   padding-bottom: 20px;
-}
-#dividend-chart-modal #dividend-chart-title {
-  text-align: center;
+  position: relative;
+  resize: both;
 }
 /* Dividend chart modal dark mode */
 #dividend-chart-modal .modal-panel {
@@ -584,21 +647,24 @@ p { /* Avsnitt */
   display: grid;
   grid-template-columns: 1fr; /* la hovedpanel bruke full bredde */
   gap: var(--space-6); /* 32px */
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-height: 0;
 }
 
 /* Stepper øverst */
 .stepper {
   background: var(--BG_CARD);
   border: 1px solid var(--BORDER_LIGHT);
-  border-radius: 12px;
-  padding: 24px;
+  border-radius: 8px;
+  padding: var(--space-2) var(--space-3);
   box-shadow: 0 4px 20px rgba(16, 24, 40, 0.06);
-  margin-bottom: 24px;
+  margin-bottom: var(--space-2);
 }
 .stepper-list {
   list-style: none;
   margin: 0;
-  padding: 0 8px;
+  padding: 0 var(--space-2);
   display: grid;
   grid-template-columns: repeat(var(--step-count, 4), 1fr);
   align-items: center;
@@ -610,16 +676,17 @@ p { /* Avsnitt */
   align-items: center;
   justify-content: flex-start;
   flex-direction: column; /* label under ikonet */
-  gap: 8px;
+  gap: 4px;
   color: var(--GRAY_TEXT_SECONDARY);
   font-weight: var(--weight-semibold);
+  font-size: 11px;
 }
 .step::after {
   content: "";
   position: absolute;
-  left: calc(50% + 16px); /* start rett etter prikk + ring */
-  right: calc(-50% + 16px); /* stopp rett før neste prikk + ring */
-  top: 10px;              /* midt i prikk (20px) */
+  left: calc(50% + 11px); /* start rett etter prikk + ring */
+  right: calc(-50% + 11px); /* stopp rett før neste prikk + ring */
+  top: 7px;              /* midt i prikk (14px) */
   height: 2px;
   transform: none;
   background: var(--BORDER_LIGHT);
@@ -627,11 +694,11 @@ p { /* Avsnitt */
 }
 .step:last-child::after { display: none; }
 .step-dot {
-  width: 20px; height: 20px;
+  width: 14px; height: 14px;
   border-radius: 50%;
   border: 2px solid #B6CCFF; /* inaktiv outline */
   background: #ffffff;
-  box-shadow: 0 0 0 6px var(--P_LIGHT_BG); /* myk ytre ring */
+  box-shadow: 0 0 0 4px var(--P_LIGHT_BG); /* myk ytre ring */
   position: relative;
   z-index: 1; /* sikre at strek ikke går over ikonet */
 }
@@ -654,14 +721,14 @@ p { /* Avsnitt */
 .panel {
   background: var(--BG_CARD);
   border: 1px solid var(--BORDER_LIGHT);
-  border-radius: 12px; /* rounded-xl */
-  padding: 24px; /* p-6 */
+  border-radius: 8px; /* rounded-xl */
+  padding: var(--space-3);
   color: var(--GRAY_TEXT_DARK);
   box-shadow: 0 4px 20px rgba(16, 24, 40, 0.06);
   max-width: none; /* la panel bruke full bredde i grid */
   overflow: hidden;
   grid-column: 1 / -1; /* span alle kolonner som standard */
-  margin-bottom: var(--space-5); /* konsistent spacing til neste element */
+  margin-bottom: var(--space-2);
   margin-right: 0; /* sikre lik høyremarg */
 }
 
@@ -673,8 +740,8 @@ p { /* Avsnitt */
 
 /* Tom panel mellom overskrift og hovedinnhold */
 .panel-empty {
-  height: 72px;
-  margin-bottom: var(--space-5); /* Litt mer avstand enn forrige versjon (24px) */
+  height: 56px;
+  margin-bottom: var(--space-2);
   /* Fjern ytre panel-stil slik at bare de fire boksene vises */
   padding: 0;
   background: transparent;
@@ -686,17 +753,17 @@ p { /* Avsnitt */
 /* Inndeling i fire responsive bokser */
 .pe-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(10rem, 1fr)); /* Minimum 10rem per kolonne for å forhindre wrapping */
-  gap: 1rem; /* Bruker rem for zoom-uavhengighet */
+  grid-template-columns: repeat(4, minmax(0, 1fr)); /* Bruk 1fr for bedre skalering */
+  gap: var(--space-2);
   height: 100%;
   min-width: 0; /* Forhindre overflow */
 }
 .pe-item {
   border: 1px solid var(--BORDER_LIGHT);
   background: #ffffff;
-  border-radius: 10px;
+  border-radius: 8px;
   height: 100%;
-  padding: 0.5rem; /* Bruker rem for zoom-uavhengighet */
+  padding: var(--space-2);
   display: flex;
   align-items: flex-start;
   min-width: 0; /* Forhindre at elementer ekspanderer utenfor */
@@ -705,8 +772,8 @@ p { /* Avsnitt */
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.06); /* Diskret, elegant skygge */
 }
 
-.summary-card { display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 0.75rem; gap: 0.375rem; height: 100%; } /* Sentrert og midstilt */
-.summary-title { font-weight: var(--weight-semibold); text-align: center; }
+.summary-card { display: flex; flex-direction: column; justify-content: center; align-items: center; padding: var(--space-2); gap: var(--space-1); height: 100%; } /* Sentrert og midstilt */
+.summary-title { font-weight: var(--weight-semibold); text-align: center; font-size: 11px; }
 .summary-assets { background: #ECEFF3; } /* Secondary */
 .summary-assets .summary-title { color: var(--GRAY_TEXT_DARK) !important; }
 .summary-assets .summary-value { color: var(--GRAY_TEXT_SECONDARY); }
@@ -756,7 +823,7 @@ p { /* Avsnitt */
 .dark .summary-cash .summary-value {
   color: #FFFFFF !important;
 }
-.summary-value { font-weight: var(--weight-semibold); font-size: 1.25rem; color: var(--GRAY_TEXT_SECONDARY); text-align: center; }
+.summary-value { font-weight: var(--weight-semibold); font-size: 14px; color: var(--GRAY_TEXT_SECONDARY); text-align: center; line-height: 1.2; }
 
 /* Kostnadsrader: svakt rødskjær på felt og rød verdi */
 .is-cost .asset-amount { color: var(--ERROR_DEBT); }
@@ -770,17 +837,17 @@ p { /* Avsnitt */
 .asset-amount {
   align-self: center;
   font-weight: var(--weight-bold);
-  font-size: 1.25rem; /* ca 20px */
+  font-size: 14px;
   color: var(--GRAY_TEXT_SECONDARY);
   justify-self: end; /* hold tallene inne i høyre kolonne */
   white-space: nowrap; /* ikke bryt siffer over flere linjer */
   width: 100%;
   box-sizing: border-box;
   text-align: right;
-  padding: 10px 16px;
+  padding: 6px var(--space-3);
   border: 1px solid var(--BORDER_LIGHT);
   background: #ffffff;
-  border-radius: 12px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: flex-end;
@@ -890,14 +957,15 @@ p { /* Avsnitt */
 }
 
 .btn-add {
-  margin-top: 10px;
+  margin-top: var(--space-2);
   width: 100%;
   background: var(--BLUE_500);
   color: #ffffff;
   border: 1px solid var(--BLUE_500);
-  padding: 14px 18px;
-  border-radius: 12px;
+  padding: var(--space-2) var(--space-3);
+  border-radius: 8px;
   font-weight: var(--weight-semibold);
+  font-size: 12px;
   cursor: pointer;
 }
 .btn-add:hover { filter: brightness(1.05); box-shadow: 0 0 0 4px rgba(127,170,246,0.25); }
@@ -910,9 +978,9 @@ p { /* Avsnitt */
 }
 
 .section-label {
-  margin-top: 6px;
-  margin-bottom: 6px;
-  font-size: 16px; /* labels */
+  margin-top: 4px;
+  margin-bottom: 4px;
+  font-size: 11px; /* labels */
   letter-spacing: 0.1em; /* 10% */
   text-transform: uppercase;
   color: var(--text-label);
@@ -924,11 +992,12 @@ p { /* Avsnitt */
 }
 .select select {
   width: 100%;
-  padding: 12px 40px 12px 12px;
-  border-radius: 10px;
+  padding: 8px 32px 8px var(--space-2);
+  border-radius: 8px;
   border: 1px solid var(--BORDER_LIGHT);
   background: #ffffff;
   color: var(--GRAY_TEXT_DARK);
+  font-size: 12px;
   /* Skjul native nedtrekkspil, vi viser egen via .select:after */
   appearance: none;
   -webkit-appearance: none;
@@ -957,7 +1026,8 @@ p { /* Avsnitt */
 }
 .kpi-table th,
 .kpi-table td {
-  padding: 14px 12px;
+  padding: 8px var(--space-2);
+  font-size: 12px;
 }
 .kpi-table thead th {
   text-align: left;
@@ -968,7 +1038,7 @@ p { /* Avsnitt */
 .kpi-table .muted { color: var(--GRAY_TEXT_SECONDARY); }
 /* Kombinasjonsresultater i kolonne 2 */
 .kpi-table tbody td:nth-child(2) {
-  font-size: 1.25rem; /* 20px */
+  font-size: 14px;
   font-weight: var(--weight-semibold);
   color: var(--GRAY_TEXT_SECONDARY);
 }
@@ -995,12 +1065,13 @@ p { /* Avsnitt */
 
 /* TBE konklusjon banner */
 .tbe-conclusion {
-  margin-top: 16px;
-  margin-bottom: 8px;
-  padding: 14px 16px;
-  border-radius: 12px;
+  margin-top: var(--space-2);
+  margin-bottom: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-radius: 8px;
   border: 1px solid var(--border-color);
   background: rgba(255,255,255,0.04);
+  font-size: 12px;
 }
 .tbe-conclusion.low { background: rgba(239,68,68,0.08); }
 .tbe-conclusion.mid { background: rgba(245,158,11,0.10); }
@@ -1012,16 +1083,16 @@ p { /* Avsnitt */
   position: relative;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 24px;
-  min-height: 448px;
+  gap: var(--space-3);
+  min-height: 300px;
 }
-.viz h4 { color: var(--text-primary); margin: 0 0 8px 0; text-align: center; }
-.viz-col { display: flex; flex-direction: column; gap: 18px; height: 448px; }
+.viz h4 { color: var(--text-primary); margin: 0 0 var(--space-2) 0; text-align: center; }
+.viz-col { display: flex; flex-direction: column; gap: var(--space-2); height: 300px; }
 
 .viz-block {
   background: var(--BG_CARD);
-  border-radius: 14px;
-  padding: 16px;
+  border-radius: 8px;
+  padding: var(--space-2);
   text-align: center;
   color: var(--GRAY_TEXT_DARK);
   box-shadow: inset 0 0 0 1px var(--BORDER_LIGHT);
@@ -1029,7 +1100,8 @@ p { /* Avsnitt */
   align-items: center;
   justify-content: center;
   flex: 0 0 auto; /* height controlled explicitly */
-  min-height: 56px;
+  min-height: 40px;
+  font-size: 12px;
 }
 .viz-block.primary { background: var(--BG_CARD); }
 .viz-block.secondary { background: #FAFBFF; }
@@ -1039,7 +1111,7 @@ p { /* Avsnitt */
 .viz-block .value {
   color: var(--P_ACCENT);
   font-weight: var(--weight-bold);
-  font-size: 1.5rem; /* 24px kombinasjonsresultat */
+  font-size: 16px;
 }
 
 .viz-divider { position: relative; }
@@ -1071,15 +1143,17 @@ p { /* Avsnitt */
   border: 1px solid var(--BORDER_LIGHT);
   background: var(--BG_CARD);
   color: var(--GRAY_TEXT_DARK);
-  border-radius: 8px;
-  width: 36px; height: 32px;
+  border-radius: 6px;
+  width: 28px; height: 24px;
   cursor: pointer;
+  font-size: 12px;
 }
 .theme-toggle:hover { background: var(--BLUE_100); }
 
 /* Disclaimer button container */
 .brand > div {
-  margin-top: 12px;
+  margin-top: var(--space-2);
+  gap: var(--space-1);
 }
 
 /* Disclaimer button */
@@ -1088,12 +1162,13 @@ p { /* Avsnitt */
   border: 1px solid var(--BORDER_LIGHT);
   background: var(--BG_CARD);
   color: var(--GRAY_TEXT_SECONDARY);
-  border-radius: 8px;
-  padding: 6px 10px;
-  font-size: 0.75rem;
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 10px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.15s ease;
+  line-height: 1.3;
 }
 .disclaimer-btn:hover {
   background: var(--BLUE_100);
