@@ -99,8 +99,27 @@
       </main>
     </div>
 
+    <!-- Input flytende knapp -->
+    <button id="input-fab" class="px-3 py-1.5 text-xs font-medium rounded-full bg-slate-700/70 hover:bg-slate-700 text-slate-200 border border-slate-600/70 shadow-sm transition-colors" aria-haspopup="dialog" aria-controls="input-modal" aria-label="Åpne Input">Input</button>
+
     <!-- Output flytende knapp -->
     <button id="output-fab" class="px-3 py-1.5 text-xs font-medium rounded-full bg-slate-700/70 hover:bg-slate-700 text-slate-200 border border-slate-600/70 shadow-sm transition-colors" aria-haspopup="dialog" aria-controls="output-modal" aria-label="Åpne Output">Output</button>
+
+    <!-- Input modal -->
+    <div id="input-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="input-title" hidden>
+      <div class="modal-backdrop" data-close="true"></div>
+      <div class="modal-panel" role="document">
+        <button class="modal-close" aria-label="Lukk" data-close="true">×</button>
+        <h3 id="input-title">Input</h3>
+        <div class="output-editor">
+          <textarea id="input-text" class="output-textarea" aria-label="Lim inn input data" spellcheck="false" placeholder="Lim inn tekst fra Output-knappen her..."></textarea>
+          <button id="apply-input" class="copy-btn" type="button">
+            <span class="copy-icon" aria-hidden="true">✓</span>
+            <span class="copy-label">Oppdater input</span>
+          </button>
+        </div>
+      </div>
+    </div>
 
     <!-- Output modal -->
     <div id="output-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="output-title" hidden>

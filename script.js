@@ -16,6 +16,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const sectionTitle = document.getElementById("sectionTitle");
   const moduleRoot = document.getElementById("module-root");
   const stepperList = document.getElementById("stepper-list");
+  // Input UI
+  initInputUI();
+  
   // Output UI
   initOutputUI();
 
@@ -1054,7 +1057,7 @@ function renderPlaceholder(root) {
       // Legg til "Aksjeandel"-knapp rett til høyre for "Antall år"-knappen
       const equityShareIcon = document.createElement("button");
       equityShareIcon.id = "chart-icon-equity-share";
-      equityShareIcon.setAttribute("aria-label", "Åpne grafikk for aksjeandel");
+      equityShareIcon.setAttribute("aria-label", "Åpne grafikk");
       equityShareIcon.style.cssText = `
         background: var(--BG_SECONDARY, #f8f9fa);
         border: 1px solid var(--BORDER_LIGHT, #e5e7eb);
@@ -1096,7 +1099,7 @@ function renderPlaceholder(root) {
       // Legg til "Rentekostnad"-knapp rett til høyre for "Aksjeandel"-knappen
       const interestCostIcon = document.createElement("button");
       interestCostIcon.id = "chart-icon-interest-cost";
-      interestCostIcon.setAttribute("aria-label", "Åpne grafikk for rentekostnad");
+      interestCostIcon.setAttribute("aria-label", "Åpne grafikk");
       interestCostIcon.style.cssText = `
         background: var(--BG_SECONDARY, #f8f9fa);
         border: 1px solid var(--BORDER_LIGHT, #e5e7eb);
@@ -1928,7 +1931,7 @@ function renderPlaceholder(root) {
       // Legg til "Endring skatt"-knapp rett til høyre for "Antall år"-knappen
       const taxChangeIcon = document.createElement("button");
       taxChangeIcon.id = "chart-icon-tax-change";
-      taxChangeIcon.setAttribute("aria-label", "Åpne grafikk for endring skatt");
+      taxChangeIcon.setAttribute("aria-label", "Åpne grafikk");
       taxChangeIcon.style.cssText = `
         background: var(--BG_SECONDARY, #f8f9fa);
         border: 1px solid var(--BORDER_LIGHT, #e5e7eb);
@@ -3141,26 +3144,23 @@ function updateInvestLoanCalc() {
     elAnnualPayment.style.color = "#D32F2F";
   }
   
-  // Beregn og oppdater "Renter totalt" med SAMLET.RENTE-funksjonen (fra Excel)
-  // SAMLET.RENTE(Rente, Antall_utbet, Nåverdi, Startperiode, Sluttperiode, Type)
+  // Beregn og oppdater "Renter totalt" med ny formel (fra Excel):
+  // = (( AVDRAG( rentekotnader ; Avdragsprofil ; -Porteføljestørrelse ) * Avdragsprofil ) - Porteføljestørrelse) * -1
   const elTotalInterest = document.getElementById('inv-right-total-interest');
   let totalInterest = 0; // Deklarer utenfor if-blokken for å kunne bruke den senere
   if (elTotalInterest) {
-    // Rente: Rentekostnad fra input-fanen (konverter fra prosent til desimal)
-    const cumRate = interestPct / 100;
-    // Antall_utbet: Avdragsprofil fra input-fanen
-    const cumNper = repaymentYears;
-    // Nåverdi: Porteføljestørrelse
-    const cumPv = portfolio;
-    // Startperiode: 1
-    const startPeriod = 1;
-    // Sluttperiode: Antall år fra input-fanen
-    const endPeriod = years;
-    // Type: 0 (betaling i slutten av perioden)
-    const cumType = 0;
+    // Step 1: Annual Payment (AVDRAG) - allerede beregnet som annualPayment
+    // annualPayment er allerede beregnet med: AVDRAG(rentekotnader; Avdragsprofil; -Porteføljestørrelse)
     
-    // Beregn total rente med SAMLET.RENTE (resultatet er allerede negativt fra calculateCUMIPMT)
-    totalInterest = calculateCUMIPMT(cumRate, cumNper, cumPv, startPeriod, endPeriod, cumType);
+    // Step 2: Multiply annual payment by Avdragsprofil to get Total Amount Paid
+    const totalPaid = annualPayment * repaymentYears;
+    
+    // Step 3: Subtract Porteføljestørrelse from Total Amount Paid to get interest
+    const interest = totalPaid - portfolio;
+    
+    // Step 4: Multiply by -1 (resultatet skal være negativt fordi det er en kostnad)
+    totalInterest = interest * -1;
+    
     elTotalInterest.textContent = formatNOK(Math.round(totalInterest));
     elTotalInterest.style.color = "#D32F2F";
     
@@ -3229,23 +3229,42 @@ function updateInvestLoanCalc() {
     const currentGrossExpected = currentEquityShare * currentExpEquity + (1 - currentEquityShare) * currentExpBonds;
     const expectedReturnPct = currentGrossExpected - currentFee - currentKpi;
     
-    // SLUTTVERDI-formelen (fra Excel):
-    // SLUTTVERDI(Rente, Antall_utbet, Utbetaling, Nåverdi, Type)
-    // 
-    // Rente: Forventet avkastning beregnet på nytt basert på nåværende aksjeandel (konvertert fra prosent til desimal)
-    const fvRate = expectedReturnPct / 100;
-    // Antall_utbet: Antall år fra input-fanen
-    const fvNper = years;
-    // Utbetaling: Fra "Uttak til renter og avdrag" (samme boks, litt lengre opp)
-    // I Excel SLUTTVERDI skal utbetalinger være negative
-    const fvPmt = annualPayment > 0 ? -annualPayment : 0;
-    // Nåverdi: Porteføljestørrelse (positiv i Excel SLUTTVERDI)
-    const fvPv = portfolio;
-    // Type: 0 (betaling i slutten av perioden)
-    const fvType = 0;
+    // Hent avdragsprofil for den nye formelen
+    let repaymentYearsForFV = 20; // default
+    const repaymentSliderElForFV = document.getElementById('repayment-profile-slider');
+    if (repaymentSliderElForFV && repaymentSliderElForFV.value) {
+      const v = Number(repaymentSliderElForFV.value);
+      if (isFinite(v) && v > 0) repaymentYearsForFV = v;
+    } else if (isFinite(AppState.repaymentProfileYears)) {
+      repaymentYearsForFV = Number(AppState.repaymentProfileYears);
+    }
     
-    // Beregn verdi ved periodens slutt med SLUTTVERDI
-    futureValue = calculateFV(fvRate, fvNper, fvPmt, fvPv, fvType);
+    // NY FORMEL (fra Excel):
+    // SLUTTVERDI(Forventet avkastning; Avdragsprofil; AVDRAG(rentekotnader; Avdragsprofil; -Porteføljestørrelse); -Porteføljestørrelse) * (1 + Avkastning) ^ (Antall år - Avdragsprofil)
+    //
+    // Del 1: Beregn årlig uttak (AVDRAG) - allerede beregnet som annualPayment
+    // annualPayment er allerede beregnet med: AVDRAG(rentekotnader; Avdragsprofil; -Porteføljestørrelse)
+    //
+    // Del 2: Resultat etter låneperioden (SLUTTVERDI)
+    // SLUTTVERDI(Forventet avkastning; Avdragsprofil; [Del 1]; -Porteføljestørrelse)
+    // I Excel: pmt skal være positiv (selv om vi tar ut penger), pv skal være negativ
+    // Men i vår calculateFV: pmt negativ = uttak, pv positiv = startverdi
+    const fvRate = expectedReturnPct / 100; // Forventet avkastning (konvertert fra prosent til desimal)
+    const fvNper = repaymentYearsForFV; // Avdragsprofil
+    const fvPmt = annualPayment > 0 ? -annualPayment : 0; // AVDRAG-resultatet (negativt fordi vi tar ut penger)
+    const fvPv = portfolio; // Porteføljestørrelse (positiv fordi vi starter med penger)
+    const fvType = 0; // Type: 0 (betaling i slutten av perioden)
+    
+    // Beregn verdi etter låneperioden med SLUTTVERDI
+    const valueAfterLoanPeriod = calculateFV(fvRate, fvNper, fvPmt, fvPv, fvType);
+    
+    // Del 3: Rentes rente i rest-perioden
+    // (1 + Avkastning) ^ (Antall år - Avdragsprofil)
+    const remainingYears = Math.max(0, years - repaymentYearsForFV);
+    const compoundFactor = Math.pow(1 + fvRate, remainingYears);
+    
+    // Totalsummen: Del 2 * Del 3
+    futureValue = valueAfterLoanPeriod * compoundFactor;
     elEndValue.textContent = formatNOK(Math.round(futureValue));
     
     // Beregn og oppdater "Netto portefølje etter skatt" = Verdi ved periodens slutt - Skatt
@@ -4638,6 +4657,172 @@ function generateOutputText() {
   return lines.join("\n");
 }
 
+// --- Input modal, parse, and update ---
+function initInputUI() {
+  const fab = document.getElementById("input-fab");
+  const modal = document.getElementById("input-modal");
+  const textArea = document.getElementById("input-text");
+  const applyBtn = document.getElementById("apply-input");
+
+  if (!fab || !modal || !textArea || !applyBtn) return;
+
+  function openModal() {
+    modal.removeAttribute("hidden");
+    document.addEventListener("keydown", onKeyDown);
+    // Fokus på textarea
+    setTimeout(() => textArea.focus(), 100);
+  }
+
+  function closeModal() {
+    modal.setAttribute("hidden", "");
+    document.removeEventListener("keydown", onKeyDown);
+  }
+
+  function onKeyDown(e) {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      closeModal();
+    }
+  }
+
+  function parseAndApplyInput() {
+    const text = textArea.value.trim();
+    if (!text) {
+      alert("Ingen tekst å parse. Lim inn tekst fra Output-knappen.");
+      return;
+    }
+
+    try {
+      parseInputText(text);
+      closeModal();
+      // Oppdater alle faner
+      updateTopSummaries();
+      // Re-render aktiv fane hvis den finnes
+      const activeTab = document.querySelector(".nav-item.is-active");
+      if (activeTab) {
+        const section = activeTab.getAttribute("data-section");
+        if (section) {
+          renderPlaceholder(document.getElementById("module-root"));
+          updateTopSummaries();
+        }
+      }
+      alert("Input oppdatert!");
+    } catch (e) {
+      console.error("Feil ved parsing av input:", e);
+      alert(`Feil ved parsing av input: ${e.message}`);
+    }
+  }
+
+  fab.addEventListener("click", openModal);
+  applyBtn.addEventListener("click", parseAndApplyInput);
+  
+  modal.addEventListener("click", (e) => {
+    const t = e.target;
+    if (t && (t.getAttribute && t.getAttribute("data-close") === "true")) {
+      closeModal();
+    }
+  });
+}
+
+function parseInputText(text) {
+  const lines = text.split("\n").map(l => l.trim()).filter(l => l);
+  
+  // Parse INPUT-seksjonen
+  let inInputSection = false;
+  
+  for (const line of lines) {
+    if (line === "=== INPUT ===") {
+      inInputSection = true;
+      continue;
+    }
+    
+    if (line.startsWith("===") && line !== "=== INPUT ===") {
+      inInputSection = false;
+      continue;
+    }
+    
+    if (!inInputSection) continue;
+    
+    // Parse hver linje
+    if (line.startsWith("Antall år:")) {
+      const match = line.match(/Antall år:\s*(\d+)\s*år/);
+      if (match) {
+        AppState.yearsCount = parseInt(match[1], 10);
+      }
+    } else if (line.startsWith("Porteføljestørrelse:")) {
+      const match = line.match(/Porteføljestørrelse:\s*([\d\s]+)\s*kr/);
+      if (match) {
+        const value = parseInt(match[1].replace(/\s/g, ""), 10);
+        AppState.portfolioSize = value;
+      }
+    } else if (line.startsWith("Innskutt kapital:")) {
+      const match = line.match(/Innskutt kapital:\s*([\d\s]+)\s*kr/);
+      if (match) {
+        const value = parseInt(match[1].replace(/\s/g, ""), 10);
+        AppState.inputCapital = value;
+      }
+    } else if (line.startsWith("Aksjeandel:")) {
+      const match = line.match(/Aksjeandel:\s*(.+)/);
+      if (match) {
+        AppState.stockShareOption = match[1].trim();
+        // Prøv å ekstrahere prosent hvis mulig
+        const pctMatch = match[1].match(/(\d+)%/);
+        if (pctMatch) {
+          AppState.stockSharePercent = parseInt(pctMatch[1], 10);
+        }
+      }
+    } else if (line.startsWith("Forventet avkastning aksjer:")) {
+      const match = line.match(/Forventet avkastning aksjer:\s*([\d,]+)\s*%/);
+      if (match) {
+        AppState.expEquity = parseFloat(match[1].replace(",", "."));
+      }
+    } else if (line.startsWith("Forventet avkastning renter:")) {
+      const match = line.match(/Forventet avkastning renter:\s*([\d,]+)\s*%/);
+      if (match) {
+        AppState.expBonds = parseFloat(match[1].replace(",", "."));
+      }
+    } else if (line.startsWith("Forventet KPI:")) {
+      const match = line.match(/Forventet KPI:\s*([\d,]+)\s*%/);
+      if (match) {
+        AppState.expKpi = parseFloat(match[1].replace(",", "."));
+      }
+    } else if (line.startsWith("Rådgivningshonorar:")) {
+      const match = line.match(/Rådgivningshonorar:\s*([\d,]+)\s*%/);
+      if (match) {
+        AppState.advisoryFeePct = parseFloat(match[1].replace(",", "."));
+      }
+    } else if (line.startsWith("Skjermingsrente:")) {
+      const match = line.match(/Skjermingsrente:\s*([\d,]+)\s*%/);
+      if (match) {
+        AppState.shieldRatePct = parseFloat(match[1].replace(",", "."));
+      }
+    } else if (line.startsWith("Rentekostnader:")) {
+      const match = line.match(/Rentekostnader:\s*([\d,]+)\s*%/);
+      if (match) {
+        AppState.interestCostPct = parseFloat(match[1].replace(",", "."));
+      }
+    } else if (line.startsWith("Avdragsprofil:")) {
+      const match = line.match(/Avdragsprofil:\s*(\d+)\s*år/);
+      if (match) {
+        AppState.repaymentProfileYears = parseInt(match[1], 10);
+      }
+    } else if (line.startsWith("Utbytteskatt:")) {
+      const match = line.match(/Utbytteskatt:\s*([\d,]+)\s*%/);
+      if (match) {
+        AppState.stockTaxPct = parseFloat(match[1].replace(",", "."));
+      }
+    } else if (line.startsWith("Kapitalskatt:")) {
+      const match = line.match(/Kapitalskatt:\s*([\d,]+)\s*%/);
+      if (match) {
+        AppState.capitalTaxPct = parseFloat(match[1].replace(",", "."));
+      }
+    }
+  }
+  
+  // Oppdater alle input-felter i UI
+  updateInputTabValues();
+}
+
 // --- Disclaimer modal ---
 function initDisclaimerUI() {
   const btn = document.getElementById("disclaimer-btn");
@@ -4801,17 +4986,23 @@ function calculateNetReturnForEquityShare(equitySharePercent) {
   const pv = portfolio;
   const annualPayment = Math.abs(calculatePMT(rate, nper, pv, 0, 0));
 
-  // Beregn verdi ved periodens slutt
-  // Når lånet er nedbetalt (years > repaymentYears), skal ikke annualPayment trekkes fra
-  // I år repaymentYears (f.eks. år 20) betales lånet fortsatt, så annualPayment skal trekkes fra
-  const fvRate = expectedPct / 100;
-  const fvNper = years;
-  // I Excel SLUTTVERDI skal utbetalinger være negative, eller 0 hvis lånet er nedbetalt
-  const fvPmt = (years <= repaymentYears && annualPayment > 0) ? -annualPayment : 0;
-  // Nåverdi: Porteføljestørrelse (positiv i Excel SLUTTVERDI)
-  const fvPv = portfolio;
-  const fvType = 0;
-  const futureValue = calculateFV(fvRate, fvNper, fvPmt, fvPv, fvType);
+  // Beregn verdi ved periodens slutt med NY FORMEL:
+  // SLUTTVERDI(Forventet avkastning; Avdragsprofil; AVDRAG(rentekotnader; Avdragsprofil; -Porteføljestørrelse); -Porteføljestørrelse) * (1 + Avkastning) ^ (Antall år - Avdragsprofil)
+  const fvRate = expectedPct / 100; // Forventet avkastning (konvertert fra prosent til desimal)
+  const fvNper = repaymentYears; // Avdragsprofil
+  const fvPmt = annualPayment > 0 ? -annualPayment : 0; // AVDRAG-resultatet (negativt fordi vi tar ut penger)
+  const fvPv = portfolio; // Porteføljestørrelse (positiv fordi vi starter med penger)
+  const fvType = 0; // Type: 0 (betaling i slutten av perioden)
+  
+  // Beregn verdi etter låneperioden med SLUTTVERDI
+  const valueAfterLoanPeriod = calculateFV(fvRate, fvNper, fvPmt, fvPv, fvType);
+  
+  // Rentes rente i rest-perioden
+  const remainingYears = Math.max(0, years - repaymentYears);
+  const compoundFactor = Math.pow(1 + fvRate, remainingYears);
+  
+  // Totalsummen: Del 2 * Del 3
+  const futureValue = valueAfterLoanPeriod * compoundFactor;
 
   // Beregn restlån
   let remainingLoan = 0;
@@ -4880,20 +5071,11 @@ function calculateNetReturnForEquityShare(equitySharePercent) {
   // Dette kan bli negativt, så vi fjerner Math.max(0, ...)
   const netPortfolioAfterTax = futureValue + taxAmount;
 
-  // Beregn fradrag rentekostnader
-  // Når lånet er nedbetalt (years >= repaymentYears), beregner vi renter for hele nedbetalingsperioden
-  // Når lånet ikke er nedbetalt (years < repaymentYears), beregner vi renter for perioden 1 til years
-  let totalInterest = 0;
-  if (years > 0) {
-    const cumRate = interestPct / 100;
-    const cumNper = repaymentYears;
-    const cumPv = portfolio;
-    const startPeriod = 1;
-    // Hvis lånet er nedbetalt, beregn renter for hele nedbetalingsperioden
-    // Hvis lånet ikke er nedbetalt, beregn renter for perioden 1 til years
-    const endPeriod = years <= repaymentYears ? years : repaymentYears;
-    totalInterest = calculateCUMIPMT(cumRate, cumNper, cumPv, startPeriod, endPeriod, 0);
-  }
+  // Beregn fradrag rentekostnader med NY FORMEL:
+  // = (( AVDRAG( rentekotnader ; Avdragsprofil ; -Porteføljestørrelse ) * Avdragsprofil ) - Porteføljestørrelse) * -1
+  const totalPaid = annualPayment * repaymentYears;
+  const interest = totalPaid - portfolio;
+  const totalInterest = interest * -1; // Multipliser med -1 (resultatet skal være negativt fordi det er en kostnad)
   const interestDeduction = Math.abs(totalInterest) * ((AppState.capitalTaxPct ?? 22.00) / 100);
 
   // Beregn netto avkastning (Avkastning utover lånekostnad)
@@ -4956,17 +5138,23 @@ function calculateNetReturnForInterestCost(interestCostPercent) {
   const pv = portfolio;
   const annualPayment = Math.abs(calculatePMT(rate, nper, pv, 0, 0));
 
-  // Beregn verdi ved periodens slutt
-  // Når lånet er nedbetalt (years > repaymentYears), skal ikke annualPayment trekkes fra
-  // I år repaymentYears (f.eks. år 20) betales lånet fortsatt, så annualPayment skal trekkes fra
-  const fvRate = expectedPct / 100;
-  const fvNper = years;
-  // I Excel SLUTTVERDI skal utbetalinger være negative, eller 0 hvis lånet er nedbetalt
-  const fvPmt = (years <= repaymentYears && annualPayment > 0) ? -annualPayment : 0;
-  // Nåverdi: Porteføljestørrelse (positiv i Excel SLUTTVERDI)
-  const fvPv = portfolio;
-  const fvType = 0;
-  const futureValue = calculateFV(fvRate, fvNper, fvPmt, fvPv, fvType);
+  // Beregn verdi ved periodens slutt med NY FORMEL:
+  // SLUTTVERDI(Forventet avkastning; Avdragsprofil; AVDRAG(rentekotnader; Avdragsprofil; -Porteføljestørrelse); -Porteføljestørrelse) * (1 + Avkastning) ^ (Antall år - Avdragsprofil)
+  const fvRate = expectedPct / 100; // Forventet avkastning (konvertert fra prosent til desimal)
+  const fvNper = repaymentYears; // Avdragsprofil
+  const fvPmt = annualPayment > 0 ? -annualPayment : 0; // AVDRAG-resultatet (negativt fordi vi tar ut penger)
+  const fvPv = portfolio; // Porteføljestørrelse (positiv fordi vi starter med penger)
+  const fvType = 0; // Type: 0 (betaling i slutten av perioden)
+  
+  // Beregn verdi etter låneperioden med SLUTTVERDI
+  const valueAfterLoanPeriod = calculateFV(fvRate, fvNper, fvPmt, fvPv, fvType);
+  
+  // Rentes rente i rest-perioden
+  const remainingYears = Math.max(0, years - repaymentYears);
+  const compoundFactor = Math.pow(1 + fvRate, remainingYears);
+  
+  // Totalsummen: Del 2 * Del 3
+  const futureValue = valueAfterLoanPeriod * compoundFactor;
 
   // Beregn restlån med den gitte rentekostnaden
   let remainingLoan = 0;
@@ -5035,20 +5223,11 @@ function calculateNetReturnForInterestCost(interestCostPercent) {
   // Dette kan bli negativt, så vi fjerner Math.max(0, ...)
   const netPortfolioAfterTax = futureValue + taxAmount;
 
-  // Beregn fradrag rentekostnader med den gitte rentekostnaden
-  // Når lånet er nedbetalt (years > repaymentYears), beregner vi renter for hele nedbetalingsperioden
-  // Når lånet ikke er nedbetalt (years <= repaymentYears), beregner vi renter for perioden 1 til years
-  let totalInterest = 0;
-  if (years > 0) {
-    const cumRate = interestPct / 100;
-    const cumNper = repaymentYears;
-    const cumPv = portfolio;
-    const startPeriod = 1;
-    // Hvis lånet er nedbetalt, beregn renter for hele nedbetalingsperioden
-    // Hvis lånet ikke er nedbetalt, beregn renter for perioden 1 til years
-    const endPeriod = years <= repaymentYears ? years : repaymentYears;
-    totalInterest = calculateCUMIPMT(cumRate, cumNper, cumPv, startPeriod, endPeriod, 0);
-  }
+  // Beregn fradrag rentekostnader med NY FORMEL:
+  // = (( AVDRAG( rentekotnader ; Avdragsprofil ; -Porteføljestørrelse ) * Avdragsprofil ) - Porteføljestørrelse) * -1
+  const totalPaid = annualPayment * repaymentYears;
+  const interest = totalPaid - portfolio;
+  const totalInterest = interest * -1; // Multipliser med -1 (resultatet skal være negativt fordi det er en kostnad)
   const interestDeduction = Math.abs(totalInterest) * ((AppState.capitalTaxPct ?? 22.00) / 100);
 
   // Beregn netto avkastning (Avkastning utover lånekostnad)
@@ -5091,17 +5270,23 @@ function calculateNetReturnForYears(years) {
   const pv = portfolio;
   const annualPayment = Math.abs(calculatePMT(rate, nper, pv, 0, 0));
 
-  // Beregn verdi ved periodens slutt
-  // Når lånet er nedbetalt (years > repaymentYears), skal ikke annualPayment trekkes fra
-  // I år repaymentYears (f.eks. år 20) betales lånet fortsatt, så annualPayment skal trekkes fra
-  const fvRate = expectedPct / 100;
-  const fvNper = years;
-  // I Excel SLUTTVERDI skal utbetalinger være negative, eller 0 hvis lånet er nedbetalt
-  const fvPmt = (years <= repaymentYears && annualPayment > 0) ? -annualPayment : 0;
-  // Nåverdi: Porteføljestørrelse (positiv i Excel SLUTTVERDI)
-  const fvPv = portfolio;
-  const fvType = 0;
-  const futureValue = calculateFV(fvRate, fvNper, fvPmt, fvPv, fvType);
+  // Beregn verdi ved periodens slutt med NY FORMEL:
+  // SLUTTVERDI(Forventet avkastning; Avdragsprofil; AVDRAG(rentekotnader; Avdragsprofil; -Porteføljestørrelse); -Porteføljestørrelse) * (1 + Avkastning) ^ (Antall år - Avdragsprofil)
+  const fvRate = expectedPct / 100; // Forventet avkastning (konvertert fra prosent til desimal)
+  const fvNper = repaymentYears; // Avdragsprofil
+  const fvPmt = annualPayment > 0 ? -annualPayment : 0; // AVDRAG-resultatet (negativt fordi vi tar ut penger)
+  const fvPv = portfolio; // Porteføljestørrelse (positiv fordi vi starter med penger)
+  const fvType = 0; // Type: 0 (betaling i slutten av perioden)
+  
+  // Beregn verdi etter låneperioden med SLUTTVERDI
+  const valueAfterLoanPeriod = calculateFV(fvRate, fvNper, fvPmt, fvPv, fvType);
+  
+  // Rentes rente i rest-perioden
+  const remainingYears = Math.max(0, years - repaymentYears);
+  const compoundFactor = Math.pow(1 + fvRate, remainingYears);
+  
+  // Totalsummen: Del 2 * Del 3
+  const futureValue = valueAfterLoanPeriod * compoundFactor;
 
   // Beregn restlån
   let remainingLoan = 0;
@@ -5178,16 +5363,11 @@ function calculateNetReturnForYears(years) {
   // Dette kan bli negativt, så vi fjerner Math.max(0, ...)
   const netPortfolioAfterTax = futureValue + taxAmount;
 
-  // Beregn fradrag rentekostnader
-  let totalInterest = 0;
-  if (years > 0 && years <= repaymentYears) {
-    const cumRate = interestPct / 100;
-    const cumNper = repaymentYears;
-    const cumPv = portfolio;
-    const startPeriod = 1;
-    const endPeriod = years;
-    totalInterest = calculateCUMIPMT(cumRate, cumNper, cumPv, startPeriod, endPeriod, 0);
-  }
+  // Beregn fradrag rentekostnader med NY FORMEL:
+  // = (( AVDRAG( rentekotnader ; Avdragsprofil ; -Porteføljestørrelse ) * Avdragsprofil ) - Porteføljestørrelse) * -1
+  const totalPaid = annualPayment * repaymentYears;
+  const interest = totalPaid - portfolio;
+  const totalInterest = interest * -1; // Multipliser med -1 (resultatet skal være negativt fordi det er en kostnad)
   const interestDeduction = Math.abs(totalInterest) * ((AppState.capitalTaxPct ?? 22.00) / 100);
 
   // Beregn netto avkastning
