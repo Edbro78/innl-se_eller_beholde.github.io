@@ -1711,8 +1711,8 @@ function renderPlaceholder(root) {
         // Status om N år
         addCalcRow("div-status-header", `Status om ${AppState.yearsCount || 0} år`, false, false, false, true);
         addCalcRow("div-remaining-portfolio", "Restportefølje", false, true, false, false);
-        addCalcRow("div-loan-status", "Lån", false, true, false, false);
-        addCalcRow("div-interest-costs", `rentekostnader i ${(AppState.yearsCount || 0)} år`, false, true, true, false);
+        addCalcRow("div-loan-status", "Lån / Bankinnskudd", false, true, false, false);
+        addCalcRow("div-interest-costs", `Rentekostnader i ${(AppState.yearsCount || 0)} år / tapte Renteinntekter i ${(AppState.yearsCount || 0)} år`, false, true, true, false);
 
         addDivider();
         const sumRow = addCalcRow("div-sum", "Sum", true, false, false, false);
@@ -1860,8 +1860,8 @@ function renderPlaceholder(root) {
 
         addCalcRowRR("r-status-header", `Status om ${(AppState.yearsCount || 0)} år`, false, false, false, true);
         addCalcRowRR("r-remaining", "Restportefølje", false, false, false, false, true);
-        addCalcRowRR("r-loan", "Lån", false, false, false, false, true);
-        addCalcRowRR("r-interest-costs", `sparte rentekostnader i ${(AppState.yearsCount || 0)} år`, false, false, true, false, true);
+        addCalcRowRR("r-loan", "Lån / Bankinnskudd", false, false, false, false, true);
+        addCalcRowRR("r-interest-costs", `Sparte rentekostnader i ${(AppState.yearsCount || 0)} år / Renteinntekter i ${(AppState.yearsCount || 0)} år`, false, false, true, false, true);
         addDividerRR();
         addCalcRowRR("r-sum", "Sum", true, false, false, false);
         // Oppdater verdier i høyre panel
@@ -3144,22 +3144,41 @@ function updateInvestLoanCalc() {
     elAnnualPayment.style.color = "#D32F2F";
   }
   
-  // Beregn og oppdater "Renter totalt" med ny formel (fra Excel):
-  // = (( AVDRAG( rentekotnader ; Avdragsprofil ; -Porteføljestørrelse ) * Avdragsprofil ) - Porteføljestørrelse) * -1
+  // Beregn og oppdater "Renter totalt" med år-for-år akkumulering:
+  // Beregner akkumulert rente for perioden "Antall år" basert på lån med "Avdragsprofil"
   const elTotalInterest = document.getElementById('inv-right-total-interest');
   let totalInterest = 0; // Deklarer utenfor if-blokken for å kunne bruke den senere
   if (elTotalInterest) {
     // Step 1: Annual Payment (AVDRAG) - allerede beregnet som annualPayment
     // annualPayment er allerede beregnet med: AVDRAG(rentekotnader; Avdragsprofil; -Porteføljestørrelse)
     
-    // Step 2: Multiply annual payment by Avdragsprofil to get Total Amount Paid
-    const totalPaid = annualPayment * repaymentYears;
+    // Step 2: Year-by-year loop for å akkumulere renter
+    // Variabler:
+    // - Porteføljestørrelse = portfolio
+    // - rentekotnader = rate (interestPct / 100)
+    // - Avdragsprofil = repaymentYears (brukes for å beregne PMT)
+    // - Antall år = years (perioden vi akkumulerer renter for)
+    let currentBalance = portfolio; // Start med full porteføljestørrelse
+    let totalAccumulatedInterest = 0;
+    const interestRate = rate; // rentekotnader (allerede beregnet som interestPct / 100)
     
-    // Step 3: Subtract Porteføljestørrelse from Total Amount Paid to get interest
-    const interest = totalPaid - portfolio;
+    // Loop fra år 1 til "Antall år"
+    for (let year = 1; year <= years; year++) {
+      // Beregn rentekomponent for dette året
+      const interestComponent = currentBalance * interestRate;
+      
+      // Beregn hovedstolkomponent (PMT - rente)
+      const principalComponent = annualPayment - interestComponent;
+      
+      // Oppdater saldo (trekk fra hovedstolbetaling)
+      currentBalance = currentBalance - principalComponent;
+      
+      // Akkumuler rente
+      totalAccumulatedInterest += interestComponent;
+    }
     
-    // Step 4: Multiply by -1 (resultatet skal være negativt fordi det er en kostnad)
-    totalInterest = interest * -1;
+    // Step 3: Returner som negativ verdi (fordi det er en kostnad)
+    totalInterest = -totalAccumulatedInterest;
     
     elTotalInterest.textContent = formatNOK(Math.round(totalInterest));
     elTotalInterest.style.color = "#D32F2F";
@@ -3239,32 +3258,34 @@ function updateInvestLoanCalc() {
       repaymentYearsForFV = Number(AppState.repaymentProfileYears);
     }
     
-    // NY FORMEL (fra Excel):
-    // SLUTTVERDI(Forventet avkastning; Avdragsprofil; AVDRAG(rentekotnader; Avdragsprofil; -Porteføljestørrelse); -Porteføljestørrelse) * (1 + Avkastning) ^ (Antall år - Avdragsprofil)
-    //
-    // Del 1: Beregn årlig uttak (AVDRAG) - allerede beregnet som annualPayment
-    // annualPayment er allerede beregnet med: AVDRAG(rentekotnader; Avdragsprofil; -Porteføljestørrelse)
-    //
-    // Del 2: Resultat etter låneperioden (SLUTTVERDI)
-    // SLUTTVERDI(Forventet avkastning; Avdragsprofil; [Del 1]; -Porteføljestørrelse)
-    // I Excel: pmt skal være positiv (selv om vi tar ut penger), pv skal være negativ
-    // Men i vår calculateFV: pmt negativ = uttak, pv positiv = startverdi
+    // KORREKT FORMEL med to scenarier:
+    // Scenario 1: antall_år <= avdragsprofil (lånet betales fortsatt)
+    //   FV(rate=forventet_avkastning, nper=antall_år, pmt=-annualPayment, pv=-portfolio)
+    // Scenario 2: antall_år > avdragsprofil (lånet er nedbetalt)
+    //   1. Beregn verdi ved slutten av avdragsprofil-perioden
+    //   2. Renters rente for resterende år
+    
     const fvRate = expectedReturnPct / 100; // Forventet avkastning (konvertert fra prosent til desimal)
-    const fvNper = repaymentYearsForFV; // Avdragsprofil
-    const fvPmt = annualPayment > 0 ? -annualPayment : 0; // AVDRAG-resultatet (negativt fordi vi tar ut penger)
-    const fvPv = portfolio; // Porteføljestørrelse (positiv fordi vi starter med penger)
+    // VIKTIG: For riktig beregning må vi bruke:
+    // - PV = portfolio (positiv) og PMT = -annualPayment (negativ), ELLER
+    // - PV = -portfolio (negativ) og PMT = annualPayment (positiv)
+    // Vi bruker første variant for å få positiv FV direkte
+    const fvPmt = annualPayment > 0 ? -annualPayment : 0; // Negativ fordi vi tar ut penger
+    const fvPv = portfolio; // Positiv fordi det er startverdi
     const fvType = 0; // Type: 0 (betaling i slutten av perioden)
     
-    // Beregn verdi etter låneperioden med SLUTTVERDI
-    const valueAfterLoanPeriod = calculateFV(fvRate, fvNper, fvPmt, fvPv, fvType);
-    
-    // Del 3: Rentes rente i rest-perioden
-    // (1 + Avkastning) ^ (Antall år - Avdragsprofil)
-    const remainingYears = Math.max(0, years - repaymentYearsForFV);
-    const compoundFactor = Math.pow(1 + fvRate, remainingYears);
-    
-    // Totalsummen: Del 2 * Del 3
-    futureValue = valueAfterLoanPeriod * compoundFactor;
+    if (years <= repaymentYearsForFV) {
+      // Scenario 1: Still paying down the loan
+      // FV(rate=forventet_avkastning, nper=antall_år, pmt=-annualPayment, pv=portfolio)
+      futureValue = calculateFV(fvRate, years, fvPmt, fvPv, fvType);
+    } else {
+      // Scenario 2: Loan is finished, money grows free
+      // Step 1: Calculate balance at end of avdragsprofil period
+      const balanceAtLoanEnd = calculateFV(fvRate, repaymentYearsForFV, fvPmt, fvPv, fvType);
+      // Step 2: Compound the remaining balance for remaining years
+      const remainingYears = years - repaymentYearsForFV;
+      futureValue = balanceAtLoanEnd * Math.pow(1 + fvRate, remainingYears);
+    }
     elEndValue.textContent = formatNOK(Math.round(futureValue));
     
     // Beregn og oppdater "Netto portefølje etter skatt" = Verdi ved periodens slutt - Skatt
@@ -3723,12 +3744,12 @@ function updateDividendLoanCalc() {
   // Oppdater etikett for rentekostnader til å inkludere år (label er første child av parent row)
   if (elInterestCosts && elInterestCosts.parentElement) {
     const label = elInterestCosts.parentElement.firstElementChild;
-    if (label) label.textContent = `rentekostnader i ${years} år`;
+    if (label) label.textContent = `Rentekostnader i ${years} år / tapte Renteinntekter i ${years} år`;
   }
   const elRInterestLabel = document.getElementById('r-interest-costs');
   if (elRInterestLabel && elRInterestLabel.parentElement) {
     const label = elRInterestLabel.parentElement.firstElementChild;
-    if (label) label.textContent = `sparte rentekostnader i ${years} år`;
+    if (label) label.textContent = `Sparte rentekostnader i ${years} år / Renteinntekter i ${years} år`;
   }
   const interestPct = isFinite(AppState.interestCostPct) ? Number(AppState.interestCostPct) : 5.0;
 
@@ -4986,23 +5007,26 @@ function calculateNetReturnForEquityShare(equitySharePercent) {
   const pv = portfolio;
   const annualPayment = Math.abs(calculatePMT(rate, nper, pv, 0, 0));
 
-  // Beregn verdi ved periodens slutt med NY FORMEL:
-  // SLUTTVERDI(Forventet avkastning; Avdragsprofil; AVDRAG(rentekotnader; Avdragsprofil; -Porteføljestørrelse); -Porteføljestørrelse) * (1 + Avkastning) ^ (Antall år - Avdragsprofil)
+  // Beregn verdi ved periodens slutt med KORREKT FORMEL (to scenarier):
   const fvRate = expectedPct / 100; // Forventet avkastning (konvertert fra prosent til desimal)
-  const fvNper = repaymentYears; // Avdragsprofil
-  const fvPmt = annualPayment > 0 ? -annualPayment : 0; // AVDRAG-resultatet (negativt fordi vi tar ut penger)
-  const fvPv = portfolio; // Porteføljestørrelse (positiv fordi vi starter med penger)
+  // VIKTIG: Bruk PV = portfolio (positiv) og PMT = -annualPayment (negativ) for riktig beregning
+  const fvPmt = annualPayment > 0 ? -annualPayment : 0; // Negativ fordi vi tar ut penger
+  const fvPv = portfolio; // Positiv fordi det er startverdi
   const fvType = 0; // Type: 0 (betaling i slutten av perioden)
   
-  // Beregn verdi etter låneperioden med SLUTTVERDI
-  const valueAfterLoanPeriod = calculateFV(fvRate, fvNper, fvPmt, fvPv, fvType);
-  
-  // Rentes rente i rest-perioden
-  const remainingYears = Math.max(0, years - repaymentYears);
-  const compoundFactor = Math.pow(1 + fvRate, remainingYears);
-  
-  // Totalsummen: Del 2 * Del 3
-  const futureValue = valueAfterLoanPeriod * compoundFactor;
+  let futureValue;
+  if (years <= repaymentYears) {
+    // Scenario 1: Still paying down the loan
+    // FV(rate=forventet_avkastning, nper=antall_år, pmt=-annualPayment, pv=portfolio)
+    futureValue = calculateFV(fvRate, years, fvPmt, fvPv, fvType);
+  } else {
+    // Scenario 2: Loan is finished, money grows free
+    // Step 1: Calculate balance at end of avdragsprofil period
+    const balanceAtLoanEnd = calculateFV(fvRate, repaymentYears, fvPmt, fvPv, fvType);
+    // Step 2: Compound the remaining balance for remaining years
+    const remainingYears = years - repaymentYears;
+    futureValue = balanceAtLoanEnd * Math.pow(1 + fvRate, remainingYears);
+  }
 
   // Beregn restlån
   let remainingLoan = 0;
@@ -5071,11 +5095,21 @@ function calculateNetReturnForEquityShare(equitySharePercent) {
   // Dette kan bli negativt, så vi fjerner Math.max(0, ...)
   const netPortfolioAfterTax = futureValue + taxAmount;
 
-  // Beregn fradrag rentekostnader med NY FORMEL:
-  // = (( AVDRAG( rentekotnader ; Avdragsprofil ; -Porteføljestørrelse ) * Avdragsprofil ) - Porteføljestørrelse) * -1
-  const totalPaid = annualPayment * repaymentYears;
-  const interest = totalPaid - portfolio;
-  const totalInterest = interest * -1; // Multipliser med -1 (resultatet skal være negativt fordi det er en kostnad)
+  // Beregn fradrag rentekostnader med år-for-år akkumulering:
+  // Beregner akkumulert rente for perioden "Antall år" basert på lån med "Avdragsprofil"
+  let currentBalance = portfolio;
+  let totalAccumulatedInterest = 0;
+  const interestRate = rate;
+  
+  // Loop fra år 1 til "Antall år"
+  for (let year = 1; year <= years; year++) {
+    const interestComponent = currentBalance * interestRate;
+    const principalComponent = annualPayment - interestComponent;
+    currentBalance = currentBalance - principalComponent;
+    totalAccumulatedInterest += interestComponent;
+  }
+  
+  const totalInterest = -totalAccumulatedInterest; // Negativ fordi det er en kostnad
   const interestDeduction = Math.abs(totalInterest) * ((AppState.capitalTaxPct ?? 22.00) / 100);
 
   // Beregn netto avkastning (Avkastning utover lånekostnad)
@@ -5138,23 +5172,26 @@ function calculateNetReturnForInterestCost(interestCostPercent) {
   const pv = portfolio;
   const annualPayment = Math.abs(calculatePMT(rate, nper, pv, 0, 0));
 
-  // Beregn verdi ved periodens slutt med NY FORMEL:
-  // SLUTTVERDI(Forventet avkastning; Avdragsprofil; AVDRAG(rentekotnader; Avdragsprofil; -Porteføljestørrelse); -Porteføljestørrelse) * (1 + Avkastning) ^ (Antall år - Avdragsprofil)
+  // Beregn verdi ved periodens slutt med KORREKT FORMEL (to scenarier):
   const fvRate = expectedPct / 100; // Forventet avkastning (konvertert fra prosent til desimal)
-  const fvNper = repaymentYears; // Avdragsprofil
-  const fvPmt = annualPayment > 0 ? -annualPayment : 0; // AVDRAG-resultatet (negativt fordi vi tar ut penger)
-  const fvPv = portfolio; // Porteføljestørrelse (positiv fordi vi starter med penger)
+  // VIKTIG: Bruk PV = portfolio (positiv) og PMT = -annualPayment (negativ) for riktig beregning
+  const fvPmt = annualPayment > 0 ? -annualPayment : 0; // Negativ fordi vi tar ut penger
+  const fvPv = portfolio; // Positiv fordi det er startverdi
   const fvType = 0; // Type: 0 (betaling i slutten av perioden)
   
-  // Beregn verdi etter låneperioden med SLUTTVERDI
-  const valueAfterLoanPeriod = calculateFV(fvRate, fvNper, fvPmt, fvPv, fvType);
-  
-  // Rentes rente i rest-perioden
-  const remainingYears = Math.max(0, years - repaymentYears);
-  const compoundFactor = Math.pow(1 + fvRate, remainingYears);
-  
-  // Totalsummen: Del 2 * Del 3
-  const futureValue = valueAfterLoanPeriod * compoundFactor;
+  let futureValue;
+  if (years <= repaymentYears) {
+    // Scenario 1: Still paying down the loan
+    // FV(rate=forventet_avkastning, nper=antall_år, pmt=-annualPayment, pv=portfolio)
+    futureValue = calculateFV(fvRate, years, fvPmt, fvPv, fvType);
+  } else {
+    // Scenario 2: Loan is finished, money grows free
+    // Step 1: Calculate balance at end of avdragsprofil period
+    const balanceAtLoanEnd = calculateFV(fvRate, repaymentYears, fvPmt, fvPv, fvType);
+    // Step 2: Compound the remaining balance for remaining years
+    const remainingYears = years - repaymentYears;
+    futureValue = balanceAtLoanEnd * Math.pow(1 + fvRate, remainingYears);
+  }
 
   // Beregn restlån med den gitte rentekostnaden
   let remainingLoan = 0;
@@ -5223,11 +5260,21 @@ function calculateNetReturnForInterestCost(interestCostPercent) {
   // Dette kan bli negativt, så vi fjerner Math.max(0, ...)
   const netPortfolioAfterTax = futureValue + taxAmount;
 
-  // Beregn fradrag rentekostnader med NY FORMEL:
-  // = (( AVDRAG( rentekotnader ; Avdragsprofil ; -Porteføljestørrelse ) * Avdragsprofil ) - Porteføljestørrelse) * -1
-  const totalPaid = annualPayment * repaymentYears;
-  const interest = totalPaid - portfolio;
-  const totalInterest = interest * -1; // Multipliser med -1 (resultatet skal være negativt fordi det er en kostnad)
+  // Beregn fradrag rentekostnader med år-for-år akkumulering:
+  // Beregner akkumulert rente for perioden "Antall år" basert på lån med "Avdragsprofil"
+  let currentBalance = portfolio;
+  let totalAccumulatedInterest = 0;
+  const interestRate = rate;
+  
+  // Loop fra år 1 til "Antall år"
+  for (let year = 1; year <= years; year++) {
+    const interestComponent = currentBalance * interestRate;
+    const principalComponent = annualPayment - interestComponent;
+    currentBalance = currentBalance - principalComponent;
+    totalAccumulatedInterest += interestComponent;
+  }
+  
+  const totalInterest = -totalAccumulatedInterest; // Negativ fordi det er en kostnad
   const interestDeduction = Math.abs(totalInterest) * ((AppState.capitalTaxPct ?? 22.00) / 100);
 
   // Beregn netto avkastning (Avkastning utover lånekostnad)
@@ -5270,23 +5317,26 @@ function calculateNetReturnForYears(years) {
   const pv = portfolio;
   const annualPayment = Math.abs(calculatePMT(rate, nper, pv, 0, 0));
 
-  // Beregn verdi ved periodens slutt med NY FORMEL:
-  // SLUTTVERDI(Forventet avkastning; Avdragsprofil; AVDRAG(rentekotnader; Avdragsprofil; -Porteføljestørrelse); -Porteføljestørrelse) * (1 + Avkastning) ^ (Antall år - Avdragsprofil)
+  // Beregn verdi ved periodens slutt med KORREKT FORMEL (to scenarier):
   const fvRate = expectedPct / 100; // Forventet avkastning (konvertert fra prosent til desimal)
-  const fvNper = repaymentYears; // Avdragsprofil
-  const fvPmt = annualPayment > 0 ? -annualPayment : 0; // AVDRAG-resultatet (negativt fordi vi tar ut penger)
-  const fvPv = portfolio; // Porteføljestørrelse (positiv fordi vi starter med penger)
+  // VIKTIG: Bruk PV = portfolio (positiv) og PMT = -annualPayment (negativ) for riktig beregning
+  const fvPmt = annualPayment > 0 ? -annualPayment : 0; // Negativ fordi vi tar ut penger
+  const fvPv = portfolio; // Positiv fordi det er startverdi
   const fvType = 0; // Type: 0 (betaling i slutten av perioden)
   
-  // Beregn verdi etter låneperioden med SLUTTVERDI
-  const valueAfterLoanPeriod = calculateFV(fvRate, fvNper, fvPmt, fvPv, fvType);
-  
-  // Rentes rente i rest-perioden
-  const remainingYears = Math.max(0, years - repaymentYears);
-  const compoundFactor = Math.pow(1 + fvRate, remainingYears);
-  
-  // Totalsummen: Del 2 * Del 3
-  const futureValue = valueAfterLoanPeriod * compoundFactor;
+  let futureValue;
+  if (years <= repaymentYears) {
+    // Scenario 1: Still paying down the loan
+    // FV(rate=forventet_avkastning, nper=antall_år, pmt=-annualPayment, pv=portfolio)
+    futureValue = calculateFV(fvRate, years, fvPmt, fvPv, fvType);
+  } else {
+    // Scenario 2: Loan is finished, money grows free
+    // Step 1: Calculate balance at end of avdragsprofil period
+    const balanceAtLoanEnd = calculateFV(fvRate, repaymentYears, fvPmt, fvPv, fvType);
+    // Step 2: Compound the remaining balance for remaining years
+    const remainingYears = years - repaymentYears;
+    futureValue = balanceAtLoanEnd * Math.pow(1 + fvRate, remainingYears);
+  }
 
   // Beregn restlån
   let remainingLoan = 0;
@@ -5363,11 +5413,21 @@ function calculateNetReturnForYears(years) {
   // Dette kan bli negativt, så vi fjerner Math.max(0, ...)
   const netPortfolioAfterTax = futureValue + taxAmount;
 
-  // Beregn fradrag rentekostnader med NY FORMEL:
-  // = (( AVDRAG( rentekotnader ; Avdragsprofil ; -Porteføljestørrelse ) * Avdragsprofil ) - Porteføljestørrelse) * -1
-  const totalPaid = annualPayment * repaymentYears;
-  const interest = totalPaid - portfolio;
-  const totalInterest = interest * -1; // Multipliser med -1 (resultatet skal være negativt fordi det er en kostnad)
+  // Beregn fradrag rentekostnader med år-for-år akkumulering:
+  // Beregner akkumulert rente for perioden "Antall år" basert på lån med "Avdragsprofil"
+  let currentBalance = portfolio;
+  let totalAccumulatedInterest = 0;
+  const interestRate = rate;
+  
+  // Loop fra år 1 til "Antall år"
+  for (let year = 1; year <= years; year++) {
+    const interestComponent = currentBalance * interestRate;
+    const principalComponent = annualPayment - interestComponent;
+    currentBalance = currentBalance - principalComponent;
+    totalAccumulatedInterest += interestComponent;
+  }
+  
+  const totalInterest = -totalAccumulatedInterest; // Negativ fordi det er en kostnad
   const interestDeduction = Math.abs(totalInterest) * ((AppState.capitalTaxPct ?? 22.00) / 100);
 
   // Beregn netto avkastning
