@@ -3162,8 +3162,10 @@ function updateInvestLoanCalc() {
     let totalAccumulatedInterest = 0;
     const interestRate = rate; // rentekotnader (allerede beregnet som interestPct / 100)
     
-    // Loop fra år 1 til "Antall år"
-    for (let year = 1; year <= years; year++) {
+    // Loop fra år 1 til minimum av "Antall år" og "Avdragsprofil"
+    // Lånet opphører etter avdragsprofil år, så vi kan ikke betale renter etter det
+    const payingYears = Math.min(years, repaymentYears);
+    for (let year = 1; year <= payingYears; year++) {
       // Beregn rentekomponent for dette året
       const interestComponent = currentBalance * interestRate;
       
@@ -5101,8 +5103,10 @@ function calculateNetReturnForEquityShare(equitySharePercent) {
   let totalAccumulatedInterest = 0;
   const interestRate = rate;
   
-  // Loop fra år 1 til "Antall år"
-  for (let year = 1; year <= years; year++) {
+  // Loop fra år 1 til minimum av "Antall år" og "Avdragsprofil"
+  // Lånet opphører etter avdragsprofil år, så vi kan ikke betale renter etter det
+  const payingYears = Math.min(years, repaymentYears);
+  for (let year = 1; year <= payingYears; year++) {
     const interestComponent = currentBalance * interestRate;
     const principalComponent = annualPayment - interestComponent;
     currentBalance = currentBalance - principalComponent;
@@ -5266,8 +5270,10 @@ function calculateNetReturnForInterestCost(interestCostPercent) {
   let totalAccumulatedInterest = 0;
   const interestRate = rate;
   
-  // Loop fra år 1 til "Antall år"
-  for (let year = 1; year <= years; year++) {
+  // Loop fra år 1 til minimum av "Antall år" og "Avdragsprofil"
+  // Lånet opphører etter avdragsprofil år, så vi kan ikke betale renter etter det
+  const payingYears = Math.min(years, repaymentYears);
+  for (let year = 1; year <= payingYears; year++) {
     const interestComponent = currentBalance * interestRate;
     const principalComponent = annualPayment - interestComponent;
     currentBalance = currentBalance - principalComponent;
@@ -5419,8 +5425,10 @@ function calculateNetReturnForYears(years) {
   let totalAccumulatedInterest = 0;
   const interestRate = rate;
   
-  // Loop fra år 1 til "Antall år"
-  for (let year = 1; year <= years; year++) {
+  // Loop fra år 1 til minimum av "Antall år" og "Avdragsprofil"
+  // Lånet opphører etter avdragsprofil år, så vi kan ikke betale renter etter det
+  const payingYears = Math.min(years, repaymentYears);
+  for (let year = 1; year <= payingYears; year++) {
     const interestComponent = currentBalance * interestRate;
     const principalComponent = annualPayment - interestComponent;
     currentBalance = currentBalance - principalComponent;
