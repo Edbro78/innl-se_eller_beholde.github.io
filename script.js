@@ -22,11 +22,12 @@ document.addEventListener("DOMContentLoaded", () => {
   // Output UI
   initOutputUI();
 
-  // Theme init + toggle
-  initTheme();
   
   // Disclaimer modal init
   initDisclaimerUI();
+  
+  // Fullscreen button init
+  initFullscreen();
   
   // Chart modal init
   initChartUI();
@@ -101,28 +102,6 @@ document.addEventListener("DOMContentLoaded", () => {
   renderStepper("Forside");
 });
 
-function initTheme() {
-  const root = document.documentElement;
-  const btn = document.getElementById("theme-toggle");
-  const stored = localStorage.getItem("theme");
-  const systemPrefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-  const startDark = stored ? stored === "dark" : systemPrefersDark;
-  if (startDark) root.classList.add("dark"); else root.classList.remove("dark");
-  updateThemeToggleButton(btn, root.classList.contains("dark"));
-  if (btn) {
-    btn.addEventListener("click", () => {
-      const isDark = root.classList.toggle("dark");
-      localStorage.setItem("theme", isDark ? "dark" : "light");
-      updateThemeToggleButton(btn, isDark);
-    });
-  }
-}
-
-function updateThemeToggleButton(btn, isDark) {
-  if (!btn) return;
-  btn.setAttribute("aria-pressed", isDark ? "true" : "false");
-  btn.textContent = isDark ? "☀️" : "🌙";
-}
 
 // Global flagg for å huske om Input-fanen er initialisert
 let inputTabInitialized = false;
@@ -372,7 +351,7 @@ function renderPlaceholder(root) {
     tilesContainer.style.gap = "1.5rem";
     tilesContainer.style.marginBottom = "2rem";
     tilesContainer.style.maxWidth = "1200px";
-    tilesContainer.style.margin = "0 auto";
+    tilesContainer.style.margin = "3rem auto 0 auto";
     
     // Opprett 4 fliser
     const tiles = [
@@ -380,25 +359,29 @@ function renderPlaceholder(root) {
         id: "tile-assets", 
         icon: `<svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 3v18h18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M7 16l4-4 4 4 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`, 
         title: "Input", 
-        description: "Porteføljestørrelse, aksjeandel, innskutt kapital, skatt og forventet avkastning" 
+        description: "Porteføljestørrelse, aksjeandel, innskutt kapital, skatt og forventet avkastning",
+        section: "Input"
       },
       { 
         id: "tile-income", 
         icon: `<svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/><path d="M12 6v6l4 2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`, 
         title: "Nedbetale lån", 
-        description: "Lønner det seg å nedbetale lån eller beholde eksisterende lån" 
+        description: "Lønner det seg å nedbetale lån eller beholde eksisterende lån",
+        section: "Nedbetale lån"
       },
       { 
         id: "tile-debt", 
         icon: `<svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2v20M17 5h-4a3 3 0 0 0 0 6h4a3 3 0 0 1 0 6h-4M7 5h4a3 3 0 0 1 0 6H7a3 3 0 0 0 0 6h4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`, 
         title: "Utbetale utbytte", 
-        description: "Hva koster et utbytte i lys av skatt, alternativ avkastning og rentes rente-effekten" 
+        description: "Hva koster et utbytte i lys av skatt, alternativ avkastning og rentes rente-effekten",
+        section: "Utbetale utbytte"
       },
       { 
         id: "tile-cashflow", 
         icon: `<svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="4" width="18" height="16" rx="2" stroke="currentColor" stroke-width="2"/><path d="M7 8h10M7 12h10M7 16h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`, 
         title: "Innløse Fondskonto", 
-        description: "Flytte en fondskonto over til en ASK, eller beholde den som den er" 
+        description: "Flytte en fondskonto over til en ASK, eller beholde den som den er",
+        section: "Innløse Fondskonto"
       }
     ];
     
@@ -414,19 +397,30 @@ function renderPlaceholder(root) {
         align-items: center;
         justify-content: center;
         text-align: center;
-        box-shadow: var(--shadow-sm);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.08);
         transition: transform 0.2s, box-shadow 0.2s;
         cursor: pointer;
+        border: 1px solid rgba(25, 118, 210, 0.1);
       `;
       
+      // Legg til klikk-handler for navigasjon
+      tileElement.addEventListener("click", () => {
+        const navItem = document.querySelector(`.nav-item[data-section="${tile.section}"]`);
+        if (navItem) {
+          navItem.click();
+        }
+      });
+      
       tileElement.addEventListener("mouseenter", () => {
-        tileElement.style.transform = "translateY(-2px)";
-        tileElement.style.boxShadow = "var(--shadow-md)";
+        tileElement.style.transform = "translateY(-4px)";
+        tileElement.style.boxShadow = "0 8px 20px rgba(0, 0, 0, 0.15), 0 4px 8px rgba(0, 0, 0, 0.12)";
+        tileElement.style.borderColor = "rgba(25, 118, 210, 0.3)";
       });
       
       tileElement.addEventListener("mouseleave", () => {
         tileElement.style.transform = "translateY(0)";
-        tileElement.style.boxShadow = "var(--shadow-sm)";
+        tileElement.style.boxShadow = "0 4px 12px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.08)";
+        tileElement.style.borderColor = "rgba(25, 118, 210, 0.1)";
       });
       
       const iconElement = document.createElement("div");
@@ -465,52 +459,6 @@ function renderPlaceholder(root) {
     });
     
     root.appendChild(tilesContainer);
-    
-    // Knapp nederst
-    const buttonContainer = document.createElement("div");
-    buttonContainer.style.cssText = `
-      display: flex;
-      justify-content: center;
-      margin-top: 2rem;
-    `;
-    
-    const goToInputButton = document.createElement("button");
-    goToInputButton.textContent = "Gå til input";
-    goToInputButton.style.cssText = `
-      background: var(--P_ACCENT);
-      color: white;
-      border: none;
-      border-radius: 8px;
-      padding: 1rem 2rem;
-      font-size: 1rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: background 0.2s, transform 0.2s;
-      box-shadow: var(--shadow-sm);
-    `;
-    
-    goToInputButton.addEventListener("mouseenter", () => {
-      goToInputButton.style.background = "#0848B8";
-      goToInputButton.style.transform = "translateY(-2px)";
-      goToInputButton.style.boxShadow = "var(--shadow-md)";
-    });
-    
-    goToInputButton.addEventListener("mouseleave", () => {
-      goToInputButton.style.background = "var(--P_ACCENT)";
-      goToInputButton.style.transform = "translateY(0)";
-      goToInputButton.style.boxShadow = "var(--shadow-sm)";
-    });
-    
-    goToInputButton.addEventListener("click", () => {
-      const inputNav = document.querySelector('.nav-item[data-section="Input"]');
-      if (inputNav) {
-        // Simuler et klikk på nav-elementet for å trigge standard navigasjon
-        inputNav.click();
-      }
-    });
-    
-    buttonContainer.appendChild(goToInputButton);
-    root.appendChild(buttonContainer);
     
     return;
   }
@@ -2164,12 +2112,28 @@ function renderPlaceholder(root) {
     sliderOut.style.minWidth = "140px";
     sliderOut.style.fontSize = "0.75rem";
     sliderOut.style.padding = "0.4rem 0.5rem";
+    sliderOut.style.cursor = "text";
+    sliderOut.title = "Dobbeltklikk for å legge inn manuelt";
     // lagre i appstate og oppdater toppbokser
     AppState.portfolioSize = Number(slider.value);
-    slider.addEventListener("input", () => {
-      const v = Number(slider.value);
+    
+    // Hjelpefunksjon for å oppdatere porteføljestørrelse
+    const updatePortfolioSize = (newValue) => {
+      const v = Math.max(0, Number(newValue)); // Sørg for at verdien ikke er negativ
       AppState.portfolioSize = v;
+      
+      // Oppdater slider hvis verdien er innenfor sliderens nåværende rekkevidde
+      // Ellers oppdater maksverdi
+      if (v <= Number(slider.max)) {
+        slider.value = String(v);
+      } else {
+        // Oppdater maksverdi til å være minst den nye verdien
+        slider.max = String(Math.max(Number(slider.max), v));
+        slider.value = String(v);
+      }
+      
       sliderOut.textContent = formatNOK(v);
+      
       // Oppdater innskutt kapital-slider
       const capitalSliderEl = document.getElementById('input-capital-slider');
       if (capitalSliderEl) {
@@ -2205,6 +2169,68 @@ function renderPlaceholder(root) {
         }
       }
       updateTopSummaries();
+    };
+    
+    slider.addEventListener("input", () => {
+      updatePortfolioSize(slider.value);
+    });
+    
+    // Dobbelklikk for manuell input
+    sliderOut.addEventListener("dblclick", (e) => {
+      e.stopPropagation();
+      const currentValue = AppState.portfolioSize;
+      
+      // Opprett input-felt
+      const input = document.createElement("input");
+      input.type = "number";
+      input.value = String(currentValue);
+      input.style.width = sliderOut.style.minWidth;
+      input.style.fontSize = sliderOut.style.fontSize;
+      input.style.padding = sliderOut.style.padding;
+      input.style.border = "1px solid var(--BORDER_LIGHT)";
+      input.style.borderRadius = "8px";
+      input.style.textAlign = "center";
+      input.style.fontFamily = "inherit";
+      input.style.fontWeight = sliderOut.style.fontWeight || "inherit";
+      input.style.minWidth = sliderOut.style.minWidth;
+      input.style.backgroundColor = "#ffffff";
+      input.style.color = "var(--GRAY_TEXT_DARK)";
+      input.min = "0";
+      input.step = "1";
+      
+      // Erstatt sliderOut med input
+      sliderOut.style.display = "none";
+      sliderRow.insertBefore(input, sliderOut);
+      input.focus();
+      input.select();
+      
+      // Funksjon for å avslutte redigering
+      const finishEditing = () => {
+        const newValue = input.value.trim();
+        if (newValue !== "" && !isNaN(newValue)) {
+          updatePortfolioSize(newValue);
+        } else {
+          // Hvis ugyldig input, gå tilbake til forrige verdi
+          sliderOut.textContent = formatNOK(currentValue);
+        }
+        input.remove();
+        sliderOut.style.display = "inline-flex";
+      };
+      
+      // Avslutt ved Enter eller Escape
+      input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          finishEditing();
+        } else if (e.key === "Escape") {
+          e.preventDefault();
+          input.remove();
+          sliderOut.style.display = "inline-flex";
+        }
+      });
+      
+      // Avslutt ved blur (klikk utenfor)
+      input.addEventListener("blur", finishEditing);
     });
     sliderCol.appendChild(slider);
     sliderRow.appendChild(sliderCol);
@@ -2853,11 +2879,89 @@ function renderPlaceholder(root) {
     thirdRight.appendChild(intRow);
 
     // Ny slider: Avdragsprofil (5–25 år, default 20 år)
+    // Container for label og toggle-knapp på samme linje
+    const repaymentHeader = document.createElement("div");
+    repaymentHeader.style.display = "flex";
+    repaymentHeader.style.justifyContent = "space-between";
+    repaymentHeader.style.alignItems = "center";
+    repaymentHeader.style.marginBottom = "0.25rem";
+    
     const repaymentLabel = document.createElement("div");
     repaymentLabel.className = "section-label";
     repaymentLabel.textContent = "Avdragsprofil";
     repaymentLabel.style.fontSize = "0.75rem";
-    thirdRight.appendChild(repaymentLabel);
+    repaymentLabel.style.margin = "0";
+    repaymentHeader.appendChild(repaymentLabel);
+    
+    // Toggle-knapp for avdragsfrihet
+    const interestOnlyContainer = document.createElement("div");
+    interestOnlyContainer.style.display = "flex";
+    interestOnlyContainer.style.alignItems = "center";
+    interestOnlyContainer.style.gap = "0.5rem";
+    
+    const interestOnlyLabel = document.createElement("span");
+    interestOnlyLabel.textContent = "Avdragsfrihet";
+    interestOnlyLabel.style.fontSize = "0.7rem";
+    interestOnlyLabel.style.color = "var(--GRAY_TEXT_SECONDARY)";
+    interestOnlyLabel.style.fontWeight = "500";
+    interestOnlyContainer.appendChild(interestOnlyLabel);
+    
+    const interestOnlyToggle = document.createElement("button");
+    interestOnlyToggle.type = "button";
+    interestOnlyToggle.id = "interest-only-toggle";
+    interestOnlyToggle.setAttribute("aria-pressed", "false");
+    interestOnlyToggle.setAttribute("aria-label", "Avdragsfrihet");
+    
+    // Initialiser AppState for avdragsfrihet hvis ikke satt
+    if (AppState.interestOnly === undefined) {
+      AppState.interestOnly = false; // Default: Nei
+    }
+    
+    const updateToggleButton = () => {
+      const isActive = AppState.interestOnly === true;
+      interestOnlyToggle.setAttribute("aria-pressed", isActive ? "true" : "false");
+      interestOnlyToggle.textContent = isActive ? "Ja" : "Nei";
+      interestOnlyToggle.style.cssText = `
+        appearance: none;
+        border: 1px solid var(--BORDER_LIGHT);
+        background: ${isActive ? "var(--P_ACCENT)" : "#ffffff"};
+        color: ${isActive ? "#ffffff" : "var(--GRAY_TEXT_DARK)"};
+        border-radius: 6px;
+        padding: 0.25rem 0.75rem;
+        font-size: 0.7rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        min-width: 45px;
+        text-align: center;
+      `;
+    };
+    
+    updateToggleButton();
+    
+    interestOnlyToggle.addEventListener("click", () => {
+      AppState.interestOnly = !AppState.interestOnly;
+      updateToggleButton();
+      updateTopSummaries();
+    });
+    
+    interestOnlyToggle.addEventListener("mouseenter", () => {
+      if (!AppState.interestOnly) {
+        interestOnlyToggle.style.background = "var(--BLUE_100)";
+        interestOnlyToggle.style.borderColor = "var(--BLUE_300)";
+      }
+    });
+    
+    interestOnlyToggle.addEventListener("mouseleave", () => {
+      if (!AppState.interestOnly) {
+        interestOnlyToggle.style.background = "#ffffff";
+        interestOnlyToggle.style.borderColor = "var(--BORDER_LIGHT)";
+      }
+    });
+    
+    interestOnlyContainer.appendChild(interestOnlyToggle);
+    repaymentHeader.appendChild(interestOnlyContainer);
+    thirdRight.appendChild(repaymentHeader);
 
     const repaymentRow = document.createElement("div");
     repaymentRow.style.display = "grid";
@@ -3116,6 +3220,9 @@ function updateInvestLoanCalc() {
     repaymentYears = Number(AppState.repaymentProfileYears);
   }
   
+  // Sjekk om avdragsfrihet er aktivert
+  const interestOnly = AppState.interestOnly === true;
+  
   // PMT-parametere:
   // rate: rentekostnad per år (konverter fra prosent til desimal)
   const rate = interestPct / 100;
@@ -3129,7 +3236,14 @@ function updateInvestLoanCalc() {
   const type = 0;
   
   // Beregn årlig betaling (resultatet blir negativt, så vi tar absoluttverdi)
-  annualPayment = Math.abs(calculatePMT(rate, nper, pv, fv, type));
+  // Hvis avdragsfrihet er aktivert, beregn kun årlige renter
+  if (interestOnly) {
+    // Årlige renter = portfolio * rentesats
+    annualPayment = portfolio * rate;
+  } else {
+    // Normal beregning med avdrag
+    annualPayment = Math.abs(calculatePMT(rate, nper, pv, fv, type));
+  }
   
   // Oppdater elementet hvis det finnes
   if (elPayment) {
@@ -3149,38 +3263,46 @@ function updateInvestLoanCalc() {
   const elTotalInterest = document.getElementById('inv-right-total-interest');
   let totalInterest = 0; // Deklarer utenfor if-blokken for å kunne bruke den senere
   if (elTotalInterest) {
-    // Step 1: Annual Payment (AVDRAG) - allerede beregnet som annualPayment
-    // annualPayment er allerede beregnet med: AVDRAG(rentekotnader; Avdragsprofil; -Porteføljestørrelse)
-    
-    // Step 2: Year-by-year loop for å akkumulere renter
-    // Variabler:
-    // - Porteføljestørrelse = portfolio
-    // - rentekotnader = rate (interestPct / 100)
-    // - Avdragsprofil = repaymentYears (brukes for å beregne PMT)
-    // - Antall år = years (perioden vi akkumulerer renter for)
-    let currentBalance = portfolio; // Start med full porteføljestørrelse
-    let totalAccumulatedInterest = 0;
-    const interestRate = rate; // rentekotnader (allerede beregnet som interestPct / 100)
-    
-    // Loop fra år 1 til minimum av "Antall år" og "Avdragsprofil"
-    // Lånet opphører etter avdragsprofil år, så vi kan ikke betale renter etter det
-    const payingYears = Math.min(years, repaymentYears);
-    for (let year = 1; year <= payingYears; year++) {
-      // Beregn rentekomponent for dette året
-      const interestComponent = currentBalance * interestRate;
+    if (interestOnly) {
+      // Hvis avdragsfrihet: årlige renter * antall år
+      // Bruk minimum av "Antall år" og "Avdragsprofil" (lånet opphører etter avdragsprofil år)
+      const payingYears = Math.min(years, repaymentYears);
+      const annualInterest = portfolio * rate;
+      totalInterest = -annualInterest * payingYears;
+    } else {
+      // Step 1: Annual Payment (AVDRAG) - allerede beregnet som annualPayment
+      // annualPayment er allerede beregnet med: AVDRAG(rentekotnader; Avdragsprofil; -Porteføljestørrelse)
       
-      // Beregn hovedstolkomponent (PMT - rente)
-      const principalComponent = annualPayment - interestComponent;
+      // Step 2: Year-by-year loop for å akkumulere renter
+      // Variabler:
+      // - Porteføljestørrelse = portfolio
+      // - rentekotnader = rate (interestPct / 100)
+      // - Avdragsprofil = repaymentYears (brukes for å beregne PMT)
+      // - Antall år = years (perioden vi akkumulerer renter for)
+      let currentBalance = portfolio; // Start med full porteføljestørrelse
+      let totalAccumulatedInterest = 0;
+      const interestRate = rate; // rentekotnader (allerede beregnet som interestPct / 100)
       
-      // Oppdater saldo (trekk fra hovedstolbetaling)
-      currentBalance = currentBalance - principalComponent;
+      // Loop fra år 1 til minimum av "Antall år" og "Avdragsprofil"
+      // Lånet opphører etter avdragsprofil år, så vi kan ikke betale renter etter det
+      const payingYears = Math.min(years, repaymentYears);
+      for (let year = 1; year <= payingYears; year++) {
+        // Beregn rentekomponent for dette året
+        const interestComponent = currentBalance * interestRate;
+        
+        // Beregn hovedstolkomponent (PMT - rente)
+        const principalComponent = annualPayment - interestComponent;
+        
+        // Oppdater saldo (trekk fra hovedstolbetaling)
+        currentBalance = currentBalance - principalComponent;
+        
+        // Akkumuler rente
+        totalAccumulatedInterest += interestComponent;
+      }
       
-      // Akkumuler rente
-      totalAccumulatedInterest += interestComponent;
+      // Step 3: Returner som negativ verdi (fordi det er en kostnad)
+      totalInterest = -totalAccumulatedInterest;
     }
-    
-    // Step 3: Returner som negativ verdi (fordi det er en kostnad)
-    totalInterest = -totalAccumulatedInterest;
     
     elTotalInterest.textContent = formatNOK(Math.round(totalInterest));
     elTotalInterest.style.color = "#D32F2F";
@@ -3272,11 +3394,27 @@ function updateInvestLoanCalc() {
     // - PV = portfolio (positiv) og PMT = -annualPayment (negativ), ELLER
     // - PV = -portfolio (negativ) og PMT = annualPayment (positiv)
     // Vi bruker første variant for å få positiv FV direkte
+    // Hvis avdragsfrihet: bruk kun årlige renter som PMT
     const fvPmt = annualPayment > 0 ? -annualPayment : 0; // Negativ fordi vi tar ut penger
     const fvPv = portfolio; // Positiv fordi det er startverdi
     const fvType = 0; // Type: 0 (betaling i slutten av perioden)
     
-    if (years <= repaymentYearsForFV) {
+    if (interestOnly) {
+      // Hvis avdragsfrihet: beregn verdi ved periodens slutt med kun renter som uttak
+      // Vi tar ut kun renter hvert år, ikke avdrag
+      // Bruk minimum av "Antall år" og "Avdragsprofil" (lånet opphører ikke ved avdragsfrihet, men vi stopper beregningen ved avdragsprofil)
+      const payingYears = Math.min(years, repaymentYearsForFV);
+      if (payingYears > 0) {
+        futureValue = calculateFV(fvRate, payingYears, fvPmt, fvPv, fvType);
+        // Hvis years > repaymentYearsForFV, fortsett vekst uten uttak
+        if (years > repaymentYearsForFV) {
+          const remainingYears = years - repaymentYearsForFV;
+          futureValue = futureValue * Math.pow(1 + fvRate, remainingYears);
+        }
+      } else {
+        futureValue = portfolio * Math.pow(1 + fvRate, years);
+      }
+    } else if (years <= repaymentYearsForFV) {
       // Scenario 1: Still paying down the loan
       // FV(rate=forventet_avkastning, nper=antall_år, pmt=-annualPayment, pv=portfolio)
       futureValue = calculateFV(fvRate, years, fvPmt, fvPv, fvType);
@@ -3298,48 +3436,60 @@ function updateInvestLoanCalc() {
   const elRemainingLoan = document.getElementById('inv-right-remaining-loan');
   let remainingLoan = 0;
   if (elRemainingLoan) {
-    // Hent avdragsprofil fra Input-fanen for å sjekke om lånet er nedbetalt
-    let repaymentYears = 20; // default
-    const repaymentSliderEl = document.getElementById('repayment-profile-slider');
-    if (repaymentSliderEl && repaymentSliderEl.value) {
-      const v = Number(repaymentSliderEl.value);
-      if (isFinite(v) && v > 0) repaymentYears = v;
-    } else if (isFinite(AppState.repaymentProfileYears)) {
-      repaymentYears = Number(AppState.repaymentProfileYears);
-    }
-    
-    // Hvis antall år >= avdragsprofil, er lånet fullstendig nedbetalt (restlån = 0)
-    if (years >= repaymentYears) {
-      remainingLoan = 0;
+    if (interestOnly) {
+      // Hvis avdragsfrihet er aktivert: restlån er uforandret (samme som opprinnelig lån)
+      remainingLoan = portfolio;
     } else {
-      // Beregn restlån med NÅVERDI-funksjonen
-      // Vi beregner hvor mye som gjenstår etter "years" år med betalinger
-      // Rente: rentekostnad fra input-fanen
-      const rate = interestPct / 100;
-      // Antall utbetalinger: Antall år som gjenstår (avdragsprofil - antall år)
-      const remainingYears = repaymentYears - years;
-      const nper = remainingYears;
-      // Utbetaling: fra "Uttak til renter og avdrag" (med minus)
-      const pmt = -annualPayment; // Negativ fordi det er utbetaling
-      // Sluttverdi: 0
-      const fv = 0;
-      // Type: 0 (tom, betaling i slutten av perioden)
-      const type = 0;
+      // Hent avdragsprofil fra Input-fanen for å sjekke om lånet er nedbetalt
+      let repaymentYears = 20; // default
+      const repaymentSliderEl = document.getElementById('repayment-profile-slider');
+      if (repaymentSliderEl && repaymentSliderEl.value) {
+        const v = Number(repaymentSliderEl.value);
+        if (isFinite(v) && v > 0) repaymentYears = v;
+      } else if (isFinite(AppState.repaymentProfileYears)) {
+        repaymentYears = Number(AppState.repaymentProfileYears);
+      }
       
-      // Beregn restlån ved periodens slutt (hvor mye gjenstår etter "years" år)
-      remainingLoan = Math.abs(calculatePV(rate, nper, pmt, fv, type));
+      // Hvis antall år >= avdragsprofil, er lånet fullstendig nedbetalt (restlån = 0)
+      if (years >= repaymentYears) {
+        remainingLoan = 0;
+      } else {
+        // Beregn restlån med NÅVERDI-funksjonen
+        // Vi beregner hvor mye som gjenstår etter "years" år med betalinger
+        // Rente: rentekostnad fra input-fanen
+        const rate = interestPct / 100;
+        // Antall utbetalinger: Antall år som gjenstår (avdragsprofil - antall år)
+        const remainingYears = repaymentYears - years;
+        const nper = remainingYears;
+        // Utbetaling: fra "Uttak til renter og avdrag" (med minus)
+        const pmt = -annualPayment; // Negativ fordi det er utbetaling
+        // Sluttverdi: 0
+        const fv = 0;
+        // Type: 0 (tom, betaling i slutten av perioden)
+        const type = 0;
+        
+        // Beregn restlån ved periodens slutt (hvor mye gjenstår etter "years" år)
+        remainingLoan = Math.abs(calculatePV(rate, nper, pmt, fv, type));
+      }
     }
     
     elRemainingLoan.textContent = formatNOK(Math.round(remainingLoan));
     
-    // Oppdater "Oppgjør gjeld" i venstre boks = Restlån ved periodens slutt med minus foran
+    // Oppdater "Oppgjør gjeld" i venstre boks
     const elDebtSettle = document.getElementById('inv-left-debt-settle');
-    if (elDebtSettle && remainingLoan > 0) {
-      elDebtSettle.textContent = formatNOK(-Math.round(remainingLoan));
-      elDebtSettle.style.color = "#D32F2F";
-    } else if (elDebtSettle) {
-      elDebtSettle.textContent = formatNOK(0);
-      elDebtSettle.style.color = "#D32F2F";
+    if (elDebtSettle) {
+      if (interestOnly) {
+        // Hvis avdragsfrihet: Oppgjør gjeld = opprinnelig lån med minus foran
+        elDebtSettle.textContent = formatNOK(-Math.round(portfolio));
+        elDebtSettle.style.color = "#D32F2F";
+      } else if (remainingLoan > 0) {
+        // Normal: Oppgjør gjeld = Restlån ved periodens slutt med minus foran
+        elDebtSettle.textContent = formatNOK(-Math.round(remainingLoan));
+        elDebtSettle.style.color = "#D32F2F";
+      } else {
+        elDebtSettle.textContent = formatNOK(0);
+        elDebtSettle.style.color = "#D32F2F";
+      }
     }
   }
   
@@ -4154,6 +4304,9 @@ function updateTopSummaries() {
     // Beregn og oppdater "Restlån ved periodens slutt" hvis nødvendig (avkastning er allerede beregnet)
     const elInvRemainingLoan = document.getElementById("inv-right-remaining-loan");
     if (elInvRemainingLoan && annualPayment > 0) {
+      // Sjekk om avdragsfrihet er aktivert
+      const interestOnly = AppState.interestOnly === true;
+      
       // Hent verdier for beregning
       let years = 10;
       const yearsSliderEl = document.getElementById('input-years-slider');
@@ -4173,30 +4326,44 @@ function updateTopSummaries() {
         interestCost = Number(AppState.interestCostPct);
       }
       
-      // Hent avdragsprofil for å sjekke om lånet er nedbetalt
-      let repaymentYearsForTop = 20; // default
-      const repaymentSliderElForTop = document.getElementById('repayment-profile-slider');
-      if (repaymentSliderElForTop && repaymentSliderElForTop.value) {
-        const v = Number(repaymentSliderElForTop.value);
-        if (isFinite(v) && v > 0) repaymentYearsForTop = v;
-      } else if (isFinite(AppState.repaymentProfileYears)) {
-        repaymentYearsForTop = Number(AppState.repaymentProfileYears);
+      // Hent porteføljestørrelse
+      const sumAssets = (AppState.assets || []).reduce((s, x) => s + (x.amount || 0), 0);
+      let portfolio = isFinite(AppState.portfolioSize) ? Number(AppState.portfolioSize) : sumAssets;
+      const portfolioSlider = document.getElementById('input-portfolio-slider');
+      if (portfolioSlider && portfolioSlider.value) {
+        const v = Number(portfolioSlider.value);
+        if (isFinite(v)) portfolio = v;
       }
       
       let remainingLoan = 0;
-      // Hvis antall år >= avdragsprofil, er lånet fullstendig nedbetalt (restlån = 0)
-      if (years >= repaymentYearsForTop) {
-        remainingLoan = 0;
+      if (interestOnly) {
+        // Hvis avdragsfrihet er aktivert: restlån er uforandret (samme som opprinnelig lån)
+        remainingLoan = portfolio;
       } else {
-        // PV-parametere:
-        const pvRate = interestCost / 100;
-        const remainingYears = repaymentYearsForTop - years;
-        const pvNper = remainingYears;
-        const pvPmt = -annualPayment; // Negativ fordi det er utbetaling
-        const pvFv = 0;
-        const pvType = 0;
+        // Hent avdragsprofil for å sjekke om lånet er nedbetalt
+        let repaymentYearsForTop = 20; // default
+        const repaymentSliderElForTop = document.getElementById('repayment-profile-slider');
+        if (repaymentSliderElForTop && repaymentSliderElForTop.value) {
+          const v = Number(repaymentSliderElForTop.value);
+          if (isFinite(v) && v > 0) repaymentYearsForTop = v;
+        } else if (isFinite(AppState.repaymentProfileYears)) {
+          repaymentYearsForTop = Number(AppState.repaymentProfileYears);
+        }
         
-        remainingLoan = Math.abs(calculatePV(pvRate, pvNper, pvPmt, pvFv, pvType));
+        // Hvis antall år >= avdragsprofil, er lånet fullstendig nedbetalt (restlån = 0)
+        if (years >= repaymentYearsForTop) {
+          remainingLoan = 0;
+        } else {
+          // PV-parametere:
+          const pvRate = interestCost / 100;
+          const remainingYears = repaymentYearsForTop - years;
+          const pvNper = remainingYears;
+          const pvPmt = -annualPayment; // Negativ fordi det er utbetaling
+          const pvFv = 0;
+          const pvType = 0;
+          
+          remainingLoan = Math.abs(calculatePV(pvRate, pvNper, pvPmt, pvFv, pvType));
+        }
       }
       elInvRemainingLoan.textContent = formatNOK(Math.round(remainingLoan));
       
@@ -4876,6 +5043,95 @@ function initDisclaimerUI() {
       closeModal();
     }
   });
+}
+
+// --- Fullscreen button ---
+function initFullscreen() {
+  const btn = document.getElementById("fullscreen-btn");
+  if (!btn) return;
+
+  function updateButtonIcon(isFullscreen) {
+    const svg = btn.querySelector("svg");
+    if (!svg) return;
+    
+    // Sett SVG-størrelse til 14px
+    svg.setAttribute("width", "14");
+    svg.setAttribute("height", "14");
+    
+    if (isFullscreen) {
+      // Vis "exit fullscreen" ikon
+      svg.innerHTML = `
+        <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      `;
+      btn.setAttribute("aria-label", "Avslutt fullskjerm");
+      btn.title = "Avslutt fullskjerm";
+    } else {
+      // Vis "enter fullscreen" ikon
+      svg.innerHTML = `
+        <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      `;
+      btn.setAttribute("aria-label", "Aktiver fullskjerm");
+      btn.title = "Aktiver fullskjerm";
+    }
+  }
+
+  function isFullscreen() {
+    return !!(document.fullscreenElement || document.webkitFullscreenElement || 
+              document.mozFullScreenElement || document.msFullscreenElement);
+  }
+
+  function enterFullscreen() {
+    const element = document.documentElement;
+    if (element.requestFullscreen) {
+      element.requestFullscreen();
+    } else if (element.webkitRequestFullscreen) {
+      element.webkitRequestFullscreen();
+    } else if (element.mozRequestFullScreen) {
+      element.mozRequestFullScreen();
+    } else if (element.msRequestFullscreen) {
+      element.msRequestFullscreen();
+    }
+  }
+
+  function exitFullscreen() {
+    if (document.exitFullscreen) {
+      document.exitFullscreen();
+    } else if (document.webkitExitFullscreen) {
+      document.webkitExitFullscreen();
+    } else if (document.mozCancelFullScreen) {
+      document.mozCancelFullScreen();
+    } else if (document.msExitFullscreen) {
+      document.msExitFullscreen();
+    }
+  }
+
+  function toggleFullscreen() {
+    if (isFullscreen()) {
+      exitFullscreen();
+    } else {
+      enterFullscreen();
+    }
+  }
+
+  // Oppdater ikon ved endring av fullskjermstatus
+  const fullscreenChangeEvents = [
+    "fullscreenchange",
+    "webkitfullscreenchange",
+    "mozfullscreenchange",
+    "MSFullscreenChange"
+  ];
+  
+  fullscreenChangeEvents.forEach(event => {
+    document.addEventListener(event, () => {
+      updateButtonIcon(isFullscreen());
+    });
+  });
+
+  // Initialiser ikon
+  updateButtonIcon(isFullscreen());
+
+  // Legg til klikk-handler
+  btn.addEventListener("click", toggleFullscreen);
 }
 
 // Chart modal og grafikk

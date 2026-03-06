@@ -144,51 +144,9 @@
   --space-6: 32px;
 }
 
-.dark {
-  --background: oklch(0.2046 0 0);
-  --foreground: oklch(0.9219 0 0);
-  --card: oklch(0.2686 0 0);
-  --card-foreground: oklch(0.9219 0 0);
-  --popover: oklch(0.2686 0 0);
-  --popover-foreground: oklch(0.9219 0 0);
-  --primary: oklch(0.6231 0.1880 259.8145);
-  --primary-foreground: oklch(1.0000 0 0);
-  --secondary: oklch(0.2686 0 0);
-  --secondary-foreground: oklch(0.9219 0 0);
-  --muted: oklch(0.2393 0 0);
-  --muted-foreground: oklch(0.7155 0 0);
-  --accent: oklch(0.3791 0.1378 265.5222);
-  --accent-foreground: oklch(0.8823 0.0571 254.1284);
-  --destructive: oklch(0.6368 0.2078 25.3313);
-  --destructive-foreground: oklch(1.0000 0 0);
-  --border: oklch(0.3715 0 0);
-  --input: oklch(0.3715 0 0);
-  --ring: oklch(0.6231 0.1880 259.8145);
-  --chart-1: oklch(0.7137 0.1434 254.6240);
-  --chart-2: oklch(0.6231 0.1880 259.8145);
-  --chart-3: oklch(0.5461 0.2152 262.8809);
-  --chart-4: oklch(0.4882 0.2172 264.3763);
-  --chart-5: oklch(0.4244 0.1809 265.6377);
-  --sidebar: oklch(0.2046 0 0);
-  --sidebar-foreground: oklch(0.9219 0 0);
-  --sidebar-primary: oklch(0.6231 0.1880 259.8145);
-  --sidebar-primary-foreground: oklch(1.0000 0 0);
-  --sidebar-accent: oklch(0.3791 0.1378 265.5222);
-  --sidebar-accent-foreground: oklch(0.8823 0.0571 254.1284);
-  --sidebar-border: oklch(0.3715 0 0);
-  --sidebar-ring: oklch(0.6231 0.1880 259.8145);
-  --shadow-2xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
-  --shadow-xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
-  --shadow-sm: 0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 1px 2px -1px hsl(0 0% 0% / 0.10);
-  --shadow: 0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 1px 2px -1px hsl(0 0% 0% / 0.10);
-  --shadow-md: 0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 2px 4px -1px hsl(0 0% 0% / 0.10);
-  --shadow-lg: 0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 4px 6px -1px hsl(0 0% 0% / 0.10);
-  --shadow-xl: 0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 8px 10px -1px hsl(0 0% 0% / 0.10);
-  --shadow-2xl: 0 1px 3px 0px hsl(0 0% 0% / 0.25);
-}
 
 /* @theme inline block commented out - not standard CSS, only causes linter warning */
-/* These variables are already defined in :root and .dark blocks above */
+/* These variables are already defined in :root block above */
 /*
 @theme inline {
   --color-background: var(--background);
@@ -364,6 +322,46 @@ body {
   min-height: 0;
   min-width: 0;
   gap: var(--space-2);
+  position: relative;
+}
+
+/* Fullskjermsknapp */
+.fullscreen-btn {
+  position: fixed;
+  top: calc(var(--space-3) * 1.75);
+  right: calc(var(--space-3) * 2);
+  z-index: 100;
+  appearance: none;
+  border: 1px solid var(--BORDER_LIGHT);
+  background: var(--BG_CARD);
+  color: var(--GRAY_TEXT_DARK);
+  border-radius: 6px;
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: all 0.15s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+}
+
+.fullscreen-btn:hover {
+  background: var(--BLUE_100);
+  border-color: var(--BLUE_300);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
+}
+
+.fullscreen-btn:active {
+  transform: translateY(0);
+}
+
+.fullscreen-btn svg {
+  width: 14px;
+  height: 14px;
+  stroke-width: 2;
 }
 
 .content-header {
@@ -434,6 +432,10 @@ p { /* Avsnitt */
   .nav { flex-direction: row; flex-wrap: nowrap; overflow-x: auto; padding: 8px; gap: 8px; }
   .nav-item { white-space: nowrap; font-size: calc(16px * 1.2); padding: 10px 12px; }
   .nav-sep { display: none; }
+  .fullscreen-btn {
+    top: var(--space-2);
+    right: var(--space-2);
+  }
 }
 
 
@@ -489,11 +491,11 @@ p { /* Avsnitt */
   margin: 48px auto;
   width: calc(100% - 32px);
   max-width: 672px; /* max-w-2xl */
-  background: #ffffff;
-  color: #0f172a;
+  background: var(--BG_CARD);
+  color: var(--text-primary);
   border-radius: 12px;
   box-shadow: 0 20px 48px rgba(0,0,0,0.35);
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--BORDER_LIGHT);
   padding: 20px 20px 24px 20px;
 }
 /* Chart modal - større størrelse */
@@ -581,7 +583,7 @@ p { /* Avsnitt */
   position: relative;
   resize: both;
 }
-/* Dividend chart modal dark mode */
+/* Dividend chart modal */
 #dividend-chart-modal .modal-panel {
   background: var(--BG_CARD);
   color: var(--text-primary);
@@ -674,7 +676,7 @@ p { /* Avsnitt */
 .modal-panel h3 {
   margin-top: 0;
   margin-bottom: 12px;
-  color: #0f172a;
+  color: var(--text-primary);
 }
 .modal-close {
   position: absolute;
@@ -682,12 +684,12 @@ p { /* Avsnitt */
   top: 12px;
   width: 32px; height: 32px;
   border-radius: 8px;
-  border: 1px solid #e2e8f0;
-  background: #ffffff;
-  color: #334155;
+  border: 1px solid var(--BORDER_LIGHT);
+  background: var(--BG_CARD);
+  color: var(--text-secondary);
   cursor: pointer;
 }
-.modal-close:hover { background: #f8fafc; }
+.modal-close:hover { background: var(--secondary); }
 
 /* --- Output textarea with embedded copy button --- */
 .output-editor {
@@ -698,18 +700,18 @@ p { /* Avsnitt */
   height: 16rem; /* h-64 */
   resize: vertical;
   border-radius: 12px;
-  border: 1px solid #cbd5e1; /* slate-300 */
+  border: 1px solid var(--BORDER_LIGHT);
   padding: 14px 48px 14px 14px; /* room for copy button */
   font-family: var(--font-sans);
   line-height: 1.5;
   font-size: 14px;
-  color: #0f172a;
-  background: #ffffff;
+  color: var(--text-primary);
+  background: var(--BG_CARD);
 }
 .output-textarea:focus {
   outline: none;
-  border-color: #3b82f6; /* blue-500 */
-  box-shadow: 0 0 0 4px rgba(59,130,246,0.15);
+  border-color: var(--ring);
+  box-shadow: 0 0 0 4px color-mix(in oklch, var(--ring) 25%, transparent);
 }
 
 .copy-btn {
@@ -723,9 +725,9 @@ p { /* Avsnitt */
   font-weight: 600;
   font-size: 12px;
   border-radius: 9999px; /* rounded-full */
-  border: 1px solid #93c5fd; /* blue-300 */
-  background: #3b82f6; /* blue-500 */
-  color: #ffffff;
+  border: 1px solid color-mix(in oklch, var(--primary) 40%, var(--BORDER_LIGHT));
+  background: var(--primary);
+  color: var(--primary-foreground);
   cursor: pointer;
   box-shadow: 0 2px 6px rgba(0,0,0,0.15);
   transition: transform .08s ease, filter .15s ease, background-color .2s ease, border-color .2s ease;
@@ -735,8 +737,8 @@ p { /* Avsnitt */
 
 /* Success state */
 .copy-btn.is-success {
-  background: #22c55e; /* green-500 */
-  border-color: #86efac; /* green-300 */
+  background: oklch(0.7 0.2 150);
+  border-color: color-mix(in oklch, oklch(0.7 0.2 150) 40%, var(--BORDER_LIGHT));
 }
 
 /* simple icon text */
@@ -891,39 +893,6 @@ p { /* Avsnitt */
 .summary-cash .summary-title { color: #FFFFFF !important; }
 .summary-cash .summary-value { color: #FFFFFF; }
 
-/* Dark mode: Endre de to hvite boksene til to behagelige blå nyanser */
-.dark .summary-assets {
-  background: #1e3a5f; /* Behagelig blå nyanse 1 */
-}
-.dark .summary-assets .summary-title,
-.dark .summary-assets .summary-value {
-  color: #e0f2fe !important; /* Lys tekst for bedre kontrast */
-}
-
-.dark .summary-equity {
-  background: #2d4a6b; /* Behagelig blå nyanse 2 (litt lysere) */
-}
-.dark .summary-equity .summary-title,
-.dark .summary-equity .summary-value {
-  color: #e0f2fe !important; /* Lys tekst for bedre kontrast */
-}
-
-/* De mørkeblå boksene beholder sin farge i dark mode */
-.dark .summary-debts {
-  background: #002359; /* Beholder mørkeblå */
-}
-.dark .summary-debts .summary-title,
-.dark .summary-debts .summary-value {
-  color: #FFFFFF !important;
-}
-
-.dark .summary-cash {
-  background: #074EB9; /* Beholder mørkeblå */
-}
-.dark .summary-cash .summary-title,
-.dark .summary-cash .summary-value {
-  color: #FFFFFF !important;
-}
 .summary-value { font-weight: var(--weight-semibold); font-size: 14px; color: var(--GRAY_TEXT_SECONDARY); text-align: center; line-height: 1.2; }
 
 /* Kostnadsrader: svakt rødskjær på felt og rød verdi */
@@ -1238,18 +1207,6 @@ p { /* Avsnitt */
   cursor: pointer;
 }
 
-/* Theme toggle button */
-.theme-toggle {
-  appearance: none;
-  border: 1px solid var(--BORDER_LIGHT);
-  background: var(--BG_CARD);
-  color: var(--GRAY_TEXT_DARK);
-  border-radius: 6px;
-  width: 28px; height: 24px;
-  cursor: pointer;
-  font-size: 12px;
-}
-.theme-toggle:hover { background: var(--BLUE_100); }
 
 /* Disclaimer button container */
 .brand > div {
@@ -1302,25 +1259,25 @@ p { /* Avsnitt */
   color: var(--text-secondary);
 }
 .modal-close:hover { background: var(--secondary); }
-/* Chart modal dark mode */
+/* Chart modal */
 #chart-modal .modal-panel {
   background: var(--BG_CARD);
   color: var(--text-primary);
   border: 1px solid var(--BORDER_LIGHT);
 }
-/* Equity share chart modal dark mode */
+/* Equity share chart modal */
 #equity-share-chart-modal .modal-panel {
   background: var(--BG_CARD);
   color: var(--text-primary);
   border: 1px solid var(--BORDER_LIGHT);
 }
-/* Interest cost chart modal dark mode - identisk med equity-share */
+/* Interest cost chart modal - identisk med equity-share */
 #interest-cost-chart-modal .modal-panel {
   background: var(--BG_CARD);
   color: var(--text-primary);
   border: 1px solid var(--BORDER_LIGHT);
 }
-/* Tax rate change chart modal dark mode - identisk med interest-cost-chart-modal */
+/* Tax rate change chart modal - identisk med interest-cost-chart-modal */
 #tax-rate-change-chart-modal .modal-panel {
   background: var(--BG_CARD);
   color: var(--text-primary);
