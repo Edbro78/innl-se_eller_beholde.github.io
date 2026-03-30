@@ -49,7 +49,6 @@ document.addEventListener("DOMContentLoaded", () => {
     { key: "Nedbetale lån" },
     { key: "Utbetale utbytte" },
     { key: "Innløse Fondskonto" },
-    { key: "Innløse ASK" },
     { key: "Nullstille" }
   ];
   const steps = allSteps.filter(s => s.key !== "Nullstille" && s.key !== "Forside");
@@ -280,6 +279,9 @@ function updateInputTabValues() {
 function renderPlaceholder(root) {
   const active = document.querySelector(".nav-item.is-active");
   const title = (active && (active.getAttribute("data-section") || active.textContent || "")).trim();
+
+  // Scoper CSS for bedre visuell balanse kun på Input-fanen
+  if (root && root.classList) root.classList.toggle("input-tab", title === "Input");
   
   // For Nullstille-fanen: nullstill alle verdier
   if (title === "Nullstille") {
@@ -357,7 +359,7 @@ function renderPlaceholder(root) {
     const tiles = [
       { 
         id: "tile-assets", 
-        icon: `<svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 3v18h18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M7 16l4-4 4 4 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`, 
+        icon: `<svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="6" y="4" width="12" height="16" rx="2" stroke="currentColor" stroke-width="2"/><path d="M8 9h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M12 14h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M9.5 14a2.5 2.5 0 0 0 5 0" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`, 
         title: "Input", 
         description: "Porteføljestørrelse, aksjeandel, innskutt kapital, skatt og forventet avkastning",
         section: "Input"
@@ -371,7 +373,7 @@ function renderPlaceholder(root) {
       },
       { 
         id: "tile-debt", 
-        icon: `<svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2v20M17 5h-4a3 3 0 0 0 0 6h4a3 3 0 0 1 0 6h-4M7 5h4a3 3 0 0 1 0 6H7a3 3 0 0 0 0 6h4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`, 
+        icon: `<svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="6" y="6" width="12" height="12" rx="2" stroke="currentColor" stroke-width="2"/><path d="M9 10h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M9 14h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M12 9.2h.01" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>`, 
         title: "Utbetale utbytte", 
         description: "Hva koster et utbytte i lys av skatt, alternativ avkastning og rentes rente-effekten",
         section: "Utbetale utbytte"
@@ -478,7 +480,7 @@ function renderPlaceholder(root) {
   // med lik avstand mellom hver (16px), og gjør den tredje høyere
   // title er allerede definert øverst i funksjonen
   // Faner som skal ha to stående paneler som i "Nedbetale lån"
-  const twoPanelTabs = new Set(["Nedbetale lån", "Utbetale utbytte", "Innløse ASK", "Innløse Fondskonto"]);
+  const twoPanelTabs = new Set(["Nedbetale lån", "Utbetale utbytte", "Innløse Fondskonto"]);
   if (twoPanelTabs.has(title)) {
     const spacing = 1; // luft mellom panelene i rem for zoom-uavhengighet
     if (first && first.remove) first.remove();
@@ -521,11 +523,11 @@ function renderPlaceholder(root) {
         row.style.justifyContent = "space-between";
         row.style.lineHeight = "1.3";
         row.style.fontSize = "0.75rem";
-        row.style.fontFamily = '"Inter", "Segoe UI", "Helvetica Neue", Arial, system-ui, sans-serif';
+        row.style.fontFamily = '"Whitney", "Inter", "Segoe UI", "Helvetica Neue", Arial, system-ui, sans-serif';
         const label = document.createElement("span");
         label.textContent = opts.placeholder ? "" : text;
         if (opts.labelId) label.id = opts.labelId;
-        label.style.fontFamily = '"Inter", "Segoe UI", "Helvetica Neue", Arial, system-ui, sans-serif';
+        label.style.fontFamily = '"Whitney", "Inter", "Segoe UI", "Helvetica Neue", Arial, system-ui, sans-serif';
         label.style.lineHeight = "1.3";
         if (opts.bold) {
           label.style.fontWeight = "700";
@@ -541,7 +543,7 @@ function renderPlaceholder(root) {
         const value = document.createElement("span");
         value.textContent = opts.placeholder ? "" : "";
         if (opts.id) value.id = opts.id;
-        value.style.fontFamily = '"Inter", "Segoe UI", "Helvetica Neue", Arial, system-ui, sans-serif';
+        value.style.fontFamily = '"Whitney", "Inter", "Segoe UI", "Helvetica Neue", Arial, system-ui, sans-serif';
         value.style.lineHeight = "1.3";
         value.style.minWidth = "6rem";
         value.style.textAlign = "right";
@@ -843,7 +845,7 @@ function renderPlaceholder(root) {
         row.style.justifyContent = "space-between";
         row.style.lineHeight = "1.3";
         row.style.fontSize = "0.75rem";
-        row.style.fontFamily = '"Inter", "Segoe UI", "Helvetica Neue", Arial, system-ui, sans-serif';
+        row.style.fontFamily = '"Whitney", "Inter", "Segoe UI", "Helvetica Neue", Arial, system-ui, sans-serif';
         // Skjul hele raden hvis hidden er satt, men behold plassen
         if (opts.hidden) {
           row.style.visibility = "hidden";
@@ -851,7 +853,7 @@ function renderPlaceholder(root) {
         const label = document.createElement("span");
         label.textContent = opts.placeholder ? "" : text;
         if (opts.labelId) label.id = opts.labelId;
-        label.style.fontFamily = '"Inter", "Segoe UI", "Helvetica Neue", Arial, system-ui, sans-serif';
+        label.style.fontFamily = '"Whitney", "Inter", "Segoe UI", "Helvetica Neue", Arial, system-ui, sans-serif';
         label.style.lineHeight = "1.3";
         if (opts.bold) {
           label.style.fontWeight = "700";
@@ -872,7 +874,7 @@ function renderPlaceholder(root) {
         const value = document.createElement("span");
         value.textContent = opts.placeholder ? "" : "";
         if (opts.id) value.id = opts.id;
-        value.style.fontFamily = '"Inter", "Segoe UI", "Helvetica Neue", Arial, system-ui, sans-serif';
+        value.style.fontFamily = '"Whitney", "Inter", "Segoe UI", "Helvetica Neue", Arial, system-ui, sans-serif';
         value.style.lineHeight = "1.3";
         value.style.minWidth = "6rem";
         value.style.textAlign = "right";
@@ -1581,7 +1583,7 @@ function renderPlaceholder(root) {
 
         const label = document.createElement("div");
         label.textContent = labelText;
-        label.style.fontFamily = '"Inter", "Segoe UI", "Helvetica Neue", Arial, system-ui, sans-serif';
+        label.style.fontFamily = '"Whitney", "Inter", "Segoe UI", "Helvetica Neue", Arial, system-ui, sans-serif';
         label.style.lineHeight = "1.3";
         label.style.color = isCost ? costColor : "var(--GRAY_TEXT_DARK)";
         if (isCost) {
@@ -1606,7 +1608,7 @@ function renderPlaceholder(root) {
           value.id = id;
           value.className = "asset-amount";
           value.textContent = ""; // fylles senere
-          value.style.fontFamily = '"Inter", "Segoe UI", "Helvetica Neue", Arial, system-ui, sans-serif';
+        value.style.fontFamily = '"Whitney", "Inter", "Segoe UI", "Helvetica Neue", Arial, system-ui, sans-serif';
           value.style.lineHeight = "1.3";
           value.style.width = "7rem"; // Redusert for mer kompakt layout
           if (isCost) {
@@ -1717,7 +1719,7 @@ function renderPlaceholder(root) {
 
         const label = document.createElement("div");
         label.textContent = labelText;
-        label.style.fontFamily = '"Inter", "Segoe UI", "Helvetica Neue", Arial, system-ui, sans-serif';
+        label.style.fontFamily = '"Whitney", "Inter", "Segoe UI", "Helvetica Neue", Arial, system-ui, sans-serif';
         label.style.lineHeight = "1.3";
         if (isCost) {
           label.style.color = costColor;
@@ -1748,7 +1750,7 @@ function renderPlaceholder(root) {
           const value = document.createElement("div");
           value.id = id;
           value.textContent = "";
-          value.style.fontFamily = '"Inter", "Segoe UI", "Helvetica Neue", Arial, system-ui, sans-serif';
+        value.style.fontFamily = '"Whitney", "Inter", "Segoe UI", "Helvetica Neue", Arial, system-ui, sans-serif';
           value.style.lineHeight = "1.3";
           value.style.border = "1px solid var(--BORDER_LIGHT)";
           value.style.borderRadius = "0.5rem";
@@ -1978,8 +1980,8 @@ function renderPlaceholder(root) {
     window.addEventListener("resize", stretchToBottom, { passive: true });
   }
   if (title === "Input") {
-    const spacing = 0.4; // Redusert spacing mellom alle bokser
-    const horizontalSpacing = 0.75; // Redusert horisontal luft mellom boksene
+    const spacing = 0.55; // Mer luft mellom hovedområder
+    const horizontalSpacing = 0.85; // Litt mer horisontal luft mellom kolonnene
     // Erstatt øverste enkeltpanel med en 2-kolonne grid (vertikal deling)
     if (first && first.remove) first.remove();
     const firstContainer = document.createElement("div");
@@ -2004,6 +2006,7 @@ function renderPlaceholder(root) {
     firstLeft.style.flexDirection = "column";
     firstLeft.style.alignItems = "center";
     firstLeft.style.justifyContent = "center";
+    firstLeft.style.gap = "0.6rem";
     // Reduser høyden: ingen min-høyde, litt mindre vertikal padding
     firstLeft.style.minHeight = "0";
     firstLeft.style.paddingTop = "0.5rem";
@@ -2016,6 +2019,7 @@ function renderPlaceholder(root) {
     firstRight.style.flexDirection = "column";
     firstRight.style.alignItems = "center";
     firstRight.style.justifyContent = "center";
+    firstRight.style.gap = "0.6rem";
     firstRight.style.minHeight = "0";
     firstRight.style.paddingTop = "0.5rem";
     firstRight.style.paddingBottom = "0.5rem";
@@ -2354,7 +2358,7 @@ function renderPlaceholder(root) {
     thirdLeft.innerHTML = "";
     thirdLeft.style.display = "flex";
     thirdLeft.style.flexDirection = "column";
-    thirdLeft.style.gap = "0.4rem"; // Redusert gap
+    thirdLeft.style.gap = "0.6rem"; // Jevnere luft mellom alle input-områder
     thirdLeft.style.paddingTop = "0.5rem";
     thirdLeft.style.paddingBottom = "0.5rem";
     thirdLeft.style.overflowY = "auto";
@@ -2554,7 +2558,7 @@ function renderPlaceholder(root) {
 
     // Resultatboks nederst
     const result = document.createElement("div");
-    result.style.marginTop = "0.5rem";
+    result.style.marginTop = "0";
     result.style.border = "1px solid var(--BORDER_LIGHT)";
     result.style.borderRadius = "8px";
     result.style.padding = "0.5rem 0.75rem";
@@ -2578,7 +2582,7 @@ function renderPlaceholder(root) {
     capitalLabel.className = "section-label";
     capitalLabel.textContent = "Innskutt kapital";
     capitalLabel.style.fontSize = "0.75rem";
-    capitalLabel.style.marginTop = "0.5rem";
+    capitalLabel.style.marginTop = "0";
     thirdLeft.appendChild(capitalLabel);
 
     const capitalRow = document.createElement("div");
@@ -2697,7 +2701,7 @@ function renderPlaceholder(root) {
     thirdRight.innerHTML = "";
     thirdRight.style.display = "flex";
     thirdRight.style.flexDirection = "column";
-    thirdRight.style.gap = "0.4rem"; // Redusert gap
+    thirdRight.style.gap = "0.6rem"; // Jevnere luft mellom alle input-områder
     thirdRight.style.paddingTop = "0.5rem";
     thirdRight.style.paddingBottom = "0.5rem";
     thirdRight.style.overflowY = "auto";
@@ -2893,7 +2897,7 @@ function renderPlaceholder(root) {
     repaymentLabel.style.margin = "0";
     repaymentHeader.appendChild(repaymentLabel);
     
-    // Toggle-knapp for avdragsfrihet
+    // To knapper (Ja/Nei) for avdragsfrihet
     const interestOnlyContainer = document.createElement("div");
     interestOnlyContainer.style.display = "flex";
     interestOnlyContainer.style.alignItems = "center";
@@ -2906,26 +2910,50 @@ function renderPlaceholder(root) {
     interestOnlyLabel.style.fontWeight = "500";
     interestOnlyContainer.appendChild(interestOnlyLabel);
     
-    const interestOnlyToggle = document.createElement("button");
-    interestOnlyToggle.type = "button";
-    interestOnlyToggle.id = "interest-only-toggle";
-    interestOnlyToggle.setAttribute("aria-pressed", "false");
-    interestOnlyToggle.setAttribute("aria-label", "Avdragsfrihet");
+    const interestOnlyYesBtn = document.createElement("button");
+    interestOnlyYesBtn.type = "button";
+    interestOnlyYesBtn.setAttribute("aria-pressed", "false");
+    interestOnlyYesBtn.setAttribute("aria-label", "Avdragsfrihet: Ja");
+
+    const interestOnlyNoBtn = document.createElement("button");
+    interestOnlyNoBtn.type = "button";
+    interestOnlyNoBtn.setAttribute("aria-pressed", "false");
+    interestOnlyNoBtn.setAttribute("aria-label", "Avdragsfrihet: Nei");
     
     // Initialiser AppState for avdragsfrihet hvis ikke satt
     if (AppState.interestOnly === undefined) {
       AppState.interestOnly = false; // Default: Nei
     }
     
-    const updateToggleButton = () => {
-      const isActive = AppState.interestOnly === true;
-      interestOnlyToggle.setAttribute("aria-pressed", isActive ? "true" : "false");
-      interestOnlyToggle.textContent = isActive ? "Ja" : "Nei";
-      interestOnlyToggle.style.cssText = `
+    const updateInterestOnlyButtons = () => {
+      const isYesActive = AppState.interestOnly === true;
+
+      interestOnlyYesBtn.setAttribute("aria-pressed", isYesActive ? "true" : "false");
+      interestOnlyNoBtn.setAttribute("aria-pressed", isYesActive ? "false" : "true");
+
+      interestOnlyYesBtn.textContent = "Ja";
+      interestOnlyNoBtn.textContent = "Nei";
+
+      interestOnlyYesBtn.style.cssText = `
         appearance: none;
         border: 1px solid var(--BORDER_LIGHT);
-        background: ${isActive ? "var(--P_ACCENT)" : "#ffffff"};
-        color: ${isActive ? "#ffffff" : "var(--GRAY_TEXT_DARK)"};
+        background: ${isYesActive ? "var(--P_ACCENT)" : "#ffffff"};
+        color: ${isYesActive ? "#ffffff" : "var(--GRAY_TEXT_DARK)"};
+        border-radius: 6px;
+        padding: 0.25rem 0.75rem;
+        font-size: 0.7rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        min-width: 45px;
+        text-align: center;
+      `;
+
+      interestOnlyNoBtn.style.cssText = `
+        appearance: none;
+        border: 1px solid var(--BORDER_LIGHT);
+        background: ${!isYesActive ? "var(--P_ACCENT)" : "#ffffff"};
+        color: ${!isYesActive ? "#ffffff" : "var(--GRAY_TEXT_DARK)"};
         border-radius: 6px;
         padding: 0.25rem 0.75rem;
         font-size: 0.7rem;
@@ -2937,29 +2965,50 @@ function renderPlaceholder(root) {
       `;
     };
     
-    updateToggleButton();
+    updateInterestOnlyButtons();
     
-    interestOnlyToggle.addEventListener("click", () => {
-      AppState.interestOnly = !AppState.interestOnly;
-      updateToggleButton();
+    interestOnlyYesBtn.addEventListener("click", () => {
+      AppState.interestOnly = true;
+      updateInterestOnlyButtons();
       updateTopSummaries();
     });
     
-    interestOnlyToggle.addEventListener("mouseenter", () => {
-      if (!AppState.interestOnly) {
-        interestOnlyToggle.style.background = "var(--BLUE_100)";
-        interestOnlyToggle.style.borderColor = "var(--BLUE_300)";
+    interestOnlyNoBtn.addEventListener("click", () => {
+      AppState.interestOnly = false;
+      updateInterestOnlyButtons();
+      updateTopSummaries();
+    });
+    
+    interestOnlyYesBtn.addEventListener("mouseenter", () => {
+      if (AppState.interestOnly !== true) {
+        interestOnlyYesBtn.style.background = "var(--BLUE_100)";
+        interestOnlyYesBtn.style.borderColor = "var(--BLUE_300)";
       }
     });
     
-    interestOnlyToggle.addEventListener("mouseleave", () => {
-      if (!AppState.interestOnly) {
-        interestOnlyToggle.style.background = "#ffffff";
-        interestOnlyToggle.style.borderColor = "var(--BORDER_LIGHT)";
+    interestOnlyYesBtn.addEventListener("mouseleave", () => {
+      if (AppState.interestOnly !== true) {
+        interestOnlyYesBtn.style.background = "#ffffff";
+        interestOnlyYesBtn.style.borderColor = "var(--BORDER_LIGHT)";
       }
     });
     
-    interestOnlyContainer.appendChild(interestOnlyToggle);
+    interestOnlyNoBtn.addEventListener("mouseenter", () => {
+      if (AppState.interestOnly !== false) {
+        interestOnlyNoBtn.style.background = "var(--BLUE_100)";
+        interestOnlyNoBtn.style.borderColor = "var(--BLUE_300)";
+      }
+    });
+    
+    interestOnlyNoBtn.addEventListener("mouseleave", () => {
+      if (AppState.interestOnly !== false) {
+        interestOnlyNoBtn.style.background = "#ffffff";
+        interestOnlyNoBtn.style.borderColor = "var(--BORDER_LIGHT)";
+      }
+    });
+    
+    interestOnlyContainer.appendChild(interestOnlyYesBtn);
+    interestOnlyContainer.appendChild(interestOnlyNoBtn);
     repaymentHeader.appendChild(interestOnlyContainer);
     thirdRight.appendChild(repaymentHeader);
 
@@ -4822,28 +4871,7 @@ function generateOutputText() {
     }
   });
   lines.push("");
-  
-  // === INNLØSE ASK FANEN ===
-  lines.push("=== INNLØSE ASK ===");
-  const askData = [
-    { id: "ask-left-portfolio", label: "Portefølje" },
-    { id: "ask-left-capital", label: "Innskutt kapital" },
-    { id: "ask-left-gain", label: "Gevinst" },
-    { id: "ask-left-tax", label: "Skatt" },
-    { id: "ask-left-net", label: "Netto portefølje" },
-    { id: "ask-right-portfolio", label: "Portefølje" },
-    { id: "ask-right-capital", label: "Innskutt kapital" },
-    { id: "ask-right-gain", label: "Gevinst" },
-    { id: "ask-right-tax", label: "Skatt" },
-    { id: "ask-right-net", label: "Netto portefølje" }
-  ];
-  askData.forEach(item => {
-    const el = document.getElementById(item.id);
-    if (el && el.textContent.trim()) {
-      lines.push(`${item.label}: ${el.textContent.trim()}`);
-    }
-  });
-  
+
   return lines.join("\n");
 }
 

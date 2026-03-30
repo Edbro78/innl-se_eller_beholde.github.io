@@ -51,39 +51,46 @@
 }
 
 :root {
-  --background: oklch(0.9759 0.0029 264.5420);
-  --foreground: oklch(0.2722 0.1053 258.9631);
-  --card: oklch(1.0000 0 0);
-  --card-foreground: oklch(0.2722 0.1053 258.9631);
-  --popover: oklch(1.0000 0 0);
-  --popover-foreground: oklch(0.2722 0.1053 258.9631);
-  --primary: oklch(0.5190 0.2061 260.1727);
-  --primary-foreground: oklch(1.0000 0 0);
-  --secondary: oklch(0.9510 0.0063 255.4756);
-  --secondary-foreground: oklch(0.2722 0.1053 258.9631);
-  --muted: oklch(0.9846 0.0017 247.8389);
-  --muted-foreground: oklch(0.5409 0.0616 258.6202);
-  --accent: oklch(0.9489 0.0188 255.5341);
-  --accent-foreground: oklch(0.4562 0.1809 260.1560);
+  --background: oklch(0.96 0.00 0.0);        /* Light Grey */
+  --foreground: oklch(0.27 0.00 0.0);        /* Coal */
+  --card: oklch(0.96 0.00 0.0);
+  --card-foreground: oklch(0.27 0.00 0.0);
+  --popover: oklch(0.96 0.00 0.0);
+  --popover-foreground: oklch(0.27 0.00 0.0);
+
+  --primary: oklch(0.29 0.12 274.6);          /* Blue */
+  --primary-foreground: oklch(0.85 0.08 235.3); /* Cyan 40 */
+
+  --secondary: oklch(0.92 0.05 234.1);        /* Cyan 20 */
+  --secondary-foreground: oklch(0.27 0.00 0.0);
+
+  --muted: oklch(0.96 0.00 0.0);
+  --muted-foreground: oklch(0.27 0.00 0.0);
+
+  --accent: oklch(0.29 0.12 274.6);           /* Blue (selected/fokus) */
+  --accent-foreground: oklch(0.85 0.08 235.3);
   --destructive: oklch(0.4322 0.1500 28.9906);
   --destructive-foreground: oklch(1.0000 0 0);
-  --border: oklch(0.9324 0.0080 253.8552);
-  --input: oklch(0.9276 0.0058 264.5313);
-  --ring: oklch(0.6231 0.1880 259.8145);
-  --chart-1: oklch(0.8479 0.0603 257.7878);
-  --chart-2: oklch(0.7450 0.1024 258.2961);
-  --chart-3: oklch(0.6020 0.1679 258.6201);
-  --chart-4: oklch(0.4562 0.1809 260.1560);
-  --chart-5: oklch(0.2722 0.1053 258.9631);
-  --sidebar: oklch(0.9846 0.0017 247.8389);
-  --sidebar-foreground: oklch(0.3211 0 0);
-  --sidebar-primary: oklch(0.6231 0.1880 259.8145);
-  --sidebar-primary-foreground: oklch(1.0000 0 0);
-  --sidebar-accent: oklch(0.9514 0.0250 236.8242);
-  --sidebar-accent-foreground: oklch(0.3791 0.1378 265.5222);
-  --sidebar-border: oklch(0.9276 0.0058 264.5313);
-  --sidebar-ring: oklch(0.6231 0.1880 259.8145);
-  --font-sans: Inter, sans-serif;
+  --border: #CECCCC;
+  --input: oklch(0.96 0.00 0.0);
+  --ring: oklch(0.29 0.12 274.6);
+
+  --chart-1: oklch(0.92 0.05 234.1);     /* Cyan 20 */
+  --chart-2: oklch(0.85 0.08 235.3);     /* Cyan 40 */
+  --chart-3: oklch(0.29 0.12 274.6);     /* Blue */
+  --chart-4: oklch(0.24 0.08 273.1);     /* Dark Blue */
+  --chart-5: oklch(0.24 0.08 273.1);     /* Dark Blue */
+
+  --sidebar: oklch(0.96 0.00 0.0);
+  --sidebar-foreground: oklch(0.27 0.00 0.0);
+  --sidebar-primary: oklch(0.29 0.12 274.6);
+  --sidebar-primary-foreground: oklch(0.85 0.08 235.3);
+  --sidebar-accent: oklch(0.92 0.05 234.1);
+  --sidebar-accent-foreground: oklch(0.27 0.00 0.0);
+  --sidebar-border: #CECCCC;
+  --sidebar-ring: oklch(0.29 0.12 274.6);
+
+  --font-sans: "Whitney", Inter, sans-serif;
   --font-serif: Source Serif 4, serif;
   --font-mono: JetBrains Mono, monospace;
   --radius: 0.375rem;
@@ -110,14 +117,14 @@
   --BORDER_LIGHT: var(--border);
   --text-primary: var(--foreground);
   --text-secondary: var(--muted-foreground);
-  --text-label: var(--muted-foreground);
+  --text-label: oklch(0.24 0.08 273.1); /* Dark Blue */
   --GRAY_TEXT_DARK: var(--foreground);
   --GRAY_TEXT_SECONDARY: var(--muted-foreground);
   --P_ACCENT: var(--primary);
   --P_LIGHT_BG: var(--secondary);
   --P_SELECTED_BG: var(--accent);
-  --accent-cyan: var(--primary);
-  --accent-light-blue: var(--accent);
+  --accent-cyan: var(--primary-foreground);
+  --accent-light-blue: var(--secondary);
   --color-dark-blue: var(--background);
   --color-blue: var(--card);
   --border-color: var(--border);
@@ -247,10 +254,10 @@ body {
 
 .brand-title {
   margin: 0;
-  font-weight: var(--weight-bold);
+  font-weight: var(--weight-black);
   font-size: calc(14px * 1.4);
   letter-spacing: 0.2px;
-  color: var(--GRAY_TEXT_DARK);
+  color: #002359;
   line-height: 1.3;
 }
 
@@ -371,7 +378,7 @@ body {
 /* Typografi i henhold til retningslinjer (tilnærmet webversjon) */
 h1 {
   font-weight: var(--weight-black);
-  font-size: clamp(48px, 6vw, 80px); /* H1 over 80pt når mulig */
+  font-size: clamp(56px, 6vw, 104px); /* H1 over 80pt når mulig */
   margin: 0 0 var(--space-3) 0;
 }
 
@@ -447,15 +454,17 @@ p { /* Avsnitt */
   z-index: 50; /* z-50 */
   padding: 6px 12px; /* py-1.5 px-3 */
   font-size: 12px; /* text-xs */
-  font-weight: 500; /* font-medium */
+  font-weight: var(--weight-bold);
   border-radius: 9999px; /* rounded-full */
   background: var(--P_SELECTED_BG);
-  color: var(--GRAY_TEXT_DARK);
+  color: var(--primary-foreground);
   border: 1px solid var(--BORDER_LIGHT);
+  text-transform: uppercase;
+  letter-spacing: 0.1em; /* 10% */
   box-shadow: 0 1px 2px rgba(0,0,0,0.08); /* shadow-sm */
   transition: background-color .15s ease, color .15s ease, border-color .15s ease, box-shadow .15s ease;
 }
-#input-fab:hover { background: var(--BLUE_100); border-color: var(--BORDER_LIGHT); }
+#input-fab:hover { background: var(--BLUE_100); border-color: var(--BORDER_LIGHT); color: var(--primary-foreground); }
 
 #output-fab {
   position: fixed;
@@ -464,15 +473,17 @@ p { /* Avsnitt */
   z-index: 50; /* z-50 */
   padding: 6px 12px; /* py-1.5 px-3 */
   font-size: 12px; /* text-xs */
-  font-weight: 500; /* font-medium */
+  font-weight: var(--weight-bold);
   border-radius: 9999px; /* rounded-full */
   background: var(--P_SELECTED_BG);
-  color: var(--GRAY_TEXT_DARK);
+  color: var(--primary-foreground);
   border: 1px solid var(--BORDER_LIGHT);
+  text-transform: uppercase;
+  letter-spacing: 0.1em; /* 10% */
   box-shadow: 0 1px 2px rgba(0,0,0,0.08); /* shadow-sm */
   transition: background-color .15s ease, color .15s ease, border-color .15s ease, box-shadow .15s ease;
 }
-#output-fab:hover { background: var(--BLUE_100); border-color: var(--BORDER_LIGHT); }
+#output-fab:hover { background: var(--BLUE_100); border-color: var(--BORDER_LIGHT); color: var(--primary-foreground); }
 
 /* --- Modal base (reuses disclaimer modal structure) --- */
 .modal[hidden] { display: none !important; }
@@ -781,8 +792,10 @@ p { /* Avsnitt */
   flex-direction: column; /* label under ikonet */
   gap: 4px;
   color: var(--GRAY_TEXT_SECONDARY);
-  font-weight: var(--weight-semibold);
+  font-weight: var(--weight-medium);
   font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em; /* 10% */
 }
 .step::after {
   content: "";
@@ -799,8 +812,8 @@ p { /* Avsnitt */
 .step-dot {
   width: 14px; height: 14px;
   border-radius: 50%;
-  border: 2px solid #B6CCFF; /* inaktiv outline */
-  background: #ffffff;
+  border: 2px solid var(--P_LIGHT_BG); /* inaktiv outline */
+  background: var(--BG_CARD);
   box-shadow: 0 0 0 4px var(--P_LIGHT_BG); /* myk ytre ring */
   position: relative;
   z-index: 1; /* sikre at strek ikke går over ikonet */
@@ -876,22 +889,22 @@ p { /* Avsnitt */
 }
 
 .summary-card { display: flex; flex-direction: column; justify-content: center; align-items: center; padding: var(--space-2); gap: var(--space-1); height: 100%; } /* Sentrert og midstilt */
-.summary-title { font-weight: var(--weight-semibold); text-align: center; font-size: 11px; }
-.summary-assets { background: #ECEFF3; } /* Secondary */
+.summary-title { font-weight: var(--weight-medium); text-align: center; font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; }
+.summary-assets { background: #F5F3F3; } /* Light Grey */
 .summary-assets .summary-title { color: var(--GRAY_TEXT_DARK) !important; }
-.summary-assets .summary-value { color: var(--GRAY_TEXT_SECONDARY); }
+.summary-assets .summary-value { color: var(--GRAY_TEXT_DARK); }
 
 .summary-debts { background: #002359; } /* Secondary Foreground */
-.summary-debts .summary-title { color: #FFFFFF !important; }
-.summary-debts .summary-value { color: #FFFFFF; }
+.summary-debts .summary-title { color: #99D9F2 !important; }
+.summary-debts .summary-value { color: #99D9F2; }
 
-.summary-equity { background: #E4EFFB; } /* Accent */
+.summary-equity { background: #CCECF9; } /* Cyan 20 */
 .summary-equity .summary-title { color: var(--GRAY_TEXT_DARK) !important; }
-.summary-equity .summary-value { color: var(--GRAY_TEXT_SECONDARY); }
+.summary-equity .summary-value { color: var(--GRAY_TEXT_DARK); }
 
-.summary-cash { background: #074EB9; } /* Accent Foreground */
-.summary-cash .summary-title { color: #FFFFFF !important; }
-.summary-cash .summary-value { color: #FFFFFF; }
+.summary-cash { background: #002D72; } /* Blue */
+.summary-cash .summary-title { color: #99D9F2 !important; }
+.summary-cash .summary-value { color: #99D9F2; }
 
 .summary-value { font-weight: var(--weight-semibold); font-size: 14px; color: var(--GRAY_TEXT_SECONDARY); text-align: center; line-height: 1.2; }
 
@@ -921,6 +934,13 @@ p { /* Avsnitt */
   display: flex;
   align-items: center;
   justify-content: flex-end;
+}
+
+/* Input-fanen: verdi-bokser og etiketter skal sitte “pent” på linje */
+.input-tab .asset-amount {
+  text-align: center;
+  justify-content: center;
+  justify-self: center;
 }
 
 /* Stakk rader på smale skjermer for å sikre at hele tallet vises */
@@ -962,7 +982,7 @@ p { /* Avsnitt */
 .year-range::-webkit-slider-runnable-track {
   height: 10px;
   border-radius: 9999px;
-  background: linear-gradient(90deg, #93C5FD 0%, #0A5EDC 100%);
+  background: linear-gradient(90deg, #CCECF9 0%, #002D72 100%);
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.18);
 }
 .year-range::-webkit-slider-thumb {
@@ -972,7 +992,7 @@ p { /* Avsnitt */
   margin-top: -6px; /* center on 10px track */
   border-radius: 50%;
   background: #ffffff;
-  border: 2px solid #60A5FA;
+  border: 2px solid #99D9F2;
   box-shadow: 0 2px 8px rgba(0,0,0,0.25);
 }
 
@@ -980,20 +1000,20 @@ p { /* Avsnitt */
 .year-range::-moz-range-track {
   height: 10px;
   border-radius: 9999px;
-  background: linear-gradient(90deg, #93C5FD 0%, #0A5EDC 100%);
+  background: linear-gradient(90deg, #CCECF9 0%, #002D72 100%);
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.18);
 }
 .year-range::-moz-range-thumb {
   width: 22px; height: 22px;
   border-radius: 50%;
   background: #ffffff;
-  border: 2px solid #60A5FA;
+  border: 2px solid #99D9F2;
   box-shadow: 0 2px 8px rgba(0,0,0,0.25);
 }
 
 /* Fokusglød for tilgjengelighet */
-.year-range:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 6px rgba(59,130,246,0.35); }
-.year-range:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 6px rgba(59,130,246,0.35); }
+.year-range:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 6px rgba(153,217,242,0.35); }
+.year-range:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 6px rgba(153,217,242,0.35); }
 
 /* Range styling - WebKit */
 .asset-range::-webkit-slider-runnable-track {
@@ -1029,14 +1049,16 @@ p { /* Avsnitt */
 .btn-add {
   margin-top: var(--space-2);
   width: 100%;
-  background: var(--BLUE_500);
-  color: #ffffff;
-  border: 1px solid var(--BLUE_500);
+  background: var(--P_ACCENT);
+  color: var(--primary-foreground);
+  border: 1px solid var(--P_ACCENT);
   padding: var(--space-2) var(--space-3);
   border-radius: 8px;
-  font-weight: var(--weight-semibold);
+  font-weight: var(--weight-bold);
   font-size: 12px;
   cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.1em; /* 10% */
 }
 .btn-add:hover { filter: brightness(1.05); box-shadow: 0 0 0 4px rgba(127,170,246,0.25); }
 
@@ -1054,7 +1076,7 @@ p { /* Avsnitt */
   letter-spacing: 0.1em; /* 10% */
   text-transform: uppercase;
   color: var(--text-label);
-  font-weight: var(--weight-semibold);
+  font-weight: var(--weight-medium);
 }
 
 .select {
@@ -1219,14 +1241,16 @@ p { /* Avsnitt */
   appearance: none;
   border: 1px solid var(--BORDER_LIGHT);
   background: var(--BG_CARD);
-  color: var(--GRAY_TEXT_SECONDARY);
+  color: var(--GRAY_TEXT_DARK);
   border-radius: 6px;
   padding: 4px 8px;
   font-size: 10px;
-  font-weight: 500;
+  font-weight: var(--weight-bold);
   cursor: pointer;
   transition: all 0.15s ease;
   line-height: 1.3;
+  text-transform: uppercase;
+  letter-spacing: 0.1em; /* 10% */
 }
 .disclaimer-btn:hover {
   background: var(--BLUE_100);
@@ -1296,6 +1320,9 @@ p { /* Avsnitt */
   border: 1px solid color-mix(in oklch, var(--primary) 40%, var(--BORDER_LIGHT));
   background: var(--primary);
   color: var(--primary-foreground);
+  font-weight: var(--weight-bold);
+  text-transform: uppercase;
+  letter-spacing: 0.1em; /* 10% */
 }
 .copy-btn.is-success {
   background: oklch(0.7 0.2 150);
