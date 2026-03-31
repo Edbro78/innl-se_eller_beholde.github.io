@@ -8,7 +8,9 @@ const AppState = {
     { id: genId(), name: "FAST EIENDOM", amount: 15000000, locked: true },
     { id: genId(), name: "INVESTERINGER", amount: 8000000, locked: true }
   ],
-  repaymentProfileYears: 20
+  repaymentProfileYears: 20,
+  /** Utbetale utbytte: ta med skattefradrag renter (Input Ja/Nei), standard Ja */
+  interestTaxDeductionOnLoan: true
 };
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -303,6 +305,7 @@ function renderPlaceholder(root) {
     AppState.stockTaxPct = 37.84;
     AppState.inputCapital = 0;
     AppState.capitalManuallySet = false; // Reset flagg når alt nullstilles
+    AppState.interestTaxDeductionOnLoan = true;
     inputTabInitialized = false; // Reset flagg for å la Input rendres på nytt med nullstilte verdier
     updateTopSummaries();
     // Gå tilbake til Input-fanen etter nullstilling og tving re-render
@@ -332,6 +335,7 @@ function renderPlaceholder(root) {
     if (AppState.stockTaxPct === undefined) AppState.stockTaxPct = 37.84;
     if (AppState.inputCapital === undefined) AppState.inputCapital = 0;
     if (AppState.repaymentProfileYears === undefined) AppState.repaymentProfileYears = 20;
+    if (AppState.interestTaxDeductionOnLoan === undefined) AppState.interestTaxDeductionOnLoan = true;
     
     // Beregn og sett forventet avkastning basert på defaultverdier
     const expEquity = AppState.expEquity || 8.0;
@@ -1634,6 +1638,7 @@ function renderPlaceholder(root) {
         } else {
           // For headers, kun legg til label og spacer for alignment
           const spacer = document.createElement("div");
+          if (id) spacer.id = id;
           row.appendChild(spacer);
           left.appendChild(row);
           return spacer;
@@ -1641,6 +1646,16 @@ function renderPlaceholder(root) {
       }
 
       if (showDividendLoanContent) {
+        const panelTitleLeft = document.createElement("div");
+        panelTitleLeft.textContent = "Beholde portefølje:";
+        panelTitleLeft.style.fontFamily = '"Whitney", "Inter", "Segoe UI", "Helvetica Neue", Arial, system-ui, sans-serif';
+        panelTitleLeft.style.fontWeight = "700";
+        panelTitleLeft.style.fontSize = "0.875rem";
+        panelTitleLeft.style.lineHeight = "1.3";
+        panelTitleLeft.style.color = "var(--GRAY_TEXT_DARK)";
+        panelTitleLeft.style.marginBottom = "0.25rem";
+        left.appendChild(panelTitleLeft);
+
         // Venstre: første tre linjer med verdi-bokser
         addCalcRow("div-portfolio", "Beholde portefølje", false, false, false, false);
         addCalcRow("div-expected", "Forventet avkastning", false, false, false, false);
@@ -1659,10 +1674,16 @@ function renderPlaceholder(root) {
         left.appendChild(spacer);
 
         // Status om N år
-        addCalcRow("div-status-header", `Status om ${AppState.yearsCount || 0} år`, false, false, false, true);
+        addCalcRow("div-status-header", `Status om ${AppState.yearsCount || 0} år:`, true, false, false, true);
+        addCalcRow("div-loan-status", "Nedbetalt gjeld", false, true, false, false);
         addCalcRow("div-remaining-portfolio", "Restportefølje", false, true, false, false);
-        addCalcRow("div-loan-status", "Lån / Bankinnskudd", false, true, false, false);
-        addCalcRow("div-interest-costs", `Rentekostnader i ${(AppState.yearsCount || 0)} år / tapte Renteinntekter i ${(AppState.yearsCount || 0)} år`, false, true, true, false);
+        addCalcRow("div-interest-costs", `Rentekostnader i ${(AppState.yearsCount || 0)} år`, false, true, true, false);
+        addCalcRow("div-interest-deduction", "Skattefradrag renter", false, true, false, false);
+
+        const spacerBeforeSumSection = document.createElement("div");
+        spacerBeforeSumSection.style.height = "1.5rem";
+        spacerBeforeSumSection.style.flexShrink = "0";
+        left.appendChild(spacerBeforeSumSection);
 
         addDivider();
         const sumRow = addCalcRow("div-sum", "Sum", true, false, false, false);
@@ -1782,6 +1803,7 @@ function renderPlaceholder(root) {
         } else {
           // For headers, kun legg til label og spacer for alignment
           const spacer = document.createElement("div");
+          if (id) spacer.id = id;
           row.appendChild(spacer);
           right.appendChild(row);
           return spacer;
@@ -1789,6 +1811,16 @@ function renderPlaceholder(root) {
       }
 
       if (showDividendLoanContent) {
+        const panelTitleRight = document.createElement("div");
+        panelTitleRight.textContent = "Utbetale utbytte:";
+        panelTitleRight.style.fontFamily = '"Whitney", "Inter", "Segoe UI", "Helvetica Neue", Arial, system-ui, sans-serif';
+        panelTitleRight.style.fontWeight = "700";
+        panelTitleRight.style.fontSize = "0.875rem";
+        panelTitleRight.style.lineHeight = "1.3";
+        panelTitleRight.style.color = "var(--GRAY_TEXT_DARK)";
+        panelTitleRight.style.marginBottom = "0.25rem";
+        right.appendChild(panelTitleRight);
+
         // Høyre panel – identisk tekst som venstre panel, ingen verdier
         const rPortfolioRow = addCalcRowRR("r-portfolio", "Beholde portefølje", false, false, false, false);
         const rExpectedRow = addCalcRowRR("r-expected", "Forventet avkastning", false, false, false, false);
@@ -1808,10 +1840,16 @@ function renderPlaceholder(root) {
 
         const spacerR = document.createElement("div"); spacerR.style.height = "0.5rem"; right.appendChild(spacerR);
 
-        addCalcRowRR("r-status-header", `Status om ${(AppState.yearsCount || 0)} år`, false, false, false, true);
+        addCalcRowRR("r-status-header", `Status om ${(AppState.yearsCount || 0)} år:`, true, false, false, true);
+        addCalcRowRR("r-loan", "Nedbetalt gjeld", false, false, false, false, true);
         addCalcRowRR("r-remaining", "Restportefølje", false, false, false, false, true);
-        addCalcRowRR("r-loan", "Lån / Bankinnskudd", false, false, false, false, true);
-        addCalcRowRR("r-interest-costs", `Sparte rentekostnader i ${(AppState.yearsCount || 0)} år / Renteinntekter i ${(AppState.yearsCount || 0)} år`, false, false, true, false, true);
+        addCalcRowRR("r-interest-costs", `Rentekostnader i ${(AppState.yearsCount || 0)} år`, false, false, true, false, true);
+        addCalcRowRR("r-interest-deduction", "Skattefradrag renter", false, false, false, false, true);
+        const spacerBeforeSumSectionR = document.createElement("div");
+        spacerBeforeSumSectionR.style.height = "1.5rem";
+        spacerBeforeSumSectionR.style.flexShrink = "0";
+        right.appendChild(spacerBeforeSumSectionR);
+
         addDividerRR();
         addCalcRowRR("r-sum", "Sum", true, false, false, false);
         // Oppdater verdier i høyre panel
@@ -2882,34 +2920,69 @@ function renderPlaceholder(root) {
     intRow.appendChild(intOut);
     thirdRight.appendChild(intRow);
 
-    // Ny slider: Avdragsprofil (5–25 år, default 20 år)
-    // Container for label og toggle-knapp på samme linje
-    const repaymentHeader = document.createElement("div");
-    repaymentHeader.style.display = "flex";
-    repaymentHeader.style.justifyContent = "space-between";
-    repaymentHeader.style.alignItems = "center";
-    repaymentHeader.style.marginBottom = "0.25rem";
-    
-    const repaymentLabel = document.createElement("div");
-    repaymentLabel.className = "section-label";
-    repaymentLabel.textContent = "Avdragsprofil";
-    repaymentLabel.style.fontSize = "0.75rem";
-    repaymentLabel.style.margin = "0";
-    repaymentHeader.appendChild(repaymentLabel);
-    
-    // To knapper (Ja/Nei) for avdragsfrihet
-    const interestOnlyContainer = document.createElement("div");
-    interestOnlyContainer.style.display = "flex";
-    interestOnlyContainer.style.alignItems = "center";
-    interestOnlyContainer.style.gap = "0.5rem";
-    
-    const interestOnlyLabel = document.createElement("span");
-    interestOnlyLabel.textContent = "Avdragsfrihet";
-    interestOnlyLabel.style.fontSize = "0.7rem";
-    interestOnlyLabel.style.color = "var(--GRAY_TEXT_SECONDARY)";
-    interestOnlyLabel.style.fontWeight = "500";
-    interestOnlyContainer.appendChild(interestOnlyLabel);
-    
+    // Avdragsprofil – rett under Rentekostnader (5–25 år)
+    const repaymentProfileLabel = document.createElement("div");
+    repaymentProfileLabel.className = "section-label";
+    repaymentProfileLabel.textContent = "Avdragsprofil";
+    repaymentProfileLabel.style.fontSize = "0.75rem";
+    repaymentProfileLabel.style.margin = "0";
+    repaymentProfileLabel.style.marginBottom = "0.25rem";
+    thirdRight.appendChild(repaymentProfileLabel);
+
+    const repaymentRow = document.createElement("div");
+    repaymentRow.style.display = "grid";
+    repaymentRow.style.gridTemplateColumns = "1fr 110px";
+    repaymentRow.style.alignItems = "center";
+    repaymentRow.style.gap = "0.5rem";
+    repaymentRow.style.marginBottom = "0.75rem";
+    const repaymentCol = document.createElement("div");
+    repaymentCol.style.display = "flex";
+    repaymentCol.style.alignItems = "center";
+    const repaymentSlider = document.createElement("input");
+    repaymentSlider.type = "range";
+    repaymentSlider.className = "asset-range";
+    repaymentSlider.id = "repayment-profile-slider";
+    repaymentSlider.min = "5";
+    repaymentSlider.max = "25";
+    repaymentSlider.step = "1";
+    repaymentSlider.value = String(AppState.repaymentProfileYears || 20);
+    repaymentSlider.style.width = "100%";
+    const repaymentOut = document.createElement("div");
+    repaymentOut.className = "asset-amount";
+    repaymentOut.style.width = "110px";
+    repaymentOut.style.fontSize = "0.75rem";
+    repaymentOut.style.padding = "0.4rem 0.5rem";
+    repaymentOut.style.textAlign = "center";
+    const repaymentValue = Number(repaymentSlider.value);
+    repaymentOut.textContent = `${repaymentValue} år`;
+    repaymentSlider.addEventListener("input", () => {
+      repaymentOut.textContent = `${Number(repaymentSlider.value)} år`;
+      AppState.repaymentProfileYears = Number(repaymentSlider.value);
+      updateTopSummaries();
+    });
+    AppState.repaymentProfileYears = repaymentValue;
+    repaymentCol.appendChild(repaymentSlider);
+    repaymentRow.appendChild(repaymentCol);
+    repaymentRow.appendChild(repaymentOut);
+    thirdRight.appendChild(repaymentRow);
+
+    // Avdragsfrihet (Ja/Nei) – samme layout som «Skattefradrag renter»
+    const interestOnlyHeader = document.createElement("div");
+    interestOnlyHeader.style.display = "flex";
+    interestOnlyHeader.style.justifyContent = "space-between";
+    interestOnlyHeader.style.alignItems = "center";
+    interestOnlyHeader.style.marginBottom = "0.25rem";
+    const interestOnlyTitle = document.createElement("div");
+    interestOnlyTitle.className = "section-label";
+    interestOnlyTitle.textContent = "Avdragsfrihet";
+    interestOnlyTitle.style.fontSize = "0.75rem";
+    interestOnlyTitle.style.margin = "0";
+    interestOnlyHeader.appendChild(interestOnlyTitle);
+    const interestOnlyBtns = document.createElement("div");
+    interestOnlyBtns.style.display = "flex";
+    interestOnlyBtns.style.alignItems = "center";
+    interestOnlyBtns.style.gap = "0.5rem";
+
     const interestOnlyYesBtn = document.createElement("button");
     interestOnlyYesBtn.type = "button";
     interestOnlyYesBtn.setAttribute("aria-pressed", "false");
@@ -3007,46 +3080,111 @@ function renderPlaceholder(root) {
       }
     });
     
-    interestOnlyContainer.appendChild(interestOnlyYesBtn);
-    interestOnlyContainer.appendChild(interestOnlyNoBtn);
-    repaymentHeader.appendChild(interestOnlyContainer);
-    thirdRight.appendChild(repaymentHeader);
+    interestOnlyBtns.appendChild(interestOnlyYesBtn);
+    interestOnlyBtns.appendChild(interestOnlyNoBtn);
+    interestOnlyHeader.appendChild(interestOnlyBtns);
+    thirdRight.appendChild(interestOnlyHeader);
 
-    const repaymentRow = document.createElement("div");
-    repaymentRow.style.display = "grid";
-    repaymentRow.style.gridTemplateColumns = "1fr 110px";
-    repaymentRow.style.alignItems = "center";
-    repaymentRow.style.gap = "0.5rem";
-    const repaymentCol = document.createElement("div");
-    repaymentCol.style.display = "flex";
-    repaymentCol.style.alignItems = "center";
-    const repaymentSlider = document.createElement("input");
-    repaymentSlider.type = "range";
-    repaymentSlider.className = "asset-range";
-    repaymentSlider.id = "repayment-profile-slider";
-    repaymentSlider.min = "5";
-    repaymentSlider.max = "25";
-    repaymentSlider.step = "1";
-    repaymentSlider.value = String(AppState.repaymentProfileYears || 20);
-    repaymentSlider.style.width = "100%";
-    const repaymentOut = document.createElement("div");
-    repaymentOut.className = "asset-amount";
-    repaymentOut.style.width = "110px";
-    repaymentOut.style.fontSize = "0.75rem";
-    repaymentOut.style.padding = "0.4rem 0.5rem";
-    repaymentOut.style.textAlign = "center";
-    const repaymentValue = Number(repaymentSlider.value);
-    repaymentOut.textContent = `${repaymentValue} år`;
-    repaymentSlider.addEventListener("input", () => {
-      repaymentOut.textContent = `${Number(repaymentSlider.value)} år`;
-      AppState.repaymentProfileYears = Number(repaymentSlider.value);
+    // Skattefradrag renter (Ja/Nei)
+    const interestDeductionHeader = document.createElement("div");
+    interestDeductionHeader.style.display = "flex";
+    interestDeductionHeader.style.justifyContent = "space-between";
+    interestDeductionHeader.style.alignItems = "center";
+    interestDeductionHeader.style.marginBottom = "0.25rem";
+    const interestDeductionTitle = document.createElement("div");
+    interestDeductionTitle.className = "section-label";
+    interestDeductionTitle.textContent = "Skattefradrag renter";
+    interestDeductionTitle.style.fontSize = "0.75rem";
+    interestDeductionTitle.style.margin = "0";
+    interestDeductionHeader.appendChild(interestDeductionTitle);
+    const interestDeductionBtns = document.createElement("div");
+    interestDeductionBtns.style.display = "flex";
+    interestDeductionBtns.style.alignItems = "center";
+    interestDeductionBtns.style.gap = "0.5rem";
+    const interestDeductionYesBtn = document.createElement("button");
+    interestDeductionYesBtn.type = "button";
+    interestDeductionYesBtn.setAttribute("aria-pressed", "false");
+    interestDeductionYesBtn.setAttribute("aria-label", "Skattefradrag renter: Ja");
+    const interestDeductionNoBtn = document.createElement("button");
+    interestDeductionNoBtn.type = "button";
+    interestDeductionNoBtn.setAttribute("aria-pressed", "false");
+    interestDeductionNoBtn.setAttribute("aria-label", "Skattefradrag renter: Nei");
+    if (AppState.interestTaxDeductionOnLoan === undefined) {
+      AppState.interestTaxDeductionOnLoan = true;
+    }
+    const updateInterestDeductionButtons = () => {
+      const isYes = AppState.interestTaxDeductionOnLoan !== false;
+      interestDeductionYesBtn.setAttribute("aria-pressed", isYes ? "true" : "false");
+      interestDeductionNoBtn.setAttribute("aria-pressed", isYes ? "false" : "true");
+      interestDeductionYesBtn.textContent = "Ja";
+      interestDeductionNoBtn.textContent = "Nei";
+      interestDeductionYesBtn.style.cssText = `
+        appearance: none;
+        border: 1px solid var(--BORDER_LIGHT);
+        background: ${isYes ? "var(--P_ACCENT)" : "#ffffff"};
+        color: ${isYes ? "#ffffff" : "var(--GRAY_TEXT_DARK)"};
+        border-radius: 6px;
+        padding: 0.25rem 0.75rem;
+        font-size: 0.7rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        min-width: 45px;
+        text-align: center;
+      `;
+      interestDeductionNoBtn.style.cssText = `
+        appearance: none;
+        border: 1px solid var(--BORDER_LIGHT);
+        background: ${!isYes ? "var(--P_ACCENT)" : "#ffffff"};
+        color: ${!isYes ? "#ffffff" : "var(--GRAY_TEXT_DARK)"};
+        border-radius: 6px;
+        padding: 0.25rem 0.75rem;
+        font-size: 0.7rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        min-width: 45px;
+        text-align: center;
+      `;
+    };
+    updateInterestDeductionButtons();
+    const refreshAfterInterestDeductionToggle = () => {
       updateTopSummaries();
+      try { updateDividendLoanCalc(); } catch (_) {}
+      try { updateInvestLoanCalc(); } catch (_) {}
+    };
+    interestDeductionYesBtn.addEventListener("click", () => {
+      AppState.interestTaxDeductionOnLoan = true;
+      updateInterestDeductionButtons();
+      refreshAfterInterestDeductionToggle();
     });
-    AppState.repaymentProfileYears = repaymentValue;
-    repaymentCol.appendChild(repaymentSlider);
-    repaymentRow.appendChild(repaymentCol);
-    repaymentRow.appendChild(repaymentOut);
-    thirdRight.appendChild(repaymentRow);
+    interestDeductionNoBtn.addEventListener("click", () => {
+      AppState.interestTaxDeductionOnLoan = false;
+      updateInterestDeductionButtons();
+      refreshAfterInterestDeductionToggle();
+    });
+    interestDeductionYesBtn.addEventListener("mouseenter", () => {
+      if (AppState.interestTaxDeductionOnLoan !== true) {
+        interestDeductionYesBtn.style.background = "var(--BLUE_100)";
+        interestDeductionYesBtn.style.borderColor = "var(--BLUE_300)";
+      }
+    });
+    interestDeductionYesBtn.addEventListener("mouseleave", () => {
+      updateInterestDeductionButtons();
+    });
+    interestDeductionNoBtn.addEventListener("mouseenter", () => {
+      if (AppState.interestTaxDeductionOnLoan !== false) {
+        interestDeductionNoBtn.style.background = "var(--BLUE_100)";
+        interestDeductionNoBtn.style.borderColor = "var(--BLUE_300)";
+      }
+    });
+    interestDeductionNoBtn.addEventListener("mouseleave", () => {
+      updateInterestDeductionButtons();
+    });
+    interestDeductionBtns.appendChild(interestDeductionYesBtn);
+    interestDeductionBtns.appendChild(interestDeductionNoBtn);
+    interestDeductionHeader.appendChild(interestDeductionBtns);
+    thirdRight.appendChild(interestDeductionHeader);
 
     // Gi samlet høyde slik at de to boksene når ned til like over Output-knappen
     function sizeThird() {
@@ -3359,14 +3497,16 @@ function updateInvestLoanCalc() {
     // Beregn og oppdater "Fradrag rentekostnader" i venstre boks = -renter totalt × kapitalskatt (fra input)
     // Siden totalInterest er negativ (f.eks. -4220379), blir fradraget: -(-4220379) × kapitalskatt = 4220379 × kapitalskatt
     const elInterestDeduction = document.getElementById('inv-left-interest-deduction');
-    if (elInterestDeduction && totalInterest < 0) {
-      // Hent kapitalskatt fra Input-fanen
-      const capitalTaxRate = (AppState.capitalTaxPct ?? 22.00) / 100; // Konverter prosent til desimal
-      // totalInterest er negativ, så vi tar absoluttverdi og multipliserer med kapitalskatt
-      const interestDeduction = Math.abs(totalInterest) * capitalTaxRate;
-      elInterestDeduction.textContent = formatNOK(Math.round(interestDeduction));
-    } else if (elInterestDeduction) {
-      elInterestDeduction.textContent = formatNOK(0);
+    if (elInterestDeduction) {
+      if (AppState.interestTaxDeductionOnLoan === false) {
+        elInterestDeduction.textContent = "kr 0,-";
+      } else if (totalInterest < 0) {
+        const capitalTaxRate = (AppState.capitalTaxPct ?? 22.00) / 100;
+        const interestDeduction = Math.abs(totalInterest) * capitalTaxRate;
+        elInterestDeduction.textContent = formatNOK(Math.round(interestDeduction));
+      } else {
+        elInterestDeduction.textContent = formatNOK(0);
+      }
     }
   }
   
@@ -3774,16 +3914,17 @@ function updateInvestLoanCalc() {
       debtSettle = remainingLoan > 0 ? -remainingLoan : 0;
     }
     
-    // Fradrag rentekostnader = |totalInterest| × kapitalskatt (fra input)
+    // Fradrag rentekostnader = |totalInterest| × kapitalskatt (fra input), eller 0 hvis «Skattefradrag renter» = Nei
     let interestDeduction = 0;
     const elInterestDeduction = document.getElementById('inv-left-interest-deduction');
-    if (elInterestDeduction && elInterestDeduction.textContent && elInterestDeduction.textContent.trim()) {
+    if (AppState.interestTaxDeductionOnLoan === false) {
+      interestDeduction = 0;
+    } else if (elInterestDeduction && elInterestDeduction.textContent && elInterestDeduction.textContent.trim()) {
       let interestText = elInterestDeduction.textContent.trim().replace(/[^\d]/g, '');
       interestDeduction = parseFloat(interestText) || 0;
     } else {
       if (totalInterest !== 0 && totalInterest !== undefined && totalInterest !== null) {
-        // Hent kapitalskatt fra Input-fanen
-        const capitalTaxRate = (AppState.capitalTaxPct ?? 22.00) / 100; // Konverter prosent til desimal
+        const capitalTaxRate = (AppState.capitalTaxPct ?? 22.00) / 100;
         interestDeduction = Math.abs(totalInterest) * capitalTaxRate;
       }
     }
@@ -3862,13 +4003,16 @@ function updateInvestLoanCalc() {
       }
       
       if (interestDeductionDelayed === null) {
-        const totalInterest = parseFormattedValue(elTotalInterestDelayed);
-        if (totalInterest !== null) {
-          // Hent kapitalskatt fra Input-fanen
-          const capitalTaxRate = (AppState.capitalTaxPct ?? 22.00) / 100; // Konverter prosent til desimal
-          interestDeductionDelayed = Math.abs(totalInterest) * capitalTaxRate;
-        } else {
+        if (AppState.interestTaxDeductionOnLoan === false) {
           interestDeductionDelayed = 0;
+        } else {
+          const totalInterest = parseFormattedValue(elTotalInterestDelayed);
+          if (totalInterest !== null) {
+            const capitalTaxRate = (AppState.capitalTaxPct ?? 22.00) / 100;
+            interestDeductionDelayed = Math.abs(totalInterest) * capitalTaxRate;
+          } else {
+            interestDeductionDelayed = 0;
+          }
         }
       }
       
@@ -3918,6 +4062,7 @@ function updateDividendLoanCalc() {
   const elRemainingPortfolio = document.getElementById('div-remaining-portfolio');
   const elLoanStatus = document.getElementById('div-loan-status');
   const elInterestCosts = document.getElementById('div-interest-costs');
+  const elInterestDeduction = document.getElementById('div-interest-deduction');
   const elSum = document.getElementById('div-sum');
   if (!elPortfolio && !elExpected && !elEndValue) return; // ikke i riktig fane
 
@@ -3932,7 +4077,10 @@ function updateDividendLoanCalc() {
   }
   if (elStatusHeader && elStatusHeader.parentElement) {
     const label = elStatusHeader.parentElement.firstElementChild;
-    if (label) label.textContent = `Status om ${years} år`;
+    if (label) {
+      label.textContent = `Status om ${years} år:`;
+      label.style.fontWeight = "700";
+    }
   }
   if (elRDividendHeader && elRDividendHeader.parentElement) {
     const label = elRDividendHeader.parentElement.firstElementChild;
@@ -3940,19 +4088,20 @@ function updateDividendLoanCalc() {
   }
   if (elRStatusHeader && elRStatusHeader.parentElement) {
     const label = elRStatusHeader.parentElement.firstElementChild;
-    if (label) label.textContent = `Status om ${years} år`;
+    if (label) {
+      label.textContent = `Status om ${years} år:`;
+      label.style.fontWeight = "700";
+    }
   }
   // Oppdater etikett for rentekostnader til å inkludere år (label er første child av parent row)
   if (elInterestCosts && elInterestCosts.parentElement) {
     const label = elInterestCosts.parentElement.firstElementChild;
-    if (label) label.textContent = `Rentekostnader i ${years} år / tapte Renteinntekter i ${years} år`;
+    if (label) label.textContent = `Rentekostnader i ${years} år`;
   }
-  const elRInterestLabel = document.getElementById('r-interest-costs');
-  if (elRInterestLabel && elRInterestLabel.parentElement) {
-    const label = elRInterestLabel.parentElement.firstElementChild;
-    if (label) label.textContent = `Sparte rentekostnader i ${years} år / Renteinntekter i ${years} år`;
+  if (elRInterestCosts && elRInterestCosts.parentElement) {
+    const rInterestLabel = elRInterestCosts.parentElement.firstElementChild;
+    if (rInterestLabel) rInterestLabel.textContent = `Rentekostnader i ${years} år`;
   }
-  const interestPct = isFinite(AppState.interestCostPct) ? Number(AppState.interestCostPct) : 5.0;
 
   // Hent forventet avkastning fra Input-fanen (allerede beregnet med KPI trukket fra)
   const inputExpectedReturn = document.getElementById('expected-return-out');
@@ -4009,30 +4158,52 @@ function updateDividendLoanCalc() {
   // Høyre panel: Restportefølje skal være 0
   if (elRRemaining) elRRemaining.textContent = formatNOK(0);
 
-  // Lån = Netto
-  if (elLoanStatus) elLoanStatus.textContent = formatNOK(Math.round(dividendNet));
+  // Nedbetalt gjeld (venstre) = Netto i parentes
+  if (elLoanStatus) elLoanStatus.textContent = `(${formatNOK(Math.round(dividendNet))})`;
+  if (elLoanStatus && elLoanStatus.parentElement) {
+    const loanLabelL = elLoanStatus.parentElement.firstElementChild;
+    if (loanLabelL) loanLabelL.textContent = "Nedbetalt gjeld";
+  }
   // Høyre panel: Lån = Netto fra høyre tabell
-  if (elRLoan) elRLoan.textContent = formatNOK(Math.round(dividendNet));
+  if (elRLoan) elRLoan.textContent = `(${formatNOK(Math.round(dividendNet))})`;
+  if (elRLoan && elRLoan.parentElement) {
+    const loanLabelR = elRLoan.parentElement.firstElementChild;
+    if (loanLabelR) loanLabelR.textContent = "Nedbetalt gjeld";
+  }
 
-  // rentekostnader i x antall år = (Lån × rentekostnader) × antall år
-  const interestRate = interestPct / 100;
-  // Venstre: rentekostnader basert på lån (dividendNet)
-  const interestCostsTotal = (dividendNet * interestRate) * years;
+  // Venstre rentelinje: sats fra Input «Rentekostnader»; formel netto×(1+sats)^år − netto
+  let interestPct = isFinite(AppState.interestCostPct) ? Number(AppState.interestCostPct) : 5.0;
+  const interestSliderEl = document.getElementById("interest-cost-slider");
+  if (interestSliderEl && interestSliderEl.value !== "") {
+    const v = Number(interestSliderEl.value);
+    if (isFinite(v)) interestPct = v;
+  }
+  const interestRateLoan = interestPct / 100;
+  // Netto × (1 + rentekostnad)^år − netto (rentesats fra Input «Rentekostnader»)
+  const interestCostsTotal = dividendNet * Math.pow(1 + interestRateLoan, years) - dividendNet;
   if (elInterestCosts) elInterestCosts.textContent = formatNOK(Math.round(interestCostsTotal));
-  // Høyre: rentekostnader basert på lån (dividendNet)
-  const rInterestCostsTotal = (dividendNet * interestRate) * years;
-  if (elRInterestCosts) elRInterestCosts.textContent = formatNOK(Math.round(rInterestCostsTotal));
+  if (elRInterestCosts) elRInterestCosts.textContent = "kr 0,-";
 
-  // Sum = Restportefølje + Lån - rentekostnader (venstre)
-  const sum = remainingPortfolio + dividendNet - interestCostsTotal;
+  const capitalTaxDec = (AppState.capitalTaxPct ?? 22) / 100;
+  const interestTaxDeduction =
+    AppState.interestTaxDeductionOnLoan !== false ? interestCostsTotal * capitalTaxDec : 0;
+  const elRInterestDeduction = document.getElementById('r-interest-deduction');
+  if (elInterestDeduction) {
+    elInterestDeduction.textContent =
+      AppState.interestTaxDeductionOnLoan !== false
+        ? formatNOK(Math.round(interestTaxDeduction))
+        : "kr 0,-";
+  }
+  if (elRInterestDeduction) elRInterestDeduction.textContent = "kr 0,-";
+
+  // Sum (venstre) = Restportefølje − rentekostnader + skattefradrag rentekostnader
+  const sum = remainingPortfolio - interestCostsTotal + interestTaxDeduction;
   if (elSum) elSum.textContent = formatNOK(Math.round(sum));
-  // Høyre: Sum = Lån + rentekostnader i 10 år
-  const rSum = dividendNet + rInterestCostsTotal;
-  if (elRSum) elRSum.textContent = formatNOK(Math.round(rSum));
+  if (elRSum) elRSum.textContent = "kr 0,-";
   
   // Forskjell mellom å beholde Vs. å utbetale = Sum (venstre) - Sum (høyre)
   const elDifference = document.getElementById('div-difference');
-  const difference = sum - rSum;
+  const difference = sum;
   if (elDifference) elDifference.textContent = formatNOK(Math.round(difference));
 }
 
@@ -4792,6 +4963,7 @@ function generateOutputText() {
   lines.push(`Skjermingsrente: ${(AppState.shieldRatePct || 3.9).toFixed(1).replace('.', ',')} %`);
   lines.push(`Rentekostnader: ${(AppState.interestCostPct || 5.0).toFixed(1).replace('.', ',')} %`);
   lines.push(`Avdragsprofil: ${AppState.repaymentProfileYears || 20} år`);
+  lines.push(`Skattefradrag renter: ${AppState.interestTaxDeductionOnLoan !== false ? "Ja" : "Nei"}`);
   lines.push(`Utbytteskatt: ${(AppState.stockTaxPct ?? 37.84).toFixed(2).replace('.', ',')} %`);
   lines.push(`Kapitalskatt: ${(AppState.capitalTaxPct || 22.0).toFixed(2).replace('.', ',')} %`);
   lines.push("");
@@ -4833,7 +5005,8 @@ function generateOutputText() {
     { id: "div-dividend-net", label: "Netto" },
     { id: "div-remaining", label: "Restportefølje" },
     { id: "div-loan", label: "Lån" },
-    { id: "div-interest-costs", label: "rentekostnader i x antall år" },
+    { id: "div-interest-costs", label: "rentekostnader i x år" },
+    { id: "div-interest-deduction", label: "Skattefradrag renter" },
     { id: "div-sum", label: "Sum" }
   ];
   utbytteData.forEach(item => {
@@ -5023,6 +5196,11 @@ function parseInputText(text) {
       const match = line.match(/Avdragsprofil:\s*(\d+)\s*år/);
       if (match) {
         AppState.repaymentProfileYears = parseInt(match[1], 10);
+      }
+    } else if (line.startsWith("Skattefradrag renter:") || line.startsWith("Skattefradrag på renter:")) {
+      const m = line.match(/Skattefradrag (?:på )?renter:\s*(Ja|Nei)/i);
+      if (m) {
+        AppState.interestTaxDeductionOnLoan = /^ja$/i.test(m[1].trim());
       }
     } else if (line.startsWith("Utbytteskatt:")) {
       const match = line.match(/Utbytteskatt:\s*([\d,]+)\s*%/);
@@ -5398,7 +5576,10 @@ function calculateNetReturnForEquityShare(equitySharePercent) {
   }
   
   const totalInterest = -totalAccumulatedInterest; // Negativ fordi det er en kostnad
-  const interestDeduction = Math.abs(totalInterest) * ((AppState.capitalTaxPct ?? 22.00) / 100);
+  const interestDeduction =
+    AppState.interestTaxDeductionOnLoan !== false
+      ? Math.abs(totalInterest) * ((AppState.capitalTaxPct ?? 22.00) / 100)
+      : 0;
 
   // Beregn netto avkastning (Avkastning utover lånekostnad)
   const debtSettle = remainingLoan > 0 ? -remainingLoan : 0;
@@ -5565,7 +5746,10 @@ function calculateNetReturnForInterestCost(interestCostPercent) {
   }
   
   const totalInterest = -totalAccumulatedInterest; // Negativ fordi det er en kostnad
-  const interestDeduction = Math.abs(totalInterest) * ((AppState.capitalTaxPct ?? 22.00) / 100);
+  const interestDeduction =
+    AppState.interestTaxDeductionOnLoan !== false
+      ? Math.abs(totalInterest) * ((AppState.capitalTaxPct ?? 22.00) / 100)
+      : 0;
 
   // Beregn netto avkastning (Avkastning utover lånekostnad)
   const debtSettle = remainingLoan > 0 ? -remainingLoan : 0;
@@ -5720,7 +5904,10 @@ function calculateNetReturnForYears(years) {
   }
   
   const totalInterest = -totalAccumulatedInterest; // Negativ fordi det er en kostnad
-  const interestDeduction = Math.abs(totalInterest) * ((AppState.capitalTaxPct ?? 22.00) / 100);
+  const interestDeduction =
+    AppState.interestTaxDeductionOnLoan !== false
+      ? Math.abs(totalInterest) * ((AppState.capitalTaxPct ?? 22.00) / 100)
+      : 0;
 
   // Beregn netto avkastning
   const debtSettle = remainingLoan > 0 ? -remainingLoan : 0;
@@ -6024,18 +6211,13 @@ function calculateDifferenceForYears(years) {
   const dividendNet = portfolio - dividendTax;
   const remainingPortfolio = endValue - portfolio;
   const interestRate = interestPct / 100;
-  const interestCostsTotal = (dividendNet * interestRate) * years;
+  const interestCostsTotal = dividendNet * Math.pow(1 + interestRate, years) - dividendNet;
+  const capitalTaxDec = (AppState.capitalTaxPct ?? 22) / 100;
+  const interestTaxDeduction =
+    AppState.interestTaxDeductionOnLoan !== false ? interestCostsTotal * capitalTaxDec : 0;
+  const sum = remainingPortfolio - interestCostsTotal + interestTaxDeduction;
+  const rSum = 0;
   
-  // Sum venstre = Restportefølje + Lån - rentekostnader
-  const sum = remainingPortfolio + dividendNet - interestCostsTotal;
-  
-  // Beregn verdier for høyre boks (utbetale)
-  const rInterestCostsTotal = (dividendNet * interestRate) * years;
-  
-  // Sum høyre = Lån + rentekostnader
-  const rSum = dividendNet + rInterestCostsTotal;
-  
-  // Forskjell = Sum venstre - Sum høyre
   return sum - rSum;
 }
 
@@ -6083,18 +6265,13 @@ function calculateDifferenceForTaxRate(taxRatePercent) {
   const dividendNet = portfolio - dividendTax;
   const remainingPortfolio = endValue - portfolio;
   const interestRate = interestPct / 100;
-  const interestCostsTotal = (dividendNet * interestRate) * years;
+  const interestCostsTotal = dividendNet * Math.pow(1 + interestRate, years) - dividendNet;
+  const capitalTaxDec = (AppState.capitalTaxPct ?? 22) / 100;
+  const interestTaxDeduction =
+    AppState.interestTaxDeductionOnLoan !== false ? interestCostsTotal * capitalTaxDec : 0;
+  const sum = remainingPortfolio - interestCostsTotal + interestTaxDeduction;
+  const rSum = 0;
   
-  // Sum venstre = Restportefølje + Lån - rentekostnader
-  const sum = remainingPortfolio + dividendNet - interestCostsTotal;
-  
-  // Beregn verdier for høyre boks (utbetale)
-  const rInterestCostsTotal = (dividendNet * interestRate) * years;
-  
-  // Sum høyre = Lån + rentekostnader
-  const rSum = dividendNet + rInterestCostsTotal;
-  
-  // Forskjell = Sum venstre - Sum høyre
   return sum - rSum;
 }
 
