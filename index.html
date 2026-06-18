@@ -4,15 +4,15 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Innløse eller beholde</title>
+    <link rel="stylesheet" href="SPWM mal/colors_and_type.css" />
+    <link rel="stylesheet" href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
     <div class="app">
       <aside class="sidebar" aria-label="Hovednavigasjon">
         <div class="brand">
-          <h1 class="brand-title">Innløse eller beholde</h1>
-          <div style="display: flex; gap: 0.5rem; align-items: center;">
-          </div>
+          <img class="brand-logo" src="SPWM mal/assets/spwm-logo.svg" alt="Söderberg &amp; Partners Wealth Management" width="200" height="34" />
         </div>
         <nav class="nav" role="navigation">
           <button class="nav-item is-active" data-section="Forside">
@@ -97,10 +97,10 @@
     </div>
 
     <!-- Input flytende knapp -->
-    <button id="input-fab" class="px-3 py-1.5 text-xs font-medium rounded-full bg-slate-700/70 hover:bg-slate-700 text-slate-200 border border-slate-600/70 shadow-sm transition-colors" aria-haspopup="dialog" aria-controls="input-modal" aria-label="Åpne Input">Input</button>
+    <button id="input-fab" aria-haspopup="dialog" aria-controls="input-modal" aria-label="Åpne Input">Input</button>
 
     <!-- Output flytende knapp -->
-    <button id="output-fab" class="px-3 py-1.5 text-xs font-medium rounded-full bg-slate-700/70 hover:bg-slate-700 text-slate-200 border border-slate-600/70 shadow-sm transition-colors" aria-haspopup="dialog" aria-controls="output-modal" aria-label="Åpne Output">Output</button>
+    <button id="output-fab" aria-haspopup="dialog" aria-controls="output-modal" aria-label="Åpne Output">Output</button>
 
     <!-- Input modal -->
     <div id="input-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="input-title" hidden>
@@ -111,7 +111,7 @@
         <div class="output-editor">
           <textarea id="input-text" class="output-textarea" aria-label="Lim inn input data" spellcheck="false" placeholder="Lim inn tekst fra Output-knappen her..."></textarea>
           <button id="apply-input" class="copy-btn" type="button">
-            <span class="copy-icon" aria-hidden="true">✓</span>
+            <span class="copy-icon bx bx-check" aria-hidden="true"></span>
             <span class="copy-label">Oppdater input</span>
           </button>
         </div>
@@ -127,7 +127,7 @@
         <div class="output-editor">
           <textarea id="output-text" class="output-textarea" readonly aria-label="Generert output" spellcheck="false"></textarea>
           <button id="copy-output" class="copy-btn" type="button">
-            <span class="copy-icon" aria-hidden="true">📋</span>
+            <span class="copy-icon bx bx-copy" aria-hidden="true"></span>
             <span class="copy-label">Kopier</span>
           </button>
         </div>

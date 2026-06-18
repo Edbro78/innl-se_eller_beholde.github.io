@@ -395,7 +395,7 @@ function renderPlaceholder(root) {
       const tileElement = document.createElement("div");
       tileElement.id = tile.id;
       tileElement.style.cssText = `
-        background: #E3F2FD;
+        background: var(--white);
         border-radius: 12px;
         padding: 2rem;
         display: flex;
@@ -403,10 +403,10 @@ function renderPlaceholder(root) {
         align-items: center;
         justify-content: center;
         text-align: center;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.08);
-        transition: transform 0.2s, box-shadow 0.2s;
+        box-shadow: var(--shadow-sm);
+        transition: box-shadow 0.15s ease, border-color 0.15s ease;
         cursor: pointer;
-        border: 1px solid rgba(25, 118, 210, 0.1);
+        border: 1px solid var(--gray-200);
       `;
       
       // Legg til klikk-handler for navigasjon
@@ -418,15 +418,13 @@ function renderPlaceholder(root) {
       });
       
       tileElement.addEventListener("mouseenter", () => {
-        tileElement.style.transform = "translateY(-4px)";
-        tileElement.style.boxShadow = "0 8px 20px rgba(0, 0, 0, 0.15), 0 4px 8px rgba(0, 0, 0, 0.12)";
-        tileElement.style.borderColor = "rgba(25, 118, 210, 0.3)";
+        tileElement.style.boxShadow = "var(--shadow-md)";
+        tileElement.style.borderColor = "var(--blue-300)";
       });
       
       tileElement.addEventListener("mouseleave", () => {
-        tileElement.style.transform = "translateY(0)";
-        tileElement.style.boxShadow = "0 4px 12px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.08)";
-        tileElement.style.borderColor = "rgba(25, 118, 210, 0.1)";
+        tileElement.style.boxShadow = "var(--shadow-sm)";
+        tileElement.style.borderColor = "var(--gray-200)";
       });
       
       const iconElement = document.createElement("div");
@@ -435,7 +433,7 @@ function renderPlaceholder(root) {
         width: 48px;
         height: 48px;
         margin-bottom: 1rem;
-        color: #1976D2;
+        color: var(--blue-main);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -527,11 +525,11 @@ function renderPlaceholder(root) {
         row.style.justifyContent = "space-between";
         row.style.lineHeight = "1.3";
         row.style.fontSize = "0.75rem";
-        row.style.fontFamily = '"Whitney", "Inter", "Segoe UI", "Helvetica Neue", Arial, system-ui, sans-serif';
+        row.style.fontFamily = 'var(--font-sans)';
         const label = document.createElement("span");
         label.textContent = opts.placeholder ? "" : text;
         if (opts.labelId) label.id = opts.labelId;
-        label.style.fontFamily = '"Whitney", "Inter", "Segoe UI", "Helvetica Neue", Arial, system-ui, sans-serif';
+        label.style.fontFamily = 'var(--font-sans)';
         label.style.lineHeight = "1.3";
         if (opts.bold) {
           label.style.fontWeight = "700";
@@ -541,13 +539,13 @@ function renderPlaceholder(root) {
           label.style.fontSize = "0.75rem";
         }
         if (opts.red) {
-          label.style.color = "#D32F2F";
+          label.style.color = "var(--error-600)";
           label.style.fontWeight = "400"; // Rød tekst skal ha font-weight 400
         }
         const value = document.createElement("span");
         value.textContent = opts.placeholder ? "" : "";
         if (opts.id) value.id = opts.id;
-        value.style.fontFamily = '"Whitney", "Inter", "Segoe UI", "Helvetica Neue", Arial, system-ui, sans-serif';
+        value.style.fontFamily = 'var(--font-sans)';
         value.style.lineHeight = "1.3";
         value.style.minWidth = "6rem";
         value.style.textAlign = "right";
@@ -559,7 +557,7 @@ function renderPlaceholder(root) {
           value.style.fontSize = "0.75rem";
         }
         if (opts.red) {
-          value.style.color = "#D32F2F";
+          value.style.color = "var(--error-600)";
           value.style.fontWeight = "400"; // Rød tekst skal ha font-weight 400
         }
         row.appendChild(label);
@@ -681,7 +679,7 @@ function renderPlaceholder(root) {
         if (elGR) elGR.textContent = formatNOK(gain);
         if (elT) { 
           elT.textContent = formatNOK(tax); 
-          elT.style.color = "#D32F2F"; 
+          elT.style.color = "var(--error-600)"; 
           elT.style.fontWeight = "400"; // Rød tekst skal ha font-weight 400
         }
 
@@ -776,7 +774,7 @@ function renderPlaceholder(root) {
           const rateRight = equitySharePctR > 80 ? stockTaxRate : (equityShareR * stockTaxRate + interestShareR * capitalTaxRate);
           const taxRight = Math.round(excessRight * rateRight);
           elTR.textContent = formatNOK(taxRight);
-          elTR.style.color = "#D32F2F";
+          elTR.style.color = "var(--error-600)";
           // Høyre: Netto portefølje (fremtid) = Verdi om x år − Skatt
           if (elNR) elNR.textContent = formatNOK(Math.max(0, futureRight - taxRight));
         }
@@ -814,7 +812,7 @@ function renderPlaceholder(root) {
         const taxFuture = Math.round(excess * effectiveTaxRate);
         if (elTaxFuture) { 
           elTaxFuture.textContent = formatNOK(taxFuture); 
-          elTaxFuture.style.color = "#D32F2F"; 
+          elTaxFuture.style.color = "var(--error-600)"; 
           elTaxFuture.style.fontWeight = "400"; // Rød tekst skal ha font-weight 400
         }
 
@@ -849,7 +847,7 @@ function renderPlaceholder(root) {
         row.style.justifyContent = "space-between";
         row.style.lineHeight = "1.3";
         row.style.fontSize = "0.75rem";
-        row.style.fontFamily = '"Whitney", "Inter", "Segoe UI", "Helvetica Neue", Arial, system-ui, sans-serif';
+        row.style.fontFamily = 'var(--font-sans)';
         // Skjul hele raden hvis hidden er satt, men behold plassen
         if (opts.hidden) {
           row.style.visibility = "hidden";
@@ -857,7 +855,7 @@ function renderPlaceholder(root) {
         const label = document.createElement("span");
         label.textContent = opts.placeholder ? "" : text;
         if (opts.labelId) label.id = opts.labelId;
-        label.style.fontFamily = '"Whitney", "Inter", "Segoe UI", "Helvetica Neue", Arial, system-ui, sans-serif';
+        label.style.fontFamily = 'var(--font-sans)';
         label.style.lineHeight = "1.3";
         if (opts.bold) {
           label.style.fontWeight = "700";
@@ -867,7 +865,7 @@ function renderPlaceholder(root) {
           label.style.fontSize = "0.75rem";
         }
         if (opts.red) {
-          label.style.color = "#D32F2F";
+          label.style.color = "var(--error-600)";
           label.style.fontWeight = "400"; // Rød tekst skal ha font-weight 400
         }
         if (opts.italic) label.style.fontStyle = "italic";
@@ -878,7 +876,7 @@ function renderPlaceholder(root) {
         const value = document.createElement("span");
         value.textContent = opts.placeholder ? "" : "";
         if (opts.id) value.id = opts.id;
-        value.style.fontFamily = '"Whitney", "Inter", "Segoe UI", "Helvetica Neue", Arial, system-ui, sans-serif';
+        value.style.fontFamily = 'var(--font-sans)';
         value.style.lineHeight = "1.3";
         value.style.minWidth = "6rem";
         value.style.textAlign = "right";
@@ -891,7 +889,7 @@ function renderPlaceholder(root) {
         }
         // Sett rødfarge på verdien også hvis red er satt
         if (opts.red) {
-          value.style.color = "#D32F2F";
+          value.style.color = "var(--error-600)";
           value.style.fontWeight = "400"; // Rød tekst skal ha font-weight 400
         }
         row.appendChild(label);
@@ -1178,13 +1176,13 @@ function renderPlaceholder(root) {
           // Beregn årlig betaling
           const annualPayment = Math.abs(calculatePMT(rate, nper, pv, fv, type));
           elPayment.textContent = formatNOK(Math.round(annualPayment));
-          elPayment.style.color = "#D32F2F";
+          elPayment.style.color = "var(--error-600)";
           
           // Oppdater "Årlig renter og avdrag per år" i høyre boksen med minus foran
           const elAnnualPayment = document.getElementById("inv-right-annual-payment");
           if (elAnnualPayment) {
             elAnnualPayment.textContent = formatNOK(-Math.round(annualPayment));
-            elAnnualPayment.style.color = "#D32F2F";
+            elAnnualPayment.style.color = "var(--error-600)";
           }
           
           // "Verdi ved periodens slutt" beregnes i updateInvestLoanCalc() som kalles etter at UI er opprettet
@@ -1232,10 +1230,10 @@ function renderPlaceholder(root) {
             const elDebtSettle = document.getElementById('inv-left-debt-settle');
             if (elDebtSettle && remainingLoan > 0) {
               elDebtSettle.textContent = formatNOK(-Math.round(remainingLoan));
-              elDebtSettle.style.color = "#D32F2F";
+              elDebtSettle.style.color = "var(--error-600)";
             } else if (elDebtSettle) {
               elDebtSettle.textContent = formatNOK(0);
-              elDebtSettle.style.color = "#D32F2F";
+              elDebtSettle.style.color = "var(--error-600)";
             }
             
             // "Avkastning:" beregnes i updateInvestLoanCalc() som kalles etter at UI er opprettet
@@ -1329,7 +1327,7 @@ function renderPlaceholder(root) {
                   elTax.textContent = formatNOK(roundedTax);
                   
                   // Sett farge: grønn hvis positiv (skattefordel), rød hvis negativ (skattekostnad)
-                  const taxColor = roundedTax >= 0 ? "#0C8F4A" : "#D32F2F"; // Grønn eller rød
+                  const taxColor = roundedTax >= 0 ? "var(--success-600)" : "var(--error-600)"; // Grønn eller rød
                   elTax.style.color = taxColor;
                   
                   // Oppdater også etiketten "Skatt" med samme farge
@@ -1476,14 +1474,14 @@ function renderPlaceholder(root) {
             const pv2 = portfolio2;
             annualPayment2 = Math.abs(calculatePMT(rate2, nper2, pv2, 0, 0));
             elPayment2.textContent = formatNOK(Math.round(annualPayment2));
-            elPayment2.style.color = "#D32F2F";
+            elPayment2.style.color = "var(--error-600)";
           }
           
           // Oppdater "Årlig renter og avdrag per år" i høyre boksen med minus foran
           const elAnnualPayment2 = document.getElementById("inv-right-annual-payment");
           if (elAnnualPayment2 && annualPayment2 > 0) {
             elAnnualPayment2.textContent = formatNOK(-Math.round(annualPayment2));
-            elAnnualPayment2.style.color = "#D32F2F";
+            elAnnualPayment2.style.color = "var(--error-600)";
           }
           
           // VIKTIG: Kall updateInvestLoanCalc() for å beregne "Verdi ved periodens slutt"
@@ -1583,11 +1581,11 @@ function renderPlaceholder(root) {
         row.style.marginBottom = "0.1rem"; // Minimal margin mellom rader
 
         // Behagelig rødfarge for kostnader (samme som i "Nedbetale lån")
-        const costColor = "#D32F2F"; // En behagelig rødfarge, ikke for sterk
+        const costColor = "var(--error-600)"; // En behagelig rødfarge, ikke for sterk
 
         const label = document.createElement("div");
         label.textContent = labelText;
-        label.style.fontFamily = '"Whitney", "Inter", "Segoe UI", "Helvetica Neue", Arial, system-ui, sans-serif';
+        label.style.fontFamily = 'var(--font-sans)';
         label.style.lineHeight = "1.3";
         label.style.color = isCost ? costColor : "var(--GRAY_TEXT_DARK)";
         if (isCost) {
@@ -1612,7 +1610,7 @@ function renderPlaceholder(root) {
           value.id = id;
           value.className = "asset-amount";
           value.textContent = ""; // fylles senere
-        value.style.fontFamily = '"Whitney", "Inter", "Segoe UI", "Helvetica Neue", Arial, system-ui, sans-serif';
+        value.style.fontFamily = 'var(--font-sans)';
           value.style.lineHeight = "1.3";
           value.style.width = "7rem"; // Redusert for mer kompakt layout
           if (isCost) {
@@ -1648,7 +1646,7 @@ function renderPlaceholder(root) {
       if (showDividendLoanContent) {
         const panelTitleLeft = document.createElement("div");
         panelTitleLeft.textContent = "Beholde portefølje:";
-        panelTitleLeft.style.fontFamily = '"Whitney", "Inter", "Segoe UI", "Helvetica Neue", Arial, system-ui, sans-serif';
+        panelTitleLeft.style.fontFamily = 'var(--font-sans)';
         panelTitleLeft.style.fontWeight = "700";
         panelTitleLeft.style.fontSize = "0.875rem";
         panelTitleLeft.style.lineHeight = "1.3";
@@ -1734,13 +1732,13 @@ function renderPlaceholder(root) {
         row.style.marginBottom = "0.1rem"; // Minimal margin mellom rader
 
         // Behagelig rødfarge for kostnader (samme som i "Nedbetale lån")
-        const costColor = "#D32F2F";
+        const costColor = "var(--error-600)";
         // Behagelig grønnfarge for positive verdier
-        const positiveColor = "#0C8F4A";
+        const positiveColor = "var(--success-600)";
 
         const label = document.createElement("div");
         label.textContent = labelText;
-        label.style.fontFamily = '"Whitney", "Inter", "Segoe UI", "Helvetica Neue", Arial, system-ui, sans-serif';
+        label.style.fontFamily = 'var(--font-sans)';
         label.style.lineHeight = "1.3";
         if (isCost) {
           label.style.color = costColor;
@@ -1771,7 +1769,7 @@ function renderPlaceholder(root) {
           const value = document.createElement("div");
           value.id = id;
           value.textContent = "";
-        value.style.fontFamily = '"Whitney", "Inter", "Segoe UI", "Helvetica Neue", Arial, system-ui, sans-serif';
+        value.style.fontFamily = 'var(--font-sans)';
           value.style.lineHeight = "1.3";
           value.style.border = "1px solid var(--BORDER_LIGHT)";
           value.style.borderRadius = "0.5rem";
@@ -1813,7 +1811,7 @@ function renderPlaceholder(root) {
       if (showDividendLoanContent) {
         const panelTitleRight = document.createElement("div");
         panelTitleRight.textContent = "Utbetale utbytte:";
-        panelTitleRight.style.fontFamily = '"Whitney", "Inter", "Segoe UI", "Helvetica Neue", Arial, system-ui, sans-serif';
+        panelTitleRight.style.fontFamily = 'var(--font-sans)';
         panelTitleRight.style.fontWeight = "700";
         panelTitleRight.style.fontSize = "0.875rem";
         panelTitleRight.style.lineHeight = "1.3";
@@ -2324,8 +2322,8 @@ function renderPlaceholder(root) {
       btn.style.borderRadius = "8px";
       btn.style.fontSize = "0.75rem";
       btn.style.border = "1px solid var(--BORDER_LIGHT)";
-      btn.style.background = idx === 4 ? "#4B6B88" : "var(--BG_CARD)"; // 65% Aksjer er standard (indeks 4)
-      btn.style.color = idx === 4 ? "#ffffff" : "var(--GRAY_TEXT_DARK)";
+      btn.style.background = idx === 4 ? "var(--blue-main)" : "var(--BG_CARD)"; // 65% Aksjer er standard (indeks 4)
+      btn.style.color = idx === 4 ? "var(--white)" : "var(--GRAY_TEXT_DARK)";
       btn.style.fontWeight = "700";
       btn.style.boxShadow = "0 2px 8px rgba(16,24,40,0.06)";
       btn.style.whiteSpace = "nowrap";
@@ -2343,9 +2341,9 @@ function renderPlaceholder(root) {
       buttons.forEach((b, i) => {
         const isActive = i === activeIdx;
         b.setAttribute("aria-pressed", isActive ? "true" : "false");
-        b.style.background = isActive ? "#4B6B88" : "var(--BG_CARD)";
-        b.style.color = isActive ? "#ffffff" : "var(--GRAY_TEXT_DARK)";
-        b.style.borderColor = isActive ? "#4B6B88" : "var(--BORDER_LIGHT)";
+        b.style.background = isActive ? "var(--blue-main)" : "var(--BG_CARD)";
+        b.style.color = isActive ? "var(--white)" : "var(--GRAY_TEXT_DARK)";
+        b.style.borderColor = isActive ? "var(--blue-main)" : "var(--BORDER_LIGHT)";
       });
       // lagre valget for senere bruk
       AppState.stockShareOption = options[activeIdx];
@@ -2492,13 +2490,13 @@ function renderPlaceholder(root) {
         const active = (i + 1) === idx; // i+1 fordi feeButtons starter fra indeks 0, men tilsvarer feeOptions[1], feeOptions[2], etc.
         b.setAttribute("aria-pressed", active ? "true" : "false");
         b.style.background = active ? "#ffffff" : "var(--BG_CARD)";
-        b.style.borderColor = active ? "#93C5FD" : "var(--BORDER_LIGHT)";
+        b.style.borderColor = active ? "var(--blue-300)" : "var(--BORDER_LIGHT)";
         b.style.boxShadow = active ? "0 0 0 3px rgba(59,130,246,0.15)" : "0 2px 6px rgba(16,24,40,0.06)";
       });
       if (customFeeInput) {
         const active = idx === 0;
         customFeeInput.style.background = active ? "#ffffff" : "var(--BG_CARD)";
-        customFeeInput.style.borderColor = active ? "#93C5FD" : "var(--BORDER_LIGHT)";
+        customFeeInput.style.borderColor = active ? "var(--blue-300)" : "var(--BORDER_LIGHT)";
         customFeeInput.style.boxShadow = active ? "0 0 0 3px rgba(59,130,246,0.15)" : "0 2px 6px rgba(16,24,40,0.06)";
       }
       AppState.advisoryFeePct = feeOptions[idx];
@@ -2514,7 +2512,7 @@ function renderPlaceholder(root) {
       });
       if (customFeeInput) {
         customFeeInput.style.background = "#ffffff";
-        customFeeInput.style.borderColor = "#93C5FD";
+        customFeeInput.style.borderColor = "var(--blue-300)";
         customFeeInput.style.boxShadow = "0 0 0 3px rgba(59,130,246,0.15)";
       }
     }
@@ -3435,14 +3433,14 @@ function updateInvestLoanCalc() {
   // Oppdater elementet hvis det finnes
   if (elPayment) {
     elPayment.textContent = formatNOK(Math.round(annualPayment));
-    elPayment.style.color = "#D32F2F";
+    elPayment.style.color = "var(--error-600)";
   }
   
   // Oppdater "Årlig renter og avdrag per år" i høyre boksen med minus foran
   const elAnnualPayment = document.getElementById('inv-right-annual-payment');
   if (elAnnualPayment && annualPayment > 0) {
     elAnnualPayment.textContent = formatNOK(-Math.round(annualPayment));
-    elAnnualPayment.style.color = "#D32F2F";
+    elAnnualPayment.style.color = "var(--error-600)";
   }
   
   // Beregn og oppdater "Renter totalt" med år-for-år akkumulering:
@@ -3492,7 +3490,7 @@ function updateInvestLoanCalc() {
     }
     
     elTotalInterest.textContent = formatNOK(Math.round(totalInterest));
-    elTotalInterest.style.color = "#D32F2F";
+    elTotalInterest.style.color = "var(--error-600)";
     
     // Beregn og oppdater "Fradrag rentekostnader" i venstre boks = -renter totalt × kapitalskatt (fra input)
     // Siden totalInterest er negativ (f.eks. -4220379), blir fradraget: -(-4220379) × kapitalskatt = 4220379 × kapitalskatt
@@ -3670,14 +3668,14 @@ function updateInvestLoanCalc() {
       if (interestOnly) {
         // Hvis avdragsfrihet: Oppgjør gjeld = opprinnelig lån med minus foran
         elDebtSettle.textContent = formatNOK(-Math.round(portfolio));
-        elDebtSettle.style.color = "#D32F2F";
+        elDebtSettle.style.color = "var(--error-600)";
       } else if (remainingLoan > 0) {
         // Normal: Oppgjør gjeld = Restlån ved periodens slutt med minus foran
         elDebtSettle.textContent = formatNOK(-Math.round(remainingLoan));
-        elDebtSettle.style.color = "#D32F2F";
+        elDebtSettle.style.color = "var(--error-600)";
       } else {
         elDebtSettle.textContent = formatNOK(0);
-        elDebtSettle.style.color = "#D32F2F";
+        elDebtSettle.style.color = "var(--error-600)";
       }
     }
   }
@@ -3802,7 +3800,7 @@ function updateInvestLoanCalc() {
       elTax.textContent = formatNOK(roundedTax);
       
       // Sett farge: grønn hvis positiv (skattefordel), rød hvis negativ (skattekostnad)
-      const taxColor = roundedTax >= 0 ? "#0C8F4A" : "#D32F2F"; // Grønn eller rød
+      const taxColor = roundedTax >= 0 ? "var(--success-600)" : "var(--error-600)"; // Grønn eller rød
       elTax.style.color = taxColor;
       
       // Oppdater også etiketten "Skatt" med samme farge
@@ -3835,7 +3833,7 @@ function updateInvestLoanCalc() {
       }
     } else if (elTax) {
       elTax.textContent = formatNOK(0);
-      elTax.style.color = "#D32F2F";
+      elTax.style.color = "var(--error-600)";
       taxAmount = 0; // Sett til 0 hvis skatt er 0
       
       // Hvis skatt er 0, er "Netto portefølje etter skatt" = Verdi ved periodens slutt
@@ -4315,7 +4313,7 @@ function updateTopSummaries() {
       if (elRG) elRG.textContent = formatNOK(gain);
       if (elLT) { 
         elLT.textContent = formatNOK(taxLeft); 
-        elLT.style.color = "#D32F2F"; 
+        elLT.style.color = "var(--error-600)"; 
         elLT.style.fontWeight = "400"; // Rød tekst skal ha font-weight 400
       }
       if (elLNet) elLNet.textContent = formatNOK(Math.max(0, Math.round(portfolio - taxLeft)));
@@ -4339,7 +4337,7 @@ function updateTopSummaries() {
         const taxRight = Math.round(gain * rateRight);
         if (elRT) { 
           elRT.textContent = formatNOK(taxRight); 
-          elRT.style.color = "#D32F2F"; 
+          elRT.style.color = "var(--error-600)"; 
           elRT.style.fontWeight = "400"; // Rød tekst skal ha font-weight 400
         }
         // På høyre side (øverste blokk) skal "Netto portefølje" vise Porteføljestørrelse
@@ -4428,7 +4426,7 @@ function updateTopSummaries() {
         // Hvis aksjeandel > 80%, bruk utbytteskatt på hele avkastningen
         const effectiveTaxRate = equitySharePct > 80 ? stockTaxRate : (equityShare * stockTaxRate + interestShare * capitalTaxRate);
         const taxFuture = Math.round(excess * effectiveTaxRate);
-        if (elTaxFuture) { elTaxFuture.textContent = formatNOK(taxFuture); elTaxFuture.style.color = "#D32F2F"; }
+        if (elTaxFuture) { elTaxFuture.textContent = formatNOK(taxFuture); elTaxFuture.style.color = "var(--error-600)"; }
         
         // Netto portefølje (fremtid) = Fremtidsverdi − Skatt (fremtid)
         if (elNetFuture) elNetFuture.textContent = formatNOK(Math.max(0, future - taxFuture));
@@ -4509,14 +4507,14 @@ function updateTopSummaries() {
       const pv = portfolio;
       annualPayment = Math.abs(calculatePMT(rate, nper, pv, 0, 0));
       elInvPayment.textContent = formatNOK(Math.round(annualPayment));
-      elInvPayment.style.color = "#D32F2F";
+      elInvPayment.style.color = "var(--error-600)";
     }
     
     // Oppdater "Årlig renter og avdrag per år" i høyre boksen med minus foran
     const elInvAnnualPayment = document.getElementById("inv-right-annual-payment");
     if (elInvAnnualPayment && annualPayment > 0) {
       elInvAnnualPayment.textContent = formatNOK(-Math.round(annualPayment));
-      elInvAnnualPayment.style.color = "#D32F2F";
+      elInvAnnualPayment.style.color = "var(--error-600)";
     }
     
     // "Verdi ved periodens slutt" og "Avkastning" beregnes i updateInvestLoanCalc() som kalles tidligere i funksjonen
@@ -4677,7 +4675,7 @@ function updateTopSummaries() {
           elInvTax.textContent = formatNOK(roundedTax);
           
           // Sett farge: grønn hvis positiv (skattefordel), rød hvis negativ (skattekostnad)
-          const taxColor = roundedTax >= 0 ? "#0C8F4A" : "#D32F2F"; // Grønn eller rød
+          const taxColor = roundedTax >= 0 ? "var(--success-600)" : "var(--error-600)"; // Grønn eller rød
           elInvTax.style.color = taxColor;
           
           // Oppdater også etiketten "Skatt" med samme farge
@@ -6129,12 +6127,12 @@ function drawBarChart() {
       // Positiv søyle - går oppover fra null-linjen (grønn)
       y = zeroY - barHeight;
       height = barHeight;
-      fillColor = "#0C8F4A"; // Grønn
+      fillColor = "var(--success-600)"; // Grønn
     } else {
       // Negativ søyle - går nedover fra null-linjen (rød)
       y = zeroY;
       height = barHeight;
-      fillColor = "#D32F2F"; // Rød
+      fillColor = "var(--error-600)"; // Rød
     }
 
     const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
@@ -6469,12 +6467,12 @@ function drawDividendDifferenceChart() {
       // Positiv søyle - går oppover fra null-linjen (grønn)
       y = zeroY - barHeight;
       height = barHeight;
-      fillColor = "#0C8F4A"; // Grønn
+      fillColor = "var(--success-600)"; // Grønn
     } else {
       // Negativ søyle - går nedover fra null-linjen (rød)
       y = zeroY;
       height = barHeight;
-      fillColor = "#D32F2F"; // Rød
+      fillColor = "var(--error-600)"; // Rød
     }
 
     const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
@@ -6741,12 +6739,12 @@ function drawTaxRateChangeChart() {
       // Positive verdier - grønne søyler oppover fra null-linjen
       y = zeroY - barHeight;
       height = barHeight;
-      fillColor = "#0C8F4A"; // Grønn
+      fillColor = "var(--success-600)"; // Grønn
     } else {
       // Negative verdier - røde søyler nedover fra null-linjen
       y = zeroY;
       height = barHeight;
-      fillColor = "#D32F2F"; // Rød
+      fillColor = "var(--error-600)"; // Rød
     }
     
     const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
@@ -7292,12 +7290,12 @@ function drawEquityShareBarChart() {
       // Positiv søyle - går oppover fra null-linjen (grønn)
       y = zeroY - barHeight;
       height = barHeight;
-      fillColor = "#0C8F4A"; // Grønn
+      fillColor = "var(--success-600)"; // Grønn
     } else {
       // Negativ søyle - går nedover fra null-linjen (rød)
       y = zeroY;
       height = barHeight;
-      fillColor = "#D32F2F"; // Rød
+      fillColor = "var(--error-600)"; // Rød
     }
 
     const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
@@ -7599,11 +7597,11 @@ function drawInterestCostBarChart() {
     if (d.value >= 0) {
       y = zeroY - barHeight;
       height = barHeight;
-      fillColor = "#0C8F4A";
+      fillColor = "var(--success-600)";
     } else {
       y = zeroY;
       height = barHeight;
-      fillColor = "#D32F2F";
+      fillColor = "var(--error-600)";
     }
 
     const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
