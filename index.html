@@ -55,11 +55,17 @@
       </aside>
 
       <main class="content" role="main">
-        <button id="fullscreen-btn" class="fullscreen-btn" type="button" aria-label="Aktiver fullskjerm" title="Aktiver fullskjerm">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-        </button>
+        <div class="view-controls" role="toolbar" aria-label="Visningskontroller">
+          <button id="fullscreen-btn" class="fullscreen-btn" type="button" aria-label="Aktiver fullskjerm" title="Aktiver fullskjerm">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+          <button type="button" id="edge-fullscreen-btn" class="fullscreen-btn edge-fs-btn" aria-label="Fullskjerm kant-til-kant" title="Fullskjerm kant-til-kant" aria-pressed="false">
+            <i class="bx bx-left-arrow-alt" aria-hidden="true"></i>
+            <i class="bx bx-right-arrow-alt" aria-hidden="true"></i>
+          </button>
+        </div>
         <div class="stepper" aria-label="Fremdrift">
           <span id="sectionTitle" hidden>Forside</span>
           <ul id="stepper-list" class="stepper-list" role="list">
@@ -149,12 +155,14 @@
     </div>
 
     <!-- Chart modal -->
-    <div id="chart-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="chart-title" hidden>
+    <div id="chart-modal" class="modal chart-modal" role="dialog" aria-modal="true" aria-labelledby="chart-title" hidden>
       <div class="modal-backdrop" data-close="true"></div>
-      <div class="modal-panel" role="document">
-        <button class="modal-close" aria-label="Lukk" data-close="true">×</button>
-        <h3 id="chart-title">Avkastning utover lånekostnad</h3>
-        <div id="chart-container">
+      <div class="modal-panel chart-modal-panel" role="document">
+        <header class="chart-modal-header">
+          <h3 id="chart-title">Avkastning utover lånekostnad</h3>
+          <button class="modal-close chart-modal-close" aria-label="Lukk" data-close="true">×</button>
+        </header>
+        <div id="chart-container" class="chart-modal-canvas">
           <button id="chart-resize-handle" class="chart-resize-handle" aria-label="Endre størrelse" title="Dra for å endre størrelse">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M22 22L20 20M22 16L16 22M16 22L20 20M16 22L20 18M2 2L4 4M2 8L8 2M8 2L4 4M8 2L4 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
@@ -164,13 +172,27 @@
       </div>
     </div>
 
-    <!-- Dividend difference chart modal -->
-    <div id="dividend-chart-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="dividend-chart-title" hidden>
+    <!-- Vis grafisk modal (tom container, samme format) -->
+    <div id="vis-grafisk-modal" class="modal chart-modal" role="dialog" aria-modal="true" aria-labelledby="vis-grafisk-title" hidden>
       <div class="modal-backdrop" data-close="true"></div>
-      <div class="modal-panel" role="document">
-        <button class="modal-close" aria-label="Lukk" data-close="true">×</button>
-        <h3 id="dividend-chart-title">Forskjellen mellom å beholde Vs. å utbetale utbytte</h3>
-        <div id="dividend-chart-container">
+      <div class="modal-panel chart-modal-panel" role="document">
+        <header class="chart-modal-header">
+          <h3 id="vis-grafisk-title">Vis grafisk</h3>
+          <button class="modal-close chart-modal-close" aria-label="Lukk" data-close="true">×</button>
+        </header>
+        <div id="vis-grafisk-container" class="chart-modal-canvas" aria-label="Tom grafikkcontainer"></div>
+      </div>
+    </div>
+
+    <!-- Dividend difference chart modal -->
+    <div id="dividend-chart-modal" class="modal chart-modal" role="dialog" aria-modal="true" aria-labelledby="dividend-chart-title" hidden>
+      <div class="modal-backdrop" data-close="true"></div>
+      <div class="modal-panel chart-modal-panel" role="document">
+        <header class="chart-modal-header">
+          <h3 id="dividend-chart-title">Forskjellen mellom å beholde Vs. å utbetale utbytte</h3>
+          <button class="modal-close chart-modal-close" aria-label="Lukk" data-close="true">×</button>
+        </header>
+        <div id="dividend-chart-container" class="chart-modal-canvas">
           <button id="dividend-chart-resize-handle" class="chart-resize-handle" aria-label="Endre størrelse" title="Dra for å endre størrelse">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M22 22L20 20M22 16L16 22M16 22L20 20M16 22L20 18M2 2L4 4M2 8L8 2M8 2L4 4M8 2L4 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
@@ -181,12 +203,14 @@
     </div>
 
     <!-- Equity share chart modal -->
-    <div id="equity-share-chart-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="equity-share-chart-title" hidden>
+    <div id="equity-share-chart-modal" class="modal chart-modal" role="dialog" aria-modal="true" aria-labelledby="equity-share-chart-title" hidden>
       <div class="modal-backdrop" data-close="true"></div>
-      <div class="modal-panel" role="document">
-        <button class="modal-close" aria-label="Lukk" data-close="true">×</button>
-        <h3 id="equity-share-chart-title">Avkastning utover lånekostnad</h3>
-        <div id="equity-share-chart-container">
+      <div class="modal-panel chart-modal-panel" role="document">
+        <header class="chart-modal-header">
+          <h3 id="equity-share-chart-title">Avkastning utover lånekostnad</h3>
+          <button class="modal-close chart-modal-close" aria-label="Lukk" data-close="true">×</button>
+        </header>
+        <div id="equity-share-chart-container" class="chart-modal-canvas">
           <button id="equity-share-chart-resize-handle" class="chart-resize-handle" aria-label="Endre størrelse" title="Dra for å endre størrelse">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M22 22L20 20M22 16L16 22M16 22L20 20M16 22L20 18M2 2L4 4M2 8L8 2M8 2L4 4M8 2L4 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
@@ -197,12 +221,14 @@
     </div>
 
     <!-- Interest cost chart modal (identisk med equity-share-chart-modal) -->
-    <div id="interest-cost-chart-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="interest-cost-chart-title" hidden>
+    <div id="interest-cost-chart-modal" class="modal chart-modal" role="dialog" aria-modal="true" aria-labelledby="interest-cost-chart-title" hidden>
       <div class="modal-backdrop" data-close="true"></div>
-      <div class="modal-panel" role="document">
-        <button class="modal-close" aria-label="Lukk" data-close="true">×</button>
-        <h3 id="interest-cost-chart-title">Avkastning utover lånekostnad</h3>
-        <div id="interest-cost-chart-container">
+      <div class="modal-panel chart-modal-panel" role="document">
+        <header class="chart-modal-header">
+          <h3 id="interest-cost-chart-title">Avkastning utover lånekostnad</h3>
+          <button class="modal-close chart-modal-close" aria-label="Lukk" data-close="true">×</button>
+        </header>
+        <div id="interest-cost-chart-container" class="chart-modal-canvas">
           <button id="interest-cost-chart-resize-handle" class="chart-resize-handle" aria-label="Endre størrelse" title="Dra for å endre størrelse">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M22 22L20 20M22 16L16 22M16 22L20 20M16 22L20 18M2 2L4 4M2 8L8 2M8 2L4 4M8 2L4 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
@@ -213,12 +239,14 @@
     </div>
 
     <!-- Tax rate change chart modal -->
-    <div id="tax-rate-change-chart-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="tax-rate-change-chart-title" hidden>
+    <div id="tax-rate-change-chart-modal" class="modal chart-modal" role="dialog" aria-modal="true" aria-labelledby="tax-rate-change-chart-title" hidden>
       <div class="modal-backdrop" data-close="true"></div>
-      <div class="modal-panel" role="document">
-        <button class="modal-close" aria-label="Lukk" data-close="true">×</button>
-        <h3 id="tax-rate-change-chart-title">Forskjell mellom å beholde Vs. å utbetale</h3>
-        <div id="tax-rate-change-chart-container">
+      <div class="modal-panel chart-modal-panel" role="document">
+        <header class="chart-modal-header">
+          <h3 id="tax-rate-change-chart-title">Forskjell mellom å beholde Vs. å utbetale</h3>
+          <button class="modal-close chart-modal-close" aria-label="Lukk" data-close="true">×</button>
+        </header>
+        <div id="tax-rate-change-chart-container" class="chart-modal-canvas">
           <button id="tax-rate-change-chart-resize-handle" class="chart-resize-handle" aria-label="Endre størrelse" title="Dra for å endre størrelse">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M22 22L20 20M22 16L16 22M16 22L20 20M16 22L20 18M2 2L4 4M2 8L8 2M8 2L4 4M8 2L4 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
