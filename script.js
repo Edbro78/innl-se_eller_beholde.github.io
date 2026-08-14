@@ -417,13 +417,13 @@ function renderPlaceholder(root) {
       card.tabIndex = 0;
       card.style.cssText = `
         background: var(--white);
-        border: 1px solid var(--gray-200);
+        border: 1px solid var(--gray-300);
         border-radius: var(--radius-lg);
         overflow: hidden;
         cursor: pointer;
         display: flex;
         flex-direction: column;
-        box-shadow: none;
+        box-shadow: var(--shadow-sm);
         transition: box-shadow 0.15s ease, border-color 0.15s ease;
       `;
 
@@ -444,7 +444,7 @@ function renderPlaceholder(root) {
       media.style.cssText = `
         height: 88px;
         background: var(--blue-50);
-        border-bottom: 1px solid var(--blue-100);
+        border-bottom: 1px solid var(--blue-200);
         display: flex;
         align-items: center;
         justify-content: space-between;
@@ -518,18 +518,19 @@ function renderPlaceholder(root) {
         font-size: 14px;
         font-weight: 600;
         transition: background-color 0.15s ease, border-color 0.15s ease;
+        box-shadow: var(--shadow-sm);
       `;
       cta.innerHTML = `${tile.action} <i class="bx bx-right-arrow-alt" aria-hidden="true" style="font-size:18px;color:var(--blue-main)"></i>`;
 
       card.addEventListener("mouseenter", () => {
-        card.style.boxShadow = "var(--shadow-md)";
+        card.style.boxShadow = "var(--shadow-lg)";
         card.style.borderColor = "var(--gray-300)";
         cta.style.background = "var(--gray-50)";
         cta.style.borderColor = "var(--gray-300)";
       });
       card.addEventListener("mouseleave", () => {
-        card.style.boxShadow = "none";
-        card.style.borderColor = "var(--gray-200)";
+        card.style.boxShadow = "var(--shadow-sm)";
+        card.style.borderColor = "var(--gray-300)";
         cta.style.background = "var(--white)";
         cta.style.borderColor = "var(--gray-300)";
       });
@@ -959,6 +960,19 @@ function renderPlaceholder(root) {
           }
         });
         buttonWrapper.appendChild(ikkeFlyttBtn);
+
+        const sammenlignBtn = document.createElement("button");
+        sammenlignBtn.id = "chart-icon-fondskonto-sammenlign";
+        sammenlignBtn.type = "button";
+        sammenlignBtn.className = "chart-action-btn chart-action-btn--primary";
+        sammenlignBtn.setAttribute("aria-label", "Sammenlign alternativer");
+        sammenlignBtn.textContent = "Sammenlign alternativer";
+        sammenlignBtn.addEventListener("click", () => {
+          if (typeof window.openVisGrafiskModal === "function") {
+            window.openVisGrafiskModal("fondskonto-sammenlign");
+          }
+        });
+        buttonWrapper.appendChild(sammenlignBtn);
 
         bottom.appendChild(buttonWrapper);
       }
@@ -2226,6 +2240,7 @@ function renderPlaceholder(root) {
       input.style.padding = sliderOut.style.padding;
       input.style.border = "1px solid var(--BORDER_LIGHT)";
       input.style.borderRadius = "8px";
+      input.style.boxShadow = "var(--shadow-sm)";
       input.style.textAlign = "center";
       input.style.fontFamily = "inherit";
       input.style.fontWeight = sliderOut.style.fontWeight || "inherit";
@@ -2322,7 +2337,7 @@ function renderPlaceholder(root) {
       btn.style.background = idx === 4 ? "var(--blue-main)" : "var(--BG_CARD)"; // 65% Aksjer er standard (indeks 4)
       btn.style.color = idx === 4 ? "var(--white)" : "var(--GRAY_TEXT_DARK)";
       btn.style.fontWeight = "700";
-      btn.style.boxShadow = "0 2px 8px rgba(16,24,40,0.06)";
+      btn.style.boxShadow = "var(--shadow-sm)";
       btn.style.whiteSpace = "nowrap";
       btn.style.cursor = "pointer";
       btn.setAttribute("aria-pressed", idx === 4 ? "true" : "false"); // 65% Aksjer er standard
@@ -2488,13 +2503,13 @@ function renderPlaceholder(root) {
         b.setAttribute("aria-pressed", active ? "true" : "false");
         b.style.background = active ? "#ffffff" : "var(--BG_CARD)";
         b.style.borderColor = active ? "var(--blue-300)" : "var(--BORDER_LIGHT)";
-        b.style.boxShadow = active ? "0 0 0 3px rgba(59,130,246,0.15)" : "0 2px 6px rgba(16,24,40,0.06)";
+        b.style.boxShadow = active ? "var(--shadow-sm), 0 0 0 3px rgba(59,130,246,0.15)" : "var(--shadow-sm)";
       });
       if (customFeeInput) {
         const active = idx === 0;
         customFeeInput.style.background = active ? "#ffffff" : "var(--BG_CARD)";
         customFeeInput.style.borderColor = active ? "var(--blue-300)" : "var(--BORDER_LIGHT)";
-        customFeeInput.style.boxShadow = active ? "0 0 0 3px rgba(59,130,246,0.15)" : "0 2px 6px rgba(16,24,40,0.06)";
+        customFeeInput.style.boxShadow = active ? "var(--shadow-sm), 0 0 0 3px rgba(59,130,246,0.15)" : "var(--shadow-sm)";
       }
       AppState.advisoryFeePct = feeOptions[idx];
       updateExpectedReturn();
@@ -2505,12 +2520,12 @@ function renderPlaceholder(root) {
         b.setAttribute("aria-pressed", "false");
         b.style.background = "var(--BG_CARD)";
         b.style.borderColor = "var(--BORDER_LIGHT)";
-        b.style.boxShadow = "0 2px 6px rgba(16,24,40,0.06)";
+        b.style.boxShadow = "var(--shadow-sm)";
       });
       if (customFeeInput) {
         customFeeInput.style.background = "#ffffff";
         customFeeInput.style.borderColor = "var(--blue-300)";
-        customFeeInput.style.boxShadow = "0 0 0 3px rgba(59,130,246,0.15)";
+        customFeeInput.style.boxShadow = "var(--shadow-sm), 0 0 0 3px rgba(59,130,246,0.15)";
       }
     }
     
@@ -2523,6 +2538,7 @@ function renderPlaceholder(root) {
     customInput.style.borderRadius = "6px";
     customInput.style.border = "1px solid var(--BORDER_LIGHT)";
     customInput.style.background = "#ffffff";
+    customInput.style.boxShadow = "var(--shadow-sm)";
     customInput.style.color = "var(--GRAY_TEXT_DARK)";
     customInput.style.fontWeight = "700";
     customInput.style.fontSize = "0.75rem";
@@ -2567,6 +2583,7 @@ function renderPlaceholder(root) {
       b.style.borderRadius = "6px";
       b.style.border = "1px solid var(--BORDER_LIGHT)";
       b.style.background = "var(--BG_CARD)";
+      b.style.boxShadow = "var(--shadow-sm)";
       b.style.color = "var(--GRAY_TEXT_DARK)";
       b.style.fontWeight = "700";
       b.style.fontSize = "0.75rem";
@@ -2594,6 +2611,7 @@ function renderPlaceholder(root) {
     result.style.marginTop = "0";
     result.style.border = "1px solid var(--BORDER_LIGHT)";
     result.style.borderRadius = "8px";
+    result.style.boxShadow = "var(--shadow-sm)";
     result.style.padding = "0.5rem 0.75rem";
     result.style.background = "var(--BG_CARD)";
     const resLabel = document.createElement("div");
@@ -2804,6 +2822,7 @@ function renderPlaceholder(root) {
       input.style.width = "100%";
       input.style.border = "1px solid var(--BORDER_LIGHT)";
       input.style.borderRadius = "8px";
+      input.style.boxShadow = "var(--shadow-sm)";
       input.style.padding = "0.4rem 0.5rem";
       input.style.background = "#ffffff";
       input.style.color = "var(--GRAY_TEXT_SECONDARY)"; // Samme farge som label
@@ -3015,6 +3034,7 @@ function renderPlaceholder(root) {
         transition: all 0.15s ease;
         min-width: 45px;
         text-align: center;
+        box-shadow: var(--shadow-sm);
       `;
 
       interestOnlyNoBtn.style.cssText = `
@@ -3030,6 +3050,7 @@ function renderPlaceholder(root) {
         transition: all 0.15s ease;
         min-width: 45px;
         text-align: center;
+        box-shadow: var(--shadow-sm);
       `;
     };
     
@@ -3126,6 +3147,7 @@ function renderPlaceholder(root) {
         transition: all 0.15s ease;
         min-width: 45px;
         text-align: center;
+        box-shadow: var(--shadow-sm);
       `;
       interestDeductionNoBtn.style.cssText = `
         appearance: none;
@@ -3140,6 +3162,7 @@ function renderPlaceholder(root) {
         transition: all 0.15s ease;
         min-width: 45px;
         text-align: center;
+        box-shadow: var(--shadow-sm);
       `;
     };
     updateInterestDeductionButtons();
@@ -6145,11 +6168,242 @@ function getVisGrafiskStacks(row) {
   return { positive, negative };
 }
 
-function drawVisGrafiskChart(kind) {
+function buildFondskontoLineSeries(inputs, name, color) {
+  const { portfolio, net, years, expectedRate, netFuture } = inputs;
+  const points = [{ year: 0, value: portfolio, label: "Portefølje" }];
+  let bal = net;
+  for (let y = 1; y <= years; y++) {
+    bal = bal * (1 + expectedRate);
+    const isLast = y === years;
+    points.push({
+      year: y,
+      value: isLast ? netFuture : bal,
+      label: isLast ? "Netto portefølje" : "Verdi",
+    });
+  }
+  return { name, color, points, endValue: netFuture };
+}
+
+function buildFondskontoCompareLineData() {
+  return {
+    series: [
+      buildFondskontoLineSeries(
+        getFondskontoFlyttChartInputs(),
+        "Flytte fondskonto",
+        VIS_GRAFISK_COLORS.positive
+      ),
+      buildFondskontoLineSeries(
+        getFondskontoIkkeFlyttChartInputs(),
+        "Ikke flytte Fondskonto",
+        CHART_THEME.ink
+      ),
+    ],
+  };
+}
+
+function drawFondskontoCompareChart() {
   const chartContainer = document.getElementById("vis-grafisk-container");
   if (!chartContainer) return;
 
+  const { series } = buildFondskontoCompareLineData();
+  const allPoints = series.flatMap((s) => s.points);
+  if (!allPoints.length) return;
+
+  const values = allPoints.map((p) => p.value);
+  const minValue = Math.min(0, ...values);
+  const maxValue = Math.max(...values, 1);
+  const pad = 1.1;
+  let niceMax = maxValue * pad;
+  let niceMin = minValue < 0 ? minValue * pad : 0;
+  let range = niceMax - niceMin || 1;
+  const niceTick = niceNumber(range / 8, true) || range / 8;
+  if (niceMin < 0) niceMin = Math.floor(niceMin / niceTick) * niceTick;
+  niceMax = Math.ceil(niceMax / niceTick) * niceTick;
+  range = niceMax - niceMin || 1;
+
+  const existingSvg = chartContainer.querySelector("svg");
+  if (existingSvg) existingSvg.remove();
+  const existingLegend = chartContainer.querySelector(".vis-grafisk-legend");
+  if (existingLegend) existingLegend.remove();
+  const existingTip = chartContainer.querySelector(".vis-grafisk-tooltip");
+  if (existingTip) existingTip.remove();
+
+  const tooltip = document.createElement("div");
+  tooltip.className = "vis-grafisk-tooltip";
+  tooltip.hidden = true;
+
+  function hideChartTooltip() {
+    tooltip.hidden = true;
+    tooltip.innerHTML = "";
+  }
+
+  function positionChartTooltip(evt) {
+    const cr = chartContainer.getBoundingClientRect();
+    const padPx = 12;
+    const tw = tooltip.offsetWidth || 220;
+    const th = tooltip.offsetHeight || 80;
+    let left = evt.clientX - cr.left + padPx;
+    let top = evt.clientY - cr.top + padPx;
+    if (left + tw + 8 > cr.width) left = evt.clientX - cr.left - tw - padPx;
+    if (top + th + 8 > cr.height) top = evt.clientY - cr.top - th - padPx;
+    tooltip.style.left = `${Math.max(8, left)}px`;
+    tooltip.style.top = `${Math.max(8, top)}px`;
+  }
+
+  function showLineTooltip(seriesItem, point, evt) {
+    tooltip.innerHTML = [
+      `<div class="vis-grafisk-tooltip-row vis-grafisk-tooltip-total"><span>${seriesItem.name}</span><span></span></div>`,
+      `<div class="vis-grafisk-tooltip-row"><span>${point.label}</span><span>${formatNOK(Math.round(point.value))}</span></div>`,
+      `<div class="vis-grafisk-tooltip-row"><span>År</span><span>${point.year}</span></div>`,
+    ].join("");
+    tooltip.hidden = false;
+    positionChartTooltip(evt);
+  }
+
+  const containerRect = chartContainer.getBoundingClientRect();
+  const width = Math.max(640, containerRect.width || 900);
+  const height = Math.max(360, containerRect.height || 520);
+  const margin = { top: 28, right: 28, bottom: 88, left: 108 };
+  const chartWidth = width - margin.left - margin.right;
+  const chartHeight = height - margin.top - margin.bottom;
+  const maxYear = Math.max(...allPoints.map((p) => p.year), 1);
+
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+  svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
+  svg.style.width = "100%";
+  svg.style.height = "100%";
+  svg.style.overflow = "visible";
+
+  const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+  g.setAttribute("transform", `translate(${margin.left},${margin.top})`);
+
+  const yScale = (v) => chartHeight - ((v - niceMin) / range) * chartHeight;
+  const xScale = (year) => (year / maxYear) * chartWidth;
+
+  const ticks = [];
+  for (let t = 0; t >= niceMin; t -= niceTick) ticks.push(t);
+  for (let t = niceTick; t <= niceMax; t += niceTick) ticks.push(t);
+  const uniqueTicks = [...new Set(ticks)].sort((a, b) => a - b);
+  appendChartGridLines(g, uniqueTicks, niceMin, niceMax, chartWidth, chartHeight);
+
+  uniqueTicks.forEach((tick) => {
+    const y = yScale(tick);
+    const tickLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    tickLine.setAttribute("x1", -6);
+    tickLine.setAttribute("y1", y);
+    tickLine.setAttribute("x2", 0);
+    tickLine.setAttribute("y2", y);
+    tickLine.setAttribute("stroke", CHART_THEME.axis);
+    tickLine.setAttribute("stroke-width", "1.5");
+    g.appendChild(tickLine);
+
+    const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    label.setAttribute("x", -10);
+    label.setAttribute("y", y);
+    label.setAttribute("text-anchor", "end");
+    label.setAttribute("dominant-baseline", "middle");
+    styleChartText(label, { size: CHART_THEME.tickSize, weight: "500" });
+    label.textContent = formatNOK(Math.round(tick));
+    g.appendChild(label);
+  });
+
+  const zeroY = yScale(0);
+  const xAxisLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
+  xAxisLine.setAttribute("x1", 0);
+  xAxisLine.setAttribute("y1", zeroY);
+  xAxisLine.setAttribute("x2", chartWidth);
+  xAxisLine.setAttribute("y2", zeroY);
+  xAxisLine.setAttribute("stroke", "var(--sp-navy, #002359)");
+  xAxisLine.setAttribute("stroke-width", "2.5");
+  g.appendChild(xAxisLine);
+
+  for (let year = 0; year <= maxYear; year++) {
+    const x = xScale(year);
+    const yearLabel = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    yearLabel.setAttribute("x", x);
+    yearLabel.setAttribute("y", chartHeight + 22);
+    yearLabel.setAttribute("text-anchor", "middle");
+    styleChartText(yearLabel, { size: CHART_THEME.categorySize, weight: "500", fill: CHART_THEME.ink });
+    yearLabel.textContent = String(year);
+    g.appendChild(yearLabel);
+  }
+
+  series.forEach((seriesItem) => {
+    const d = seriesItem.points
+      .map((p, i) => `${i === 0 ? "M" : "L"} ${xScale(p.year)} ${yScale(p.value)}`)
+      .join(" ");
+    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    path.setAttribute("d", d);
+    path.setAttribute("fill", "none");
+    path.setAttribute("stroke", seriesItem.color);
+    path.setAttribute("stroke-width", "3");
+    path.setAttribute("stroke-linejoin", "round");
+    path.setAttribute("stroke-linecap", "round");
+    g.appendChild(path);
+
+    seriesItem.points.forEach((point) => {
+      const cx = xScale(point.year);
+      const cy = yScale(point.value);
+      const dot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+      dot.setAttribute("cx", cx);
+      dot.setAttribute("cy", cy);
+      dot.setAttribute("r", 5);
+      dot.setAttribute("fill", seriesItem.color);
+      dot.setAttribute("stroke", "#FFFFFF");
+      dot.setAttribute("stroke-width", "2");
+      dot.style.cursor = "pointer";
+      dot.addEventListener("mouseenter", (e) => showLineTooltip(seriesItem, point, e));
+      dot.addEventListener("mousemove", positionChartTooltip);
+      dot.addEventListener("mouseleave", hideChartTooltip);
+      g.appendChild(dot);
+    });
+
+    const last = seriesItem.points[seriesItem.points.length - 1];
+    if (last) {
+      const endLabel = document.createElementNS("http://www.w3.org/2000/svg", "text");
+      endLabel.setAttribute("x", xScale(last.year));
+      endLabel.setAttribute("y", yScale(last.value) - 12);
+      endLabel.setAttribute("text-anchor", "end");
+      styleChartText(endLabel, { size: CHART_THEME.valueSize, weight: "600", fill: CHART_THEME.ink });
+      endLabel.textContent = formatNOK(Math.round(last.value));
+      endLabel.style.pointerEvents = "none";
+      g.appendChild(endLabel);
+    }
+  });
+
+  const xAxisLabel = document.createElementNS("http://www.w3.org/2000/svg", "text");
+  xAxisLabel.setAttribute("x", chartWidth / 2);
+  xAxisLabel.setAttribute("y", chartHeight + 48);
+  xAxisLabel.setAttribute("text-anchor", "middle");
+  styleChartText(xAxisLabel, { size: CHART_THEME.axisTitleSize, weight: "600", fill: CHART_THEME.ink });
+  xAxisLabel.textContent = "Antall år";
+  g.appendChild(xAxisLabel);
+
+  svg.appendChild(g);
+  chartContainer.appendChild(svg);
+
+  const legend = document.createElement("div");
+  legend.className = "vis-grafisk-legend";
+  legend.innerHTML = `
+    <div class="vis-grafisk-legend-group">
+      ${series.map((s) => `<span class="vis-grafisk-legend-item"><i style="background:${s.color}"></i>${s.name}</span>`).join("")}
+    </div>
+  `;
+  chartContainer.appendChild(legend);
+  chartContainer.appendChild(tooltip);
+}
+
+function drawVisGrafiskChart(kind) {
   const chartKind = kind || window._visGrafiskKind || "loan";
+  if (chartKind === "fondskonto-sammenlign") {
+    drawFondskontoCompareChart();
+    return;
+  }
+
+  const chartContainer = document.getElementById("vis-grafisk-container");
+  if (!chartContainer) return;
+
   const data =
     chartKind === "dividend"
       ? buildDividendVisGrafiskData()
@@ -6425,7 +6679,10 @@ function initVisGrafiskUI() {
       return;
     }
     window._visGrafiskKind =
-      kind === "dividend" || kind === "fondskonto-flytt" || kind === "fondskonto-ikke-flytt"
+      kind === "dividend" ||
+      kind === "fondskonto-flytt" ||
+      kind === "fondskonto-ikke-flytt" ||
+      kind === "fondskonto-sammenlign"
         ? kind
         : "loan";
     modal.removeAttribute("hidden");
@@ -6436,7 +6693,9 @@ function initVisGrafiskUI() {
           ? "Flytte fondskonto"
           : window._visGrafiskKind === "fondskonto-ikke-flytt"
             ? "Ikke flytte Fondskonto"
-            : "Porteføljeutvikling";
+            : window._visGrafiskKind === "fondskonto-sammenlign"
+              ? "Sammenlign alternativer"
+              : "Porteføljeutvikling";
     }
     requestAnimationFrame(() => drawVisGrafiskChart(window._visGrafiskKind));
     document.addEventListener("keydown", onKeyDown);

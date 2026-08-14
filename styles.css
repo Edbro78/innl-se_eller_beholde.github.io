@@ -14,7 +14,7 @@
   --GRAY_TEXT_SECONDARY: var(--gray-600);
   --BG_OUTER: var(--gray-50);
   --BG_CARD: var(--white);
-  --BORDER_LIGHT: var(--gray-200);
+  --BORDER_LIGHT: var(--gray-300);
   --ERROR_DEBT: var(--error-700);
   --ERROR_LIGHT_BG: var(--error-bg);
   --BG_SECONDARY: var(--gray-50);
@@ -28,7 +28,7 @@
   --text-primary: var(--sp-navy);
   --text-secondary: var(--gray-600);
   --text-label: var(--gray-500);
-  --border-color: var(--gray-200);
+  --border-color: var(--gray-300);
   --success-green: var(--success-600);
 
   --surface-navy-1: var(--gray-50);
@@ -44,7 +44,7 @@
   --accent-foreground: var(--sp-navy);
   --destructive: var(--error-700);
   --destructive-foreground: var(--white);
-  --border: var(--gray-200);
+  --border: var(--gray-300);
   --input: var(--white);
   --ring: var(--blue-main);
   --background: var(--gray-50);
@@ -310,7 +310,7 @@ body {
   right: auto;
   z-index: auto;
   appearance: none;
-  border: 1px solid var(--BORDER_LIGHT);
+  border: 1px solid var(--gray-300);
   background: var(--BG_CARD);
   color: var(--sp-navy);
   border-radius: var(--radius-md);
@@ -322,8 +322,8 @@ body {
   align-items: center;
   justify-content: center;
   padding: 0;
-  transition: background-color 0.15s ease, border-color 0.15s ease;
-  box-shadow: var(--shadow-xs);
+  transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: var(--shadow-sm);
   flex-shrink: 0;
 }
 
@@ -356,7 +356,7 @@ body.edge-to-edge-fs .app {
 }
 
 body.edge-to-edge-fs .sidebar {
-  border-right-color: var(--gray-200);
+  border-right-color: var(--gray-300);
 }
 
 body.edge-to-edge-fs .content {
@@ -514,7 +514,7 @@ p { /* Avsnitt */
   color: var(--text-primary);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-xl);
-  border: 1px solid var(--gray-200);
+  border: 1px solid var(--gray-300);
   padding: 20px 20px 24px 20px;
 }
 
@@ -579,6 +579,7 @@ p { /* Avsnitt */
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  box-shadow: var(--shadow-sm);
   transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 .chart-modal-close:hover {
@@ -659,7 +660,7 @@ p { /* Avsnitt */
   padding: 8px 12px;
   border-radius: 8px;
   background: var(--white);
-  border: 1px solid var(--gray-200);
+  border: 1px solid var(--gray-300);
   box-shadow: 0 8px 24px rgba(16, 24, 40, 0.12);
   font-family: var(--font-sans);
   font-size: 13px;
@@ -677,7 +678,7 @@ p { /* Avsnitt */
 .vis-grafisk-tooltip-total {
   margin-top: 8px;
   padding-top: 6px;
-  border-top: 1px solid var(--gray-200);
+  border-top: 1px solid var(--gray-300);
   font-weight: 600;
 }
 
@@ -696,7 +697,7 @@ p { /* Avsnitt */
   width: 32px;
   height: 32px;
   background: var(--white);
-  border: 1px solid var(--gray-200);
+  border: 1px solid var(--gray-300);
   border-radius: var(--radius-md);
   cursor: nwse-resize;
   display: flex;
@@ -732,6 +733,7 @@ p { /* Avsnitt */
   background: var(--BG_CARD);
   color: var(--text-secondary);
   cursor: pointer;
+  box-shadow: var(--shadow-sm);
 }
 .modal-close:hover { background: var(--secondary); }
 /* --- Output textarea with embedded copy button --- */
@@ -750,6 +752,7 @@ p { /* Avsnitt */
   font-size: 14px;
   color: var(--text-primary);
   background: var(--BG_CARD);
+  box-shadow: var(--shadow-sm);
 }
 .output-textarea:focus {
   outline: none;
@@ -772,7 +775,7 @@ p { /* Avsnitt */
   background: var(--blue-main);
   color: var(--white);
   cursor: pointer;
-  box-shadow: var(--shadow-xs);
+  box-shadow: var(--shadow-sm);
   transition: background-color 0.15s ease, border-color 0.15s ease;
 }
 .copy-btn:hover { background: var(--sp-navy-pressed); border-color: var(--sp-navy-pressed); }
@@ -801,10 +804,10 @@ p { /* Avsnitt */
 /* Stepper øverst */
 .stepper {
   background: var(--BG_CARD);
-  border: 1px solid var(--BORDER_LIGHT);
+  border: 1px solid var(--gray-300);
   border-radius: var(--radius-lg);
   padding: var(--space-3) var(--space-4);
-  box-shadow: var(--shadow-xs);
+  box-shadow: var(--shadow-sm);
   margin-bottom: var(--space-2);
   margin-right: 32px;
 }
@@ -870,7 +873,7 @@ p { /* Avsnitt */
   border-radius: var(--radius-lg);
   padding: var(--space-4);
   color: var(--sp-navy);
-  box-shadow: var(--shadow-xs);
+  box-shadow: var(--shadow-sm);
   max-width: none;
   overflow: hidden;
   grid-column: 1 / -1;
@@ -915,7 +918,7 @@ p { /* Avsnitt */
   min-width: 0;
   overflow: hidden;
   flex-shrink: 0;
-  box-shadow: var(--shadow-xs);
+  box-shadow: var(--shadow-sm);
 }
 
 .summary-card { display: flex; flex-direction: column; justify-content: center; align-items: center; padding: var(--space-3); gap: var(--space-1); height: 100%; }
@@ -961,6 +964,7 @@ p { /* Avsnitt */
   border: 1px solid var(--BORDER_LIGHT);
   background: var(--white);
   border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
   display: flex;
   align-items: center;
   justify-content: flex-end;
@@ -1090,6 +1094,7 @@ p { /* Avsnitt */
   cursor: pointer;
   letter-spacing: 0;
   text-transform: none;
+  box-shadow: var(--shadow-sm);
 }
 .btn-add:hover { background: var(--sp-navy-pressed); border-color: var(--sp-navy-pressed); }
 
@@ -1125,16 +1130,16 @@ p { /* Avsnitt */
   justify-content: center;
   white-space: nowrap;
   box-sizing: border-box;
-  box-shadow: var(--shadow-xs);
+  box-shadow: var(--shadow-sm);
   transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
 }
 .chart-action-btn:hover {
   background: var(--gray-50);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-md);
 }
 .chart-action-btn:active {
   background: var(--gray-100);
-  box-shadow: var(--shadow-xs);
+  box-shadow: var(--shadow-sm);
 }
 .chart-action-btn:focus-visible {
   outline: none;
@@ -1148,7 +1153,7 @@ p { /* Avsnitt */
 .chart-action-btn--primary:hover {
   background: var(--blue-100);
   border-color: var(--blue-200);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-md);
 }
 .chart-action-btn--primary:active {
   background: var(--blue-200);
@@ -1179,7 +1184,7 @@ p { /* Avsnitt */
 .chart-action-btn--soft {
   background: var(--gray-50);
   color: var(--gray-700);
-  border-color: var(--gray-200);
+  border-color: var(--gray-300);
 }
 .chart-action-btn--soft:hover {
   background: var(--gray-100);
@@ -1216,6 +1221,7 @@ p { /* Avsnitt */
   color: var(--sp-navy);
   font-size: var(--text-sm-size);
   font-family: var(--font-sans);
+  box-shadow: var(--shadow-sm);
   /* Skjul native nedtrekkspil, vi viser egen via .select:after */
   appearance: none;
   -webkit-appearance: none;
@@ -1290,6 +1296,7 @@ p { /* Avsnitt */
   border: 1px solid var(--border-color);
   background: rgba(255,255,255,0.04);
   font-size: 12px;
+  box-shadow: var(--shadow-sm);
 }
 .tbe-conclusion.low { background: var(--error-bg); }
 .tbe-conclusion.mid { background: var(--warning-bg); }
@@ -1313,7 +1320,8 @@ p { /* Avsnitt */
   padding: var(--space-2);
   text-align: center;
   color: var(--GRAY_TEXT_DARK);
-  box-shadow: inset 0 0 0 1px var(--BORDER_LIGHT);
+  border: 1px solid var(--BORDER_LIGHT);
+  box-shadow: var(--shadow-sm);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1353,6 +1361,7 @@ p { /* Avsnitt */
   background: rgba(255,255,255,0.08);
   color: var(--text-primary);
   cursor: pointer;
+  box-shadow: var(--shadow-sm);
 }
 
 
@@ -1373,10 +1382,11 @@ p { /* Avsnitt */
   font-size: var(--text-xs-size);
   font-weight: var(--weight-semibold);
   cursor: pointer;
-  transition: background-color 0.15s ease, border-color 0.15s ease;
+  transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
   line-height: 1.3;
   letter-spacing: 0;
   text-transform: none;
+  box-shadow: var(--shadow-sm);
 }
 .disclaimer-btn:hover {
   background: var(--gray-50);
