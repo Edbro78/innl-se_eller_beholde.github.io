@@ -45,16 +45,15 @@ document.addEventListener("DOMContentLoaded", () => {
   // Interest cost chart modal init
   initInterestCostChartUI();
 
-  // Bygg stepper (uten å vise "Nullstille")
+  // Bygg stepper
   const allSteps = [
     { key: "Forside" },
     { key: "Input" },
     { key: "Nedbetale lån" },
     { key: "Utbetale utbytte" },
-    { key: "Innløse Fondskonto" },
-    { key: "Nullstille" }
+    { key: "Innløse Fondskonto" }
   ];
-  const steps = allSteps.filter(s => s.key !== "Nullstille" && s.key !== "Forside");
+  const steps = allSteps.filter(s => s.key !== "Forside");
   function renderStepper(currentKey) {
     if (!stepperList) return;
     stepperList.innerHTML = "";
@@ -70,7 +69,7 @@ document.addEventListener("DOMContentLoaded", () => {
       label.textContent = s.key;
       li.appendChild(dot); li.appendChild(label);
       let currentIndex = steps.findIndex(x => x.key === currentKey);
-      if (currentIndex < 0) currentIndex = steps.length - 1; // ved "Nullstille" marker siste synlige steg
+      if (currentIndex < 0) currentIndex = 0;
       if (idx <= currentIndex) li.classList.add("is-reached");
       if (idx === currentIndex) li.classList.add("is-current");
       stepperList.appendChild(li);
@@ -291,39 +290,6 @@ function renderPlaceholder(root) {
     contentEl.classList.toggle("hide-top-summaries", hideTopSummaries);
   }
   
-  // For Nullstille-fanen: nullstill alle verdier
-  if (title === "Nullstille") {
-    // Nullstill alle verdier i AppState til default-verdier
-    (AppState.assets || []).forEach(a => {
-      if (!a.locked) a.amount = 0;
-    });
-    AppState.portfolioSize = 10000000;
-    AppState.yearsCount = 10;
-    AppState.stockSharePercent = 65;
-    AppState.stockShareOption = "65% Aksjer";
-    AppState.expEquity = 8.0;
-    AppState.expBonds = 5.0;
-    AppState.expKpi = 0.0;
-    AppState.advisoryFeePct = 0.0;
-    AppState.interestCostPct = 5.0;
-    AppState.shieldRatePct = 3.9;
-    AppState.capitalTaxPct = 22.0;
-    AppState.stockTaxPct = 37.84;
-    AppState.inputCapital = 0;
-    AppState.capitalManuallySet = false; // Reset flagg når alt nullstilles
-    AppState.interestTaxDeductionOnLoan = true;
-    inputTabInitialized = false; // Reset flagg for å la Input rendres på nytt med nullstilte verdier
-    updateTopSummaries();
-    // Gå tilbake til Input-fanen etter nullstilling og tving re-render
-    const inputNav = document.querySelector('.nav-item[data-section="Input"]');
-    if (inputNav && moduleRoot) {
-      // Fjern eksisterende innhold for å tvinge ny rendering med nullstilte verdier
-      moduleRoot.innerHTML = "";
-      inputNav.click();
-    }
-    return;
-  }
-  
   // For Forside-fanen: vis 6 fliser med knapp
   if (title === "Forside") {
     // Sett defaultverdier tilsvarende Input-fanen hvis de ikke allerede er satt
@@ -339,7 +305,7 @@ function renderPlaceholder(root) {
     if (AppState.shieldRatePct === undefined) AppState.shieldRatePct = 3.9;
     if (AppState.capitalTaxPct === undefined) AppState.capitalTaxPct = 22.0;
     if (AppState.stockTaxPct === undefined) AppState.stockTaxPct = 37.84;
-    if (AppState.inputCapital === undefined) AppState.inputCapital = 0;
+    if (AppState.inputCapital === undefined) AppState.inputCapital = 5000000;
     if (AppState.repaymentProfileYears === undefined) AppState.repaymentProfileYears = 20;
     if (AppState.interestTaxDeductionOnLoan === undefined) AppState.interestTaxDeductionOnLoan = true;
     
@@ -2192,29 +2158,16 @@ function renderPlaceholder(root) {
         // Oppdater maksverdi til ny porteføljestørrelse
         capitalSliderEl.max = String(v);
         
-        // Hvis innskutt kapital ikke er manuelt satt, oppdater den automatisk til porteføljestørrelse
-        if (!AppState.capitalManuallySet) {
+        // Innskutt kapital har egen default (5 MNOK) og følger ikke porteføljen.
+        // Begrens den bare hvis den overstiger ny porteføljestørrelse.
+        if (currentCapitalValue > v) {
           capitalSliderEl.value = String(v);
           AppState.inputCapital = v;
-          // Finn output-elementet for innskutt kapital (søker i samme rad)
           const capitalRowEl = capitalSliderEl.closest('div[style*="grid"]');
           if (capitalRowEl) {
             const capitalOutEl = capitalRowEl.querySelector('.asset-amount');
             if (capitalOutEl) {
               capitalOutEl.textContent = formatNOK(v);
-            }
-          }
-        } else {
-          // Hvis manuelt satt, sjekk at den ikke overstiger ny maksverdi
-          if (currentCapitalValue > v) {
-            capitalSliderEl.value = String(v);
-            AppState.inputCapital = v;
-            const capitalRowEl = capitalSliderEl.closest('div[style*="grid"]');
-            if (capitalRowEl) {
-              const capitalOutEl = capitalRowEl.querySelector('.asset-amount');
-              if (capitalOutEl) {
-                capitalOutEl.textContent = formatNOK(v);
-              }
             }
           }
         }
@@ -2406,7 +2359,7 @@ function renderPlaceholder(root) {
     thirdLeft.innerHTML = "";
     thirdLeft.style.display = "flex";
     thirdLeft.style.flexDirection = "column";
-    thirdLeft.style.gap = "0.6rem"; // Jevnere luft mellom alle input-områder
+    thirdLeft.style.gap = "0.486rem"; // ytterligere 10 % mindre luft mellom linjene
     thirdLeft.style.paddingTop = "0.5rem";
     thirdLeft.style.paddingBottom = "0.5rem";
     thirdLeft.style.overflowY = "hidden";
@@ -2614,15 +2567,18 @@ function renderPlaceholder(root) {
     result.style.boxShadow = "var(--shadow-sm)";
     result.style.padding = "0.5rem 0.75rem";
     result.style.background = "var(--BG_CARD)";
+    result.style.textAlign = "center";
     const resLabel = document.createElement("div");
     resLabel.className = "section-label";
     resLabel.textContent = "Forventet avkastning:"; // Små bokstaver
     resLabel.style.fontSize = "0.75rem"; // 25% mindre
     resLabel.style.margin = "0 0 0.25rem 0";
+    resLabel.style.textAlign = "center";
     const resValue = document.createElement("div");
     resValue.id = "expected-return-out";
     resValue.style.fontWeight = "900";
     resValue.style.fontSize = "1.25rem";
+    resValue.style.textAlign = "center";
     resValue.textContent = "0.0%";
     result.appendChild(resLabel);
     result.appendChild(resValue);
@@ -2652,9 +2608,11 @@ function renderPlaceholder(root) {
     capitalSlider.max = "50000000";
     capitalSlider.step = "50000";
     
-    // Default: Innskutt kapital = porteføljestørrelse (hvis ikke allerede satt manuelt)
+    // Default: Innskutt kapital = 5 MNOK (begrenset av porteføljestørrelse)
+    const defaultInputCapital = 5000000;
     const initialPortfolioSize = AppState.portfolioSize || 10000000;
-    const initialCapitalValue = AppState.capitalManuallySet ? (AppState.inputCapital || 0) : initialPortfolioSize;
+    if (AppState.inputCapital === undefined) AppState.inputCapital = defaultInputCapital;
+    const initialCapitalValue = Math.min(AppState.inputCapital, initialPortfolioSize);
     capitalSlider.value = String(initialCapitalValue);
     capitalSlider.style.width = "100%";
     
@@ -2672,8 +2630,10 @@ function renderPlaceholder(root) {
       AppState.capitalManuallySet = false;
     }
     
-    // Default: Innskutt kapital = porteføljestørrelse (hvis ikke manuelt satt)
-    const capitalValue = AppState.capitalManuallySet ? (AppState.inputCapital || 0) : initialPortfolioSize;
+    const capitalValue = Math.min(
+      AppState.capitalManuallySet ? (AppState.inputCapital || 0) : (AppState.inputCapital ?? defaultInputCapital),
+      initialPortfolioSize
+    );
     capitalSlider.value = String(capitalValue);
     capitalOut.textContent = formatNOK(capitalValue);
     
@@ -2752,7 +2712,7 @@ function renderPlaceholder(root) {
     thirdRight.innerHTML = "";
     thirdRight.style.display = "flex";
     thirdRight.style.flexDirection = "column";
-    thirdRight.style.gap = "0.6rem"; // Jevnere luft mellom alle input-områder
+    thirdRight.style.gap = "0.486rem"; // ytterligere 10 % mindre luft mellom linjene
     thirdRight.style.paddingTop = "0.5rem";
     thirdRight.style.paddingBottom = "0.5rem";
     thirdRight.style.overflowY = "hidden";
@@ -5839,16 +5799,20 @@ function getFondskontoFlyttChartInputs() {
   }
 
   let capital = 0;
-  const capitalSliderEl = document.getElementById("input-capital-slider");
-  if (capitalSliderEl && capitalSliderEl.value) {
-    const v = Number(capitalSliderEl.value);
-    if (isFinite(v)) capital = v;
-  } else if (isFinite(AppState.inputCapital)) {
+  if (Number.isFinite(Number(AppState.inputCapital))) {
     capital = Number(AppState.inputCapital);
+  } else {
+    const capitalSliderEl = document.getElementById("input-capital-slider");
+    if (capitalSliderEl && capitalSliderEl.value) {
+      const v = Number(capitalSliderEl.value);
+      if (isFinite(v)) capital = v;
+    }
   }
 
   const gain = Math.max(0, Math.round(portfolio - capital));
-  const fundTaxFirstYearPct = AppState.fundTaxFirstYearPct || 37.84;
+  const fundTaxFirstYearPct = Number.isFinite(Number(AppState.fundTaxFirstYearPct))
+    ? Number(AppState.fundTaxFirstYearPct)
+    : 37.84;
   const tax = Math.round(gain * (fundTaxFirstYearPct / 100));
   const net = Math.max(0, Math.round(portfolio - tax));
 
@@ -6201,6 +6165,48 @@ function buildFondskontoCompareLineData() {
   };
 }
 
+function cmToChartPx(cm) {
+  return (cm * 96) / 2.54;
+}
+
+function separateStackedLabelYs(preferredYs, minSep, minY, maxY) {
+  const items = preferredYs.map((y, i) => ({ i, y })).sort((a, b) => a.y - b.y);
+  if (items.length < 2) return preferredYs.slice();
+
+  const mid = items.reduce((s, it) => s + it.y, 0) / items.length;
+  const span = minSep * (items.length - 1);
+  let start = mid - span / 2;
+  if (start < minY) start = minY;
+  if (start + span > maxY) start = maxY - span;
+  items.forEach((it, idx) => {
+    const packed = start + idx * minSep;
+    if (idx === 0) {
+      it.y = Math.min(it.y, packed);
+    } else if (idx === items.length - 1) {
+      it.y = Math.max(it.y, packed);
+    } else {
+      it.y = packed;
+    }
+  });
+  for (let i = 1; i < items.length; i++) {
+    if (items[i].y - items[i - 1].y < minSep) {
+      items[i].y = items[i - 1].y + minSep;
+    }
+  }
+  const overflow = items[items.length - 1].y - maxY;
+  if (overflow > 0) items.forEach((it) => { it.y -= overflow; });
+  if (items[0].y < minY) {
+    items[0].y = minY;
+    for (let i = 1; i < items.length; i++) {
+      items[i].y = Math.max(items[i].y, items[i - 1].y + minSep);
+    }
+  }
+
+  const result = new Array(preferredYs.length);
+  items.forEach((it) => { result[it.i] = it.y; });
+  return result;
+}
+
 function drawFondskontoCompareChart() {
   const chartContainer = document.getElementById("vis-grafisk-container");
   if (!chartContainer) return;
@@ -6359,17 +6365,34 @@ function drawFondskontoCompareChart() {
       g.appendChild(dot);
     });
 
+  });
+
+  const endLabelPlans = series.map((seriesItem) => {
     const last = seriesItem.points[seriesItem.points.length - 1];
-    if (last) {
-      const endLabel = document.createElementNS("http://www.w3.org/2000/svg", "text");
-      endLabel.setAttribute("x", xScale(last.year));
-      endLabel.setAttribute("y", yScale(last.value) - 12);
-      endLabel.setAttribute("text-anchor", "end");
-      styleChartText(endLabel, { size: CHART_THEME.valueSize, weight: "600", fill: CHART_THEME.ink });
-      endLabel.textContent = formatNOK(Math.round(last.value));
-      endLabel.style.pointerEvents = "none";
-      g.appendChild(endLabel);
-    }
+    if (!last) return null;
+    return {
+      last,
+      x: xScale(last.year),
+      preferredY: yScale(last.value) - 12,
+    };
+  }).filter(Boolean);
+  const labelSize = Number(CHART_THEME.valueSize) || 18;
+  const minLabelSep = cmToChartPx(1) + labelSize;
+  const separatedYs = separateStackedLabelYs(
+    endLabelPlans.map((p) => p.preferredY),
+    minLabelSep,
+    16,
+    chartHeight - 8
+  );
+  endLabelPlans.forEach((plan, i) => {
+    const endLabel = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    endLabel.setAttribute("x", plan.x);
+    endLabel.setAttribute("y", separatedYs[i]);
+    endLabel.setAttribute("text-anchor", "end");
+    styleChartText(endLabel, { size: CHART_THEME.valueSize, weight: "600", fill: CHART_THEME.ink });
+    endLabel.textContent = formatNOK(Math.round(plan.last.value));
+    endLabel.style.pointerEvents = "none";
+    g.appendChild(endLabel);
   });
 
   const xAxisLabel = document.createElementNS("http://www.w3.org/2000/svg", "text");
@@ -6385,13 +6408,171 @@ function drawFondskontoCompareChart() {
 
   const legend = document.createElement("div");
   legend.className = "vis-grafisk-legend";
-  legend.innerHTML = `
-    <div class="vis-grafisk-legend-group">
-      ${series.map((s) => `<span class="vis-grafisk-legend-item"><i style="background:${s.color}"></i>${s.name}</span>`).join("")}
-    </div>
-  `;
+  const legendGroup = document.createElement("div");
+  legendGroup.className = "vis-grafisk-legend-group";
+  series.forEach((s) => {
+    const item = document.createElement("span");
+    item.className = "vis-grafisk-legend-item";
+    item.innerHTML = `<i style="background:${s.color}"></i>${s.name}`;
+    legendGroup.appendChild(item);
+  });
+  legendGroup.appendChild(createVisGrafiskLegendActions());
+  legend.appendChild(legendGroup);
   chartContainer.appendChild(legend);
   chartContainer.appendChild(tooltip);
+}
+
+function redrawVisGrafiskChartPreservingEditor() {
+  const container = document.getElementById("vis-grafisk-container");
+  const editor = container && container.querySelector(".vis-grafisk-value-editor");
+  const kind = window._visGrafiskKind || "fondskonto-sammenlign";
+  if (typeof drawVisGrafiskChart === "function") {
+    drawVisGrafiskChart(kind);
+  }
+  if (editor && container && !container.contains(editor)) {
+    container.appendChild(editor);
+  }
+}
+
+function createVisGrafiskLegendActions() {
+  const actions = document.createElement("div");
+  actions.className = "vis-grafisk-legend-actions";
+
+  const taxBtn = document.createElement("button");
+  taxBtn.type = "button";
+  taxBtn.className = "vis-grafisk-legend-btn vis-grafisk-legend-btn--secondary";
+  taxBtn.setAttribute("aria-label", "Endre skatt første år");
+  taxBtn.textContent = "Endre skatt første år";
+  taxBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    openVisGrafiskValueEditor(taxBtn, {
+      kind: "tax",
+      label: "Skatt første år (%)",
+      getValue: () => (Number.isFinite(Number(AppState.fundTaxFirstYearPct)) ? Number(AppState.fundTaxFirstYearPct) : 37.84),
+      format: (v) => Number(v).toFixed(2).replace(".", ","),
+      parse: (raw) => {
+        const n = parseFloat(String(raw).replace(/\s/g, "").replace("%", "").replace(",", "."));
+        return Number.isFinite(n) ? n : null;
+      },
+      apply: (v, syncSummaries) => {
+        AppState.fundTaxFirstYearPct = v;
+        syncInputTaxFirstYearField(v);
+        redrawVisGrafiskChartPreservingEditor();
+        if (syncSummaries) {
+          try { if (typeof updateTopSummaries === "function") updateTopSummaries(); } catch (_) {}
+        }
+      },
+    });
+  });
+
+  const capitalBtn = document.createElement("button");
+  capitalBtn.type = "button";
+  capitalBtn.className = "vis-grafisk-legend-btn";
+  capitalBtn.setAttribute("aria-label", "Endre innskutt kapital første år");
+  capitalBtn.textContent = "Endre innskutt kapital første år";
+  capitalBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    openVisGrafiskValueEditor(capitalBtn, {
+      kind: "capital",
+      label: "Innskutt kapital første år",
+      getValue: () => (Number.isFinite(Number(AppState.inputCapital)) ? Number(AppState.inputCapital) : 5000000),
+      format: (v) => String(Math.round(Number(v) || 0)),
+      parse: (raw) => {
+        const cleaned = String(raw).replace(/kr/gi, "").replace(/\s/g, "").replace(/\./g, "").replace(",", ".");
+        const n = parseFloat(cleaned);
+        return Number.isFinite(n) ? n : null;
+      },
+      apply: (v, syncSummaries) => {
+        const portfolio = Number.isFinite(Number(AppState.portfolioSize)) ? Number(AppState.portfolioSize) : v;
+        const capped = Math.max(0, Math.min(v, portfolio));
+        AppState.inputCapital = capped;
+        AppState.capitalManuallySet = true;
+        syncInputCapitalField(capped);
+        redrawVisGrafiskChartPreservingEditor();
+        if (syncSummaries) {
+          try { if (typeof updateTopSummaries === "function") updateTopSummaries(); } catch (_) {}
+        }
+      },
+    });
+  });
+
+  actions.appendChild(taxBtn);
+  actions.appendChild(capitalBtn);
+  return actions;
+}
+
+function syncInputTaxFirstYearField(value) {
+  const moduleRoot = document.getElementById("module-root");
+  if (!moduleRoot) return;
+  const textInputs = moduleRoot.querySelectorAll('input[type="text"][inputMode="decimal"]');
+  textInputs.forEach((input) => {
+    const label = input.closest("div")?.previousElementSibling;
+    const labelText = label?.textContent || "";
+    if (labelText.includes("Skatt fondskonto første år")) {
+      input.value = Number(value).toFixed(2).replace(".", ",");
+    }
+  });
+}
+
+function syncInputCapitalField(value) {
+  const capitalSlider = document.getElementById("input-capital-slider");
+  if (!capitalSlider) return;
+  capitalSlider.value = String(value);
+  const capitalRowEl = capitalSlider.closest('div[style*="grid"]');
+  const capitalOutEl = capitalRowEl && capitalRowEl.querySelector(".asset-amount");
+  if (capitalOutEl) capitalOutEl.textContent = formatNOK(value);
+}
+
+function openVisGrafiskValueEditor(anchorBtn, opts) {
+  const container = document.getElementById("vis-grafisk-container");
+  if (!container) return;
+  const existing = container.querySelector(".vis-grafisk-value-editor");
+  if (existing) {
+    const same = existing.dataset.kind === opts.kind;
+    existing.remove();
+    if (same) return;
+  }
+
+  const editor = document.createElement("div");
+  editor.className = "vis-grafisk-value-editor";
+  editor.dataset.kind = opts.kind;
+
+  const label = document.createElement("label");
+  label.textContent = opts.label;
+  const input = document.createElement("input");
+  input.type = "text";
+  input.inputMode = "decimal";
+  input.value = opts.format(opts.getValue());
+
+  const apply = (syncSummaries) => {
+    const parsed = opts.parse(input.value);
+    if (parsed === null) return;
+    opts.apply(parsed, syncSummaries);
+  };
+  input.addEventListener("input", () => apply(false));
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      apply(true);
+    }
+  });
+  input.addEventListener("blur", () => apply(true));
+
+  editor.appendChild(label);
+  editor.appendChild(input);
+  container.appendChild(editor);
+
+  const cr = container.getBoundingClientRect();
+  const br = anchorBtn.getBoundingClientRect();
+  const top = br.top - cr.top - editor.offsetHeight - 8;
+  let left = br.left - cr.left;
+  if (left + editor.offsetWidth + 8 > cr.width) {
+    left = Math.max(8, cr.width - editor.offsetWidth - 8);
+  }
+  editor.style.top = `${Math.max(8, top)}px`;
+  editor.style.left = `${Math.max(8, left)}px`;
+  input.focus();
+  input.select();
 }
 
 function drawVisGrafiskChart(kind) {
