@@ -923,20 +923,20 @@ p { /* Avsnitt */
 
 .summary-card { display: flex; flex-direction: column; justify-content: center; align-items: center; padding: var(--space-3); gap: var(--space-1); height: 100%; }
 .summary-title { font-weight: var(--weight-medium); text-align: center; font-size: var(--text-xs-size); color: var(--gray-500); letter-spacing: 0; text-transform: none; }
-.summary-assets { background: var(--white); }
-.summary-assets .summary-title { color: var(--gray-500) !important; }
+.summary-assets { background: var(--white); border-color: var(--gray-200); }
+.summary-assets .summary-title { color: var(--gray-500); }
 .summary-assets .summary-value { color: var(--sp-navy); }
 
-.summary-debts { background: var(--error-bg); }
-.summary-debts .summary-title { color: var(--error-700) !important; }
-.summary-debts .summary-value { color: var(--error-700); }
+.summary-debts { background: var(--secondary-50); border-color: var(--secondary-200); }
+.summary-debts .summary-title { color: var(--secondary-600); }
+.summary-debts .summary-value { color: var(--sp-navy); }
 
-.summary-equity { background: var(--success-bg); }
-.summary-equity .summary-title { color: var(--success-700) !important; }
-.summary-equity .summary-value { color: var(--success-700); }
+.summary-equity { background: var(--blue-50); border-color: var(--blue-200); }
+.summary-equity .summary-title { color: var(--blue-700); }
+.summary-equity .summary-value { color: var(--sp-navy); }
 
-.summary-cash { background: var(--blue-50); }
-.summary-cash .summary-title { color: var(--blue-main) !important; }
+.summary-cash { background: var(--blue-100); border-color: var(--blue-300); }
+.summary-cash .summary-title { color: var(--blue-main); }
 .summary-cash .summary-value { color: var(--sp-navy); }
 
 .summary-value { font-weight: var(--weight-semibold); font-size: var(--text-sm-size); color: var(--sp-navy); text-align: center; line-height: 1.2; font-variant-numeric: tabular-nums; }
@@ -969,6 +969,75 @@ p { /* Avsnitt */
   align-items: center;
   justify-content: flex-end;
   font-variant-numeric: tabular-nums;
+}
+
+.nok-editable {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0 0.9rem 1px 0;
+  border: none;
+  border-bottom: 1px dotted var(--secondary-400);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  cursor: pointer;
+  font-variant-numeric: tabular-nums;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.nok-editable::before {
+  content: "";
+  position: absolute;
+  right: 0;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  transform: translateY(-50%);
+  pointer-events: none;
+  background-color: var(--secondary-500);
+  opacity: 0.4;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 20h9'/%3E%3Cpath d='M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 20h9'/%3E%3Cpath d='M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+.nok-editable:hover,
+.nok-editable:focus-visible {
+  background: var(--blue-25);
+  border-bottom-style: solid;
+  border-bottom-color: var(--blue-400);
+  box-shadow: none;
+  outline: none;
+}
+.nok-editable:hover::before,
+.nok-editable:focus-visible::before {
+  opacity: 0.7;
+  background-color: var(--blue-700);
+}
+.nok-editable[data-editing="1"] {
+  padding: 0;
+  background: transparent;
+  border: none;
+  cursor: text;
+}
+.nok-editable[data-editing="1"]::before {
+  display: none;
+}
+.nok-editable-input {
+  width: 100%;
+  min-width: 6.5rem;
+  font-size: 0.75rem;
+  font-family: inherit;
+  font-weight: inherit;
+  text-align: right;
+  padding: 0.05rem 0.2rem;
+  border: none;
+  border-bottom: 1px solid var(--blue-main);
+  border-radius: 0;
+  box-sizing: border-box;
+  background: transparent;
+  color: var(--GRAY_TEXT_DARK);
+  box-shadow: none;
+  outline: none;
 }
 
 /* Input-fanen: verdi-bokser og etiketter skal sitte “pent” på linje */

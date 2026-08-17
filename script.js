@@ -3277,10 +3277,16 @@ function parseNokInput(text) {
 function enableNokDblclickEdit(el, getValue, setValue) {
   if (!el || el.dataset.nokEditBound === "1") return;
   el.dataset.nokEditBound = "1";
-  el.style.cursor = "text";
-  el.title = "Dobbeltklikk for å endre";
-  el.addEventListener("dblclick", (e) => {
-    e.stopPropagation();
+  el.classList.add("nok-editable");
+  el.style.minWidth = "6.5rem";
+  el.style.boxSizing = "border-box";
+  el.title = "Klikk for å endre";
+  el.setAttribute("role", "button");
+  el.setAttribute("tabindex", "0");
+  el.setAttribute("aria-label", `${el.title}`);
+
+  const startEditing = (e) => {
+    if (e) e.stopPropagation();
     if (el.dataset.editing === "1") return;
     el.dataset.editing = "1";
     const currentValue = getValue();
@@ -3288,18 +3294,8 @@ function enableNokDblclickEdit(el, getValue, setValue) {
     input.type = "text";
     input.inputMode = "numeric";
     input.value = String(Math.round(Number(currentValue) || 0));
-    input.style.width = "100%";
-    input.style.minWidth = el.style.minWidth || "6rem";
-    input.style.fontSize = el.style.fontSize || "0.75rem";
-    input.style.fontFamily = "inherit";
-    input.style.fontWeight = el.style.fontWeight || "400";
-    input.style.textAlign = "right";
-    input.style.padding = "0.1rem 0.2rem";
-    input.style.border = "1px solid var(--BORDER_LIGHT)";
-    input.style.borderRadius = "4px";
-    input.style.boxSizing = "border-box";
-    input.style.backgroundColor = "#ffffff";
-    input.style.color = "var(--GRAY_TEXT_DARK)";
+    input.className = "nok-editable-input";
+    input.style.color = el.style.color || "var(--GRAY_TEXT_DARK)";
     el.textContent = "";
     el.appendChild(input);
     input.focus();
@@ -3332,6 +3328,14 @@ function enableNokDblclickEdit(el, getValue, setValue) {
       }
     });
     input.addEventListener("blur", () => finishEditing(true));
+  };
+
+  el.addEventListener("click", startEditing);
+  el.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      startEditing(e);
+    }
   });
 }
 
