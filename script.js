@@ -10,7 +10,11 @@ const AppState = {
   ],
   repaymentProfileYears: 20,
   /** Utbetale utbytte: ta med skattefradrag renter (Input Ja/Nei), standard Ja */
-  interestTaxDeductionOnLoan: true
+  interestTaxDeductionOnLoan: true,
+  /** Realisasjon skatt 2026 — venstre kolonne, uavhengig av Input */
+  realisationRedeemAmount: 2000000,
+  realisationGain: 800000,
+  realisationTax: 302720
 };
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -51,7 +55,8 @@ document.addEventListener("DOMContentLoaded", () => {
     { key: "Input" },
     { key: "Nedbetale lån" },
     { key: "Utbetale utbytte" },
-    { key: "Innløse Fondskonto" }
+    { key: "Innløse Fondskonto" },
+    { key: "Realisasjon skatt 2026" }
   ];
   const steps = allSteps.filter(s => s.key !== "Forside");
   function renderStepper(currentKey) {
@@ -164,7 +169,7 @@ function updateInputTabValues() {
 
   const kpiSlider = document.getElementById('expKpi-slider');
   if (kpiSlider) {
-    const newValue = String(AppState.expKpi || 0.0);
+    const newValue = String(AppState.expKpi ?? 2.0);
     if (kpiSlider.value !== newValue) {
       kpiSlider.value = newValue;
       kpiSlider.dispatchEvent(new Event('input'));
@@ -299,7 +304,7 @@ function renderPlaceholder(root) {
     if (AppState.stockShareOption === undefined) AppState.stockShareOption = "65% Aksjer";
     if (AppState.expEquity === undefined) AppState.expEquity = 8.0;
     if (AppState.expBonds === undefined) AppState.expBonds = 5.0;
-    if (AppState.expKpi === undefined) AppState.expKpi = 0.0;
+    if (AppState.expKpi === undefined) AppState.expKpi = 2.0;
     if (AppState.advisoryFeePct === undefined) AppState.advisoryFeePct = 0.0;
     if (AppState.interestCostPct === undefined) AppState.interestCostPct = 5.0;
     if (AppState.shieldRatePct === undefined) AppState.shieldRatePct = 3.9;
@@ -313,7 +318,7 @@ function renderPlaceholder(root) {
     const expEquity = AppState.expEquity || 8.0;
     const expBonds = AppState.expBonds || 5.0;
     const fee = AppState.advisoryFeePct || 0.0;
-    const kpi = AppState.expKpi || 0.0;
+    const kpi = AppState.expKpi ?? 2.0;
     const equitySharePct = AppState.stockSharePercent || 65;
     const equityShare = equitySharePct / 100;
     const grossExpected = equityShare * expEquity + (1 - equityShare) * expBonds;
@@ -373,6 +378,14 @@ function renderPlaceholder(root) {
         description: "Flytte en fondskonto over til en ASK, eller beholde den som den er",
         section: "Innløse Fondskonto",
         action: "Se detaljer"
+      },
+      {
+        id: "tile-realisation",
+        icon: "receipt",
+        title: "Realisasjon skatt 2026",
+        description: "Hvordan vil skatteregningen knyttet til porteføljeendringen i 2026 påvirke din portefølje i en gitt periode",
+        section: "Realisasjon skatt 2026",
+        action: "Se detaljer"
       }
     ];
 
@@ -394,7 +407,10 @@ function renderPlaceholder(root) {
       `;
 
       const goToSection = () => {
-        const navItem = document.querySelector(`.nav-item[data-section="${tile.section}"]`);
+        const target = (tile.section || "").trim();
+        const navItem = Array.from(document.querySelectorAll(".nav-item")).find(
+          (btn) => (btn.getAttribute("data-section") || "").trim() === target
+        );
         if (navItem) navItem.click();
       };
       card.addEventListener("click", goToSection);
@@ -530,7 +546,7 @@ function renderPlaceholder(root) {
   // med lik avstand mellom hver (16px), og gjør den tredje høyere
   // title er allerede definert øverst i funksjonen
   // Faner som skal ha to stående paneler som i "Nedbetale lån"
-  const twoPanelTabs = new Set(["Nedbetale lån", "Utbetale utbytte", "Innløse Fondskonto"]);
+  const twoPanelTabs = new Set(["Nedbetale lån", "Utbetale utbytte", "Innløse Fondskonto", "Realisasjon skatt 2026"]);
   if (twoPanelTabs.has(title)) {
     const spacing = 1; // luft mellom panelene i rem for zoom-uavhengighet
     if (first && first.remove) first.remove();
@@ -555,7 +571,7 @@ function renderPlaceholder(root) {
 
     // Tom fullbredde-container under de to panelene
     let bottom = null;
-    if (title === "Nedbetale lån" || title === "Utbetale utbytte" || title === "Innløse Fondskonto") {
+    if (title === "Nedbetale lån" || title === "Utbetale utbytte" || title === "Innløse Fondskonto" || title === "Realisasjon skatt 2026") {
       container.style.gridAutoRows = "auto";
       bottom = makePanel();
       bottom.innerHTML = "";
@@ -572,8 +588,8 @@ function renderPlaceholder(root) {
       container.appendChild(bottom);
     }
 
-    // Innløse Fondskonto: to kolonner med perfekt linje-justering
-    if (title === "Innløse Fondskonto") {
+    // Innløse Fondskonto / Realisasjon skatt 2026: to kolonner med perfekt linje-justering
+    if (title === "Innløse Fondskonto" || title === "Realisasjon skatt 2026") {
       [left, right].forEach(col => {
         col.innerHTML = "";
         col.style.display = "grid";
@@ -639,11 +655,16 @@ function renderPlaceholder(root) {
         return div;
       }
 
-      // Venstre: Flytte fondskonto
-      left.appendChild(makeRow("Flytte fondskonto:", { bold: true }));
+      const isRealisationTab = title === "Realisasjon skatt 2026";
+      const leftHeading = isRealisationTab ? "Gjennomføre endring" : "Flytte fondskonto:";
+      const rightHeading = isRealisationTab ? "Ikke gjennomføre endring" : "Ikke flytte Fondskonto:";
+      const capitalLabel = isRealisationTab ? "Andel av portefølje som skal innløses" : "Innskutt kapital";
+
+      // Venstre kolonne
+      left.appendChild(makeRow(leftHeading, { bold: true }));
       left.appendChild(makeDivider());
       left.appendChild(makeRow("Portefølje", { id: "fk-left-portfolio" }));
-      left.appendChild(makeRow("Innskutt kapital", { id: "fk-left-capital" }));
+      left.appendChild(makeRow(capitalLabel, { id: "fk-left-capital" }));
       left.appendChild(makeRow("Gevinst", { id: "fk-left-gain" }));
       left.appendChild(makeRow("Skatt", { red: true, id: "fk-left-tax" }));
       left.appendChild(makeDivider());
@@ -652,17 +673,19 @@ function renderPlaceholder(root) {
       left.appendChild(makeRow(`Verdi portefølje om ${AppState.yearsCount || 0} år:`, { id: "fk-left-future", labelId: "fk-left-future-label" }));
       left.appendChild(makeDivider());
       left.appendChild(makeRow(`Gevinst om ${AppState.yearsCount || 0} år`, { id: "fk-left-gain-future", labelId: "fk-left-gain-future-label" }));
-      left.appendChild(makeRow("Skjermingsgrunnlag", { id: "fk-left-shield" }));
-      left.appendChild(makeRow("Avkastning utover skjerming", { id: "fk-left-excess" }));
+      if (!isRealisationTab) {
+        left.appendChild(makeRow("Skjermingsgrunnlag", { id: "fk-left-shield" }));
+        left.appendChild(makeRow("Avkastning utover skjerming", { id: "fk-left-excess" }));
+      }
       left.appendChild(makeRow("Skatt", { red: true, id: "fk-left-tax-future" }));
       left.appendChild(makeDivider());
       left.appendChild(makeRow("Netto portefølje", { bold: true, id: "fk-left-net-future" }));
 
-      // Høyre: Ikke flytte Fondskonto
-      right.appendChild(makeRow("Ikke flytte Fondskonto:", { bold: true }));
+      // Høyre kolonne
+      right.appendChild(makeRow(rightHeading, { bold: true }));
       right.appendChild(makeDivider());
       right.appendChild(makeRow("Portefølje", { id: "fk-right-portfolio" }));
-      right.appendChild(makeRow("Innskutt kapital", { id: "fk-right-capital" }));
+      right.appendChild(makeRow(capitalLabel, { id: "fk-right-capital" }));
       right.appendChild(makeRow("Gevinst", { id: "fk-right-gain" }));
       right.appendChild(makeRow("Skatt", { red: true }));
       right.appendChild(makeDivider());
@@ -685,8 +708,10 @@ function renderPlaceholder(root) {
       right.appendChild(makeRow(`Verdi portefølje om ${AppState.yearsCount || 0} år:`, { id: "fk-right-future", labelId: "fk-right-future-label" }));
       right.appendChild(makeDivider());
       right.appendChild(makeRow(`Gevinst om ${AppState.yearsCount || 0} år`, { id: "fk-right-gain-future", labelId: "fk-right-gain-future-label" }));
-      right.appendChild(makeRow("Skjermingsgrunnlag", { id: "fk-right-shield" }));
-      right.appendChild(makeRow("Avkastning utover skjerming", { id: "fk-right-excess" }));
+      if (!isRealisationTab) {
+        right.appendChild(makeRow("Skjermingsgrunnlag", { id: "fk-right-shield" }));
+        right.appendChild(makeRow("Avkastning utover skjerming", { id: "fk-right-excess" }));
+      }
       right.appendChild(makeRow("Skatt", { red: true, id: "fk-right-tax" }));
       right.appendChild(makeDivider());
       right.appendChild(makeRow("Netto portefølje", { bold: true, id: "fk-right-net" }));
@@ -703,7 +728,7 @@ function renderPlaceholder(root) {
         } else if (isFinite(AppState.portfolioSize)) {
           portfolio = Number(AppState.portfolioSize);
         }
-        // Innskutt kapital hentes fra Input-fanen (slider) eller AppState
+        // Innskutt kapital hentes fra Input-fanen (slider) eller AppState — brukes på høyre side
         let capital = 0;
         const capitalSliderEl = document.getElementById('input-capital-slider');
         if (capitalSliderEl && capitalSliderEl.value) {
@@ -717,6 +742,14 @@ function renderPlaceholder(root) {
         const fundTaxFirstYearPct = AppState.fundTaxFirstYearPct || 37.84;
         const taxRateLeft = fundTaxFirstYearPct / 100; // Konverter prosent til desimal
         const tax = Math.round(gain * taxRateLeft);
+        let capitalLeft = capital;
+        let gainLeft = gain;
+        let taxLeft = tax;
+        if (isRealisationTab) {
+          capitalLeft = Number.isFinite(Number(AppState.realisationRedeemAmount)) ? Number(AppState.realisationRedeemAmount) : 2000000;
+          gainLeft = Number.isFinite(Number(AppState.realisationGain)) ? Number(AppState.realisationGain) : 800000;
+          taxLeft = Number.isFinite(Number(AppState.realisationTax)) ? Number(AppState.realisationTax) : 302720;
+        }
         const elP = document.getElementById("fk-left-portfolio");
         const elC = document.getElementById("fk-left-capital");
         const elG = document.getElementById("fk-left-gain");
@@ -740,18 +773,18 @@ function renderPlaceholder(root) {
         const elTR = document.getElementById("fk-right-tax");
         if (elP) elP.textContent = formatNOK(Math.round(portfolio));
         if (elPR) elPR.textContent = formatNOK(Math.round(portfolio));
-        if (elC) elC.textContent = formatNOK(capital);
-        if (elCR) elCR.textContent = formatNOK(capital);
-        if (elG) elG.textContent = formatNOK(gain);
-        if (elGR) elGR.textContent = formatNOK(gain);
+        if (elC) elC.textContent = formatNOK(capitalLeft);
+        if (elCR) elCR.textContent = formatNOK(isRealisationTab ? capitalLeft : capital);
+        if (elG) elG.textContent = formatNOK(gainLeft);
+        if (elGR) elGR.textContent = formatNOK(isRealisationTab ? gainLeft : gain);
         if (elT) { 
-          elT.textContent = formatNOK(tax); 
+          elT.textContent = formatNOK(taxLeft); 
           elT.style.color = "var(--error-600)"; 
           elT.style.fontWeight = "400"; // Rød tekst skal ha font-weight 400
         }
 
         // Netto portefølje = Portefølje - Skatt
-        const net = Math.max(0, Math.round(portfolio - tax));
+        const net = Math.max(0, Math.round(portfolio - taxLeft));
         if (elNet) elNet.textContent = formatNOK(net);
 
         // År og forventet avkastning hentes fra Input
@@ -800,15 +833,23 @@ function renderPlaceholder(root) {
             expectedReturnPct = gross - fee - kpi;
           }
         }
+        if (isRealisationTab) {
+          expectedReturnPct = getSummaryExpectedReturnPct();
+          years = getSummaryYears();
+        }
         const r = expectedReturnPct / 100;
         const future = Math.round(net * Math.pow(1 + r, years));
         if (elFuture) elFuture.textContent = formatNOK(future);
 
-        // Høyre: Verdi om x år = netto portefølje × (1 + r)^år
-        const futureRight = Math.round(portfolio * Math.pow(1 + r, years));
+        // Høyre: Verdi om x år = netto portefølje nå × (1 + r)^år
+        const netNowRight = portfolio;
+        const futureRight = Math.round(netNowRight * Math.pow(1 + r, years));
         if (elFR) elFR.textContent = formatNOK(futureRight);
-        // Høyre: Gevinst om x år = portefølje om x år − innskutt kapital
-        const gainRight = Math.max(0, futureRight - capital);
+        // Høyre: Gevinst om x år
+        const gainNowRight = isRealisationTab ? gainLeft : gain;
+        const gainRight = isRealisationTab
+          ? Math.max(0, Math.round(gainNowRight + (futureRight - netNowRight)))
+          : Math.max(0, futureRight - capital);
         if (elGFR) elGFR.textContent = formatNOK(gainRight);
         
         // Høyre: Skjermingsgrunnlag = (Innskuttkapital × aksjeandel) × ((1 + skjermingsrente)^antall år) - (innskuttkapital × aksjeandel)
@@ -830,23 +871,25 @@ function renderPlaceholder(root) {
         const excessRight = Math.max(0, gainRight - shieldBaseRight);
         if (elExcessRight) elExcessRight.textContent = formatNOK(excessRight);
         
-        // Høyre: Skatt = Avkastning utover skjerming × ((aksjeandel × Utbytteskatt) + ((1 − aksjeandel) × Kapitalskatt))
+        // Høyre: Skatt
         if (elTR) {
-          // Hent skattesatser fra Input-fanen
-          const stockTaxRate = (AppState.stockTaxPct ?? 37.84) / 100; // Konverter prosent til desimal
-          const capitalTaxRate = (AppState.capitalTaxPct || 22.00) / 100; // Konverter prosent til desimal
-          const equityShareR = Math.max(0, Math.min(1, equitySharePctR / 100));
-          const interestShareR = 1 - equityShareR;
-          // Hvis aksjeandel > 80%, bruk utbytteskatt på hele gevinsten
-          const rateRight = equitySharePctR > 80 ? stockTaxRate : (equityShareR * stockTaxRate + interestShareR * capitalTaxRate);
-          const taxRight = Math.round(excessRight * rateRight);
+          let taxRight;
+          if (isRealisationTab) {
+            taxRight = Math.round(gainRight * 0.3784);
+          } else {
+            const stockTaxRate = (AppState.stockTaxPct ?? 37.84) / 100;
+            const capitalTaxRate = (AppState.capitalTaxPct || 22.00) / 100;
+            const equityShareR = Math.max(0, Math.min(1, equitySharePctR / 100));
+            const interestShareR = 1 - equityShareR;
+            const rateRight = equitySharePctR > 80 ? stockTaxRate : (equityShareR * stockTaxRate + interestShareR * capitalTaxRate);
+            taxRight = Math.round(excessRight * rateRight);
+          }
           elTR.textContent = formatNOK(taxRight);
           elTR.style.color = "var(--error-600)";
-          // Høyre: Netto portefølje (fremtid) = Verdi om x år − Skatt
           if (elNR) elNR.textContent = formatNOK(Math.max(0, futureRight - taxRight));
         }
 
-        // Gevinst om x år = framtidsverdi - netto nå
+        // Gevinst om x år = verdi portefølje om x år − netto portefølje
         const gainFuture = Math.max(0, future - net);
         if (elGainFuture) elGainFuture.textContent = formatNOK(gainFuture);
 
@@ -876,7 +919,9 @@ function renderPlaceholder(root) {
         const interestShare = 1 - equityShare; // renteandel
         // Hvis aksjeandel > 80%, bruk utbytteskatt på hele avkastningen
         const effectiveTaxRate = equitySharePct > 80 ? stockTaxRate : (equityShare * stockTaxRate + interestShare * capitalTaxRate);
-        const taxFuture = Math.round(excess * effectiveTaxRate);
+        const taxFuture = isRealisationTab
+          ? Math.round(gainFuture * 0.3784)
+          : Math.round(excess * effectiveTaxRate);
         if (elTaxFuture) { 
           elTaxFuture.textContent = formatNOK(taxFuture); 
           elTaxFuture.style.color = "var(--error-600)"; 
@@ -886,6 +931,21 @@ function renderPlaceholder(root) {
         // Netto portefølje (fremtid) = Fremtidsverdi − Skatt (fremtid)
         const elNetFuture = document.getElementById("fk-left-net-future");
         if (elNetFuture) elNetFuture.textContent = formatNOK(Math.max(0, future - taxFuture));
+
+        if (isRealisationTab) {
+          enableNokDblclickEdit(elC, () => Number.isFinite(Number(AppState.realisationRedeemAmount)) ? Number(AppState.realisationRedeemAmount) : 2000000, (v) => {
+            AppState.realisationRedeemAmount = v;
+            updateTopSummaries();
+          });
+          enableNokDblclickEdit(elG, () => Number.isFinite(Number(AppState.realisationGain)) ? Number(AppState.realisationGain) : 800000, (v) => {
+            AppState.realisationGain = v;
+            updateTopSummaries();
+          });
+          enableNokDblclickEdit(elT, () => Number.isFinite(Number(AppState.realisationTax)) ? Number(AppState.realisationTax) : 302720, (v) => {
+            AppState.realisationTax = v;
+            updateTopSummaries();
+          });
+        }
       } catch (_) {}
 
       if (bottom) {
@@ -901,12 +961,15 @@ function renderPlaceholder(root) {
         const buttonWrapper = document.createElement("div");
         buttonWrapper.className = "chart-action-row";
 
+        const flyttLabel = isRealisationTab ? "Gjennomføre endring" : "Flytte fondskonto";
+        const ikkeFlyttLabel = isRealisationTab ? "Ikke gjennomføre endring" : "Ikke flytte Fondskonto";
+
         const flyttBtn = document.createElement("button");
         flyttBtn.id = "chart-icon-vis-grafisk-fondskonto-flytt";
         flyttBtn.type = "button";
         flyttBtn.className = "chart-action-btn chart-action-btn--primary";
-        flyttBtn.setAttribute("aria-label", "Flytte fondskonto");
-        flyttBtn.textContent = "Flytte fondskonto";
+        flyttBtn.setAttribute("aria-label", flyttLabel);
+        flyttBtn.textContent = flyttLabel;
         flyttBtn.addEventListener("click", () => {
           if (typeof window.openVisGrafiskModal === "function") {
             window.openVisGrafiskModal("fondskonto-flytt");
@@ -918,8 +981,8 @@ function renderPlaceholder(root) {
         ikkeFlyttBtn.id = "chart-icon-vis-grafisk-fondskonto-ikke-flytt";
         ikkeFlyttBtn.type = "button";
         ikkeFlyttBtn.className = "chart-action-btn chart-action-btn--primary";
-        ikkeFlyttBtn.setAttribute("aria-label", "Ikke flytte Fondskonto");
-        ikkeFlyttBtn.textContent = "Ikke flytte Fondskonto";
+        ikkeFlyttBtn.setAttribute("aria-label", ikkeFlyttLabel);
+        ikkeFlyttBtn.textContent = ikkeFlyttLabel;
         ikkeFlyttBtn.addEventListener("click", () => {
           if (typeof window.openVisGrafiskModal === "function") {
             window.openVisGrafiskModal("fondskonto-ikke-flytt");
@@ -939,6 +1002,19 @@ function renderPlaceholder(root) {
           }
         });
         buttonWrapper.appendChild(sammenlignBtn);
+
+        const differanseBtn = document.createElement("button");
+        differanseBtn.id = "chart-icon-fondskonto-differanse";
+        differanseBtn.type = "button";
+        differanseBtn.className = "chart-action-btn chart-action-btn--primary";
+        differanseBtn.setAttribute("aria-label", "Differanse år for år");
+        differanseBtn.textContent = "Differanse år for år";
+        differanseBtn.addEventListener("click", () => {
+          if (typeof window.openVisGrafiskModal === "function") {
+            window.openVisGrafiskModal("fondskonto-differanse");
+          }
+        });
+        buttonWrapper.appendChild(differanseBtn);
 
         bottom.appendChild(buttonWrapper);
       }
@@ -2424,7 +2500,7 @@ function renderPlaceholder(root) {
 
     const sEquity = makePctSlider("expEquity", "Forventet avkastning aksjer", 0, 20, 0.1, AppState.expEquity || 8.0);
     const sBonds  = makePctSlider("expBonds",  "Forventet avkastning renter", 0, 15, 0.1, AppState.expBonds || 5.0);
-    const sKpi    = makePctSlider("expKpi",    "Forventet KPI", 0, 10, 0.1, AppState.expKpi || 0.0);
+    const sKpi    = makePctSlider("expKpi",    "Forventet KPI", 0, 10, 0.1, AppState.expKpi ?? 2.0);
     AppState.expEquity = Number(sEquity.value);
     AppState.expBonds = Number(sBonds.value);
     AppState.expKpi = Number(sKpi.value);
@@ -3189,6 +3265,125 @@ function renderPlaceholder(root) {
 
 function formatNOK(value) {
   return new Intl.NumberFormat("nb-NO", { style: "currency", currency: "NOK", maximumFractionDigits: 0 }).format(value);
+}
+
+function parseNokInput(text) {
+  if (text == null) return NaN;
+  const cleaned = String(text).trim().replace(/\s/g, "").replace(",", ".");
+  const digits = cleaned.replace(/[^\d.-]/g, "");
+  return Number(digits);
+}
+
+function enableNokDblclickEdit(el, getValue, setValue) {
+  if (!el || el.dataset.nokEditBound === "1") return;
+  el.dataset.nokEditBound = "1";
+  el.style.cursor = "text";
+  el.title = "Dobbeltklikk for å endre";
+  el.addEventListener("dblclick", (e) => {
+    e.stopPropagation();
+    if (el.dataset.editing === "1") return;
+    el.dataset.editing = "1";
+    const currentValue = getValue();
+    const input = document.createElement("input");
+    input.type = "text";
+    input.inputMode = "numeric";
+    input.value = String(Math.round(Number(currentValue) || 0));
+    input.style.width = "100%";
+    input.style.minWidth = el.style.minWidth || "6rem";
+    input.style.fontSize = el.style.fontSize || "0.75rem";
+    input.style.fontFamily = "inherit";
+    input.style.fontWeight = el.style.fontWeight || "400";
+    input.style.textAlign = "right";
+    input.style.padding = "0.1rem 0.2rem";
+    input.style.border = "1px solid var(--BORDER_LIGHT)";
+    input.style.borderRadius = "4px";
+    input.style.boxSizing = "border-box";
+    input.style.backgroundColor = "#ffffff";
+    input.style.color = "var(--GRAY_TEXT_DARK)";
+    el.textContent = "";
+    el.appendChild(input);
+    input.focus();
+    input.select();
+
+    let finished = false;
+    const finishEditing = (commit) => {
+      if (finished) return;
+      finished = true;
+      delete el.dataset.editing;
+      const raw = input.value;
+      input.remove();
+      if (commit) {
+        const parsed = parseNokInput(raw);
+        if (isFinite(parsed)) {
+          setValue(Math.round(parsed));
+          return;
+        }
+      }
+      el.textContent = formatNOK(getValue());
+    };
+
+    input.addEventListener("keydown", (ev) => {
+      if (ev.key === "Enter") {
+        ev.preventDefault();
+        finishEditing(true);
+      } else if (ev.key === "Escape") {
+        ev.preventDefault();
+        finishEditing(false);
+      }
+    });
+    input.addEventListener("blur", () => finishEditing(true));
+  });
+}
+
+function getSummaryExpectedReturnPct() {
+  const el = document.getElementById("sum-equity");
+  if (el && el.textContent) {
+    const v = Number(String(el.textContent).replace("%", "").trim().replace(",", "."));
+    if (isFinite(v)) return v;
+  }
+  if (isFinite(AppState.expectedReturnPct)) return Number(AppState.expectedReturnPct);
+  return 0;
+}
+
+function getSummaryYears() {
+  if (isFinite(AppState.yearsCount)) return Number(AppState.yearsCount);
+  const el = document.getElementById("sum-cashflow");
+  if (el && el.textContent) {
+    const m = String(el.textContent).match(/(\d+)/);
+    if (m) return Number(m[1]);
+  }
+  return 0;
+}
+
+function isRealisationTabActive() {
+  const activeNav = document.querySelector(".nav-item.is-active");
+  const section = (activeNav && activeNav.getAttribute("data-section")) || "";
+  return section.trim() === "Realisasjon skatt 2026";
+}
+
+function parseNokFromEl(el) {
+  if (!el) return NaN;
+  return parseNokInput(el.textContent);
+}
+
+function formatDiffPct(pct) {
+  if (!isFinite(pct)) return "0 %";
+  const digits = Math.abs(pct) >= 1 ? 2 : 1;
+  return `${pct.toFixed(digits).replace(".", ",")} %`;
+}
+
+function formatShortRatePct(pct) {
+  if (!isFinite(pct)) return "0,00 %";
+  return `${pct.toFixed(2).replace(".", ",")} %`;
+}
+
+function longRateToShortRatePct(longPct, years) {
+  const n = Number(years);
+  const long = Number(longPct) / 100;
+  if (!isFinite(n) || n <= 0 || !isFinite(long)) return 0;
+  const factor = 1 + long;
+  if (factor <= 0) return (long / n) * 100;
+  return (Math.pow(factor, 1 / n) - 1) * 100;
 }
 
 // Excel AVDRAG-funksjon (PMT)
@@ -4284,7 +4479,20 @@ function updateTopSummaries() {
       // Beregn skatt for venstre side: Gevinst × Skatt fondskonto første år (%)
       const fundTaxFirstYearPct = AppState.fundTaxFirstYearPct || 37.84;
       const taxRateLeft = fundTaxFirstYearPct / 100; // Konverter prosent til desimal
-      const taxLeft = Math.round(gain * taxRateLeft);
+      const taxLeftFromInput = Math.round(gain * taxRateLeft);
+
+      const activeNav = document.querySelector(".nav-item.is-active");
+      const activeSection = (activeNav && activeNav.getAttribute("data-section")) || "";
+      const isRealisationTab = activeSection.trim() === "Realisasjon skatt 2026";
+      const capitalLeft = isRealisationTab
+        ? (Number.isFinite(Number(AppState.realisationRedeemAmount)) ? Number(AppState.realisationRedeemAmount) : 2000000)
+        : capital;
+      const gainLeft = isRealisationTab
+        ? (Number.isFinite(Number(AppState.realisationGain)) ? Number(AppState.realisationGain) : 800000)
+        : gain;
+      const taxLeft = isRealisationTab
+        ? (Number.isFinite(Number(AppState.realisationTax)) ? Number(AppState.realisationTax) : 302720)
+        : taxLeftFromInput;
 
       const elLP = document.getElementById("fk-left-portfolio");
       const elLG = document.getElementById("fk-left-gain");
@@ -4294,23 +4502,26 @@ function updateTopSummaries() {
       const elRG = document.getElementById("fk-right-gain");
       const elRT = document.getElementById("fk-right-tax");
       const elRNet = document.getElementById("fk-right-net");
+      const elNRNow = document.getElementById("fk-right-net-now");
 
       if (elLP) elLP.textContent = formatNOK(Math.round(portfolio));
         if (elRP) elRP.textContent = formatNOK(Math.round(portfolio));
-      if (elLeftCap) elLeftCap.textContent = formatNOK(capital);
-      if (elRightCap) elRightCap.textContent = formatNOK(capital);
-      if (elLG) elLG.textContent = formatNOK(gain);
-      if (elRG) elRG.textContent = formatNOK(gain);
-      if (elLT) { 
+      if (elLeftCap && elLeftCap.dataset.editing !== "1") elLeftCap.textContent = formatNOK(capitalLeft);
+      if (elRightCap) elRightCap.textContent = formatNOK(isRealisationTab ? capitalLeft : capital);
+      if (elLG && elLG.dataset.editing !== "1") elLG.textContent = formatNOK(gainLeft);
+      if (elRG) elRG.textContent = formatNOK(isRealisationTab ? gainLeft : gain);
+      if (elLT && elLT.dataset.editing !== "1") { 
         elLT.textContent = formatNOK(taxLeft); 
         elLT.style.color = "var(--error-600)"; 
         elLT.style.fontWeight = "400"; // Rød tekst skal ha font-weight 400
       }
-      if (elLNet) elLNet.textContent = formatNOK(Math.max(0, Math.round(portfolio - taxLeft)));
-        if (elNRNow) elNRNow.textContent = formatNOK(Math.round(portfolio));
+      const netLeft = Math.max(0, Math.round(portfolio - taxLeft));
+      const netRightNow = Math.round(portfolio);
+      if (elLNet) elLNet.textContent = formatNOK(netLeft);
+      if (elNRNow) elNRNow.textContent = formatNOK(netRightNow);
 
       // Høyre skatt avhenger av aksje-/renteandel
-      if (elRT || elRNet) {
+      if (!isRealisationTab && (elRT || elRNet)) {
         let equitySharePctR = 65;
         if (typeof AppState.stockSharePercent === 'number') equitySharePctR = AppState.stockSharePercent;
         else if (AppState.stockShareOption) {
@@ -4352,10 +4563,12 @@ function updateTopSummaries() {
       const elGainFuture = document.getElementById("fk-left-gain-future");
       const elShield = document.getElementById("fk-left-shield");
       const elExcess = document.getElementById("fk-left-excess");
+      const elFR = document.getElementById("fk-right-future");
+      const elGFR = document.getElementById("fk-right-gain-future");
       
-      if (elTaxFuture || elNetFuture) {
-        // Hent netto portefølje (allerede beregnet)
-        const net = Math.max(0, Math.round(portfolio - taxLeft));
+      if (elTaxFuture || elNetFuture || elFuture || elFR) {
+        // Hver kolonne vokser fra sin egen netto
+        const net = netLeft;
         
         // Hent antall år
         let years = 0;
@@ -4379,15 +4592,27 @@ function updateTopSummaries() {
             expectedReturnPct = Number(AppState.expectedReturnPct);
           }
         }
+        if (isRealisationTab) {
+          expectedReturnPct = getSummaryExpectedReturnPct();
+          years = getSummaryYears();
+        }
         
-        // Beregn fremtidsverdi
+        // Beregn fremtidsverdi: netto × (1 + forventet avkastning)^år
         const r = expectedReturnPct / 100;
         const future = Math.round(net * Math.pow(1 + r, years));
         if (elFuture) elFuture.textContent = formatNOK(future);
         
-        // Beregn gevinst om x år
+        // Beregn gevinst om x år = verdi portefølje om x år − netto portefølje
         const gainFuture = Math.max(0, future - net);
         if (elGainFuture) elGainFuture.textContent = formatNOK(gainFuture);
+
+        const futureRight = Math.round(netRightNow * Math.pow(1 + r, years));
+        if (elFR) elFR.textContent = formatNOK(futureRight);
+        const gainNowRight = isRealisationTab ? gainLeft : gain;
+        const gainRightFuture = isRealisationTab
+          ? Math.max(0, Math.round(gainNowRight + (futureRight - netRightNow)))
+          : Math.max(0, futureRight - capital);
+        if (elGFR) elGFR.textContent = formatNOK(gainRightFuture);
         
         // Beregn skjermingsgrunnlag
         let shieldRate = 0;
@@ -4415,11 +4640,23 @@ function updateTopSummaries() {
         const interestShare = 1 - equityShare; // renteandel
         // Hvis aksjeandel > 80%, bruk utbytteskatt på hele avkastningen
         const effectiveTaxRate = equitySharePct > 80 ? stockTaxRate : (equityShare * stockTaxRate + interestShare * capitalTaxRate);
-        const taxFuture = Math.round(excess * effectiveTaxRate);
+        const taxFuture = isRealisationTab
+          ? Math.round(gainFuture * 0.3784)
+          : Math.round(excess * effectiveTaxRate);
         if (elTaxFuture) { elTaxFuture.textContent = formatNOK(taxFuture); elTaxFuture.style.color = "var(--error-600)"; }
         
         // Netto portefølje (fremtid) = Fremtidsverdi − Skatt (fremtid)
         if (elNetFuture) elNetFuture.textContent = formatNOK(Math.max(0, future - taxFuture));
+
+        if (isRealisationTab) {
+          const taxRightFuture = Math.round(gainRightFuture * 0.3784);
+          if (elRT) {
+            elRT.textContent = formatNOK(taxRightFuture);
+            elRT.style.color = "var(--error-600)";
+            elRT.style.fontWeight = "400";
+          }
+          if (elRNet) elRNet.textContent = formatNOK(Math.max(0, futureRight - taxRightFuture));
+        }
       }
     }
   } catch (_) {}
@@ -4946,7 +5183,7 @@ function generateOutputText() {
   lines.push(`Aksjeandel: ${AppState.stockShareOption || "65% Aksjer"}`);
   lines.push(`Forventet avkastning aksjer: ${(AppState.expEquity || 8.0).toFixed(1).replace('.', ',')} %`);
   lines.push(`Forventet avkastning renter: ${(AppState.expBonds || 5.0).toFixed(1).replace('.', ',')} %`);
-  lines.push(`Forventet KPI: ${(AppState.expKpi || 0.0).toFixed(1).replace('.', ',')} %`);
+  lines.push(`Forventet KPI: ${(AppState.expKpi ?? 2.0).toFixed(1).replace('.', ',')} %`);
   lines.push(`Rådgivningshonorar: ${(AppState.advisoryFeePct || 0.0).toFixed(2).replace('.', ',')} %`);
   lines.push(`Skjermingsrente: ${(AppState.shieldRatePct || 3.9).toFixed(1).replace('.', ',')} %`);
   lines.push(`Rentekostnader: ${(AppState.interestCostPct || 5.0).toFixed(1).replace('.', ',')} %`);
@@ -5788,6 +6025,30 @@ function buildDividendVisGrafiskData() {
 }
 
 function getFondskontoFlyttChartInputs() {
+  if (isRealisationTabActive()) {
+    const parsedPortfolio = parseNokFromEl(document.getElementById("fk-left-portfolio"));
+    const portfolio = isFinite(parsedPortfolio)
+      ? Math.round(parsedPortfolio)
+      : (isFinite(AppState.portfolioSize) ? Number(AppState.portfolioSize) : 0);
+    const parsedTax = parseNokFromEl(document.getElementById("fk-left-tax"));
+    const tax = isFinite(parsedTax)
+      ? Math.round(parsedTax)
+      : (Number.isFinite(Number(AppState.realisationTax)) ? Math.round(Number(AppState.realisationTax)) : 302720);
+    const net = Math.max(0, Math.round(portfolio - tax));
+    const years = Math.max(0, getSummaryYears());
+    const expectedReturnPct = getSummaryExpectedReturnPct();
+    const r = expectedReturnPct / 100;
+    const parsedFuture = parseNokFromEl(document.getElementById("fk-left-future"));
+    const future = isFinite(parsedFuture) ? Math.round(parsedFuture) : Math.round(net * Math.pow(1 + r, years));
+    const parsedTaxFuture = parseNokFromEl(document.getElementById("fk-left-tax-future"));
+    const taxFuture = isFinite(parsedTaxFuture)
+      ? Math.round(parsedTaxFuture)
+      : Math.round(Math.max(0, future - net) * 0.3784);
+    const parsedNetFuture = parseNokFromEl(document.getElementById("fk-left-net-future"));
+    const netFuture = isFinite(parsedNetFuture) ? Math.round(parsedNetFuture) : Math.max(0, future - taxFuture);
+    return { portfolio, tax, net, years, expectedRate: r, taxFuture, future, netFuture };
+  }
+
   const sumAssets = (AppState.assets || []).reduce((s, x) => s + (x.amount || 0), 0);
   let portfolio = sumAssets;
   const portfolioSlider = document.getElementById("input-portfolio-slider");
@@ -5891,6 +6152,29 @@ function getFondskontoFlyttChartInputs() {
 }
 
 function getFondskontoIkkeFlyttChartInputs() {
+  if (isRealisationTabActive()) {
+    const parsedPortfolio = parseNokFromEl(document.getElementById("fk-right-portfolio"));
+    const parsedNetNow = parseNokFromEl(document.getElementById("fk-right-net-now"));
+    const portfolio = isFinite(parsedPortfolio)
+      ? Math.round(parsedPortfolio)
+      : (isFinite(parsedNetNow)
+        ? Math.round(parsedNetNow)
+        : (isFinite(AppState.portfolioSize) ? Number(AppState.portfolioSize) : 0));
+    const net = isFinite(parsedNetNow) ? Math.round(parsedNetNow) : portfolio;
+    const years = Math.max(0, getSummaryYears());
+    const expectedReturnPct = getSummaryExpectedReturnPct();
+    const r = expectedReturnPct / 100;
+    const parsedFuture = parseNokFromEl(document.getElementById("fk-right-future"));
+    const future = isFinite(parsedFuture) ? Math.round(parsedFuture) : Math.round(net * Math.pow(1 + r, years));
+    const parsedTaxFuture = parseNokFromEl(document.getElementById("fk-right-tax"));
+    const taxFuture = isFinite(parsedTaxFuture)
+      ? Math.round(parsedTaxFuture)
+      : Math.round(Math.max(0, parseNokFromEl(document.getElementById("fk-right-gain-future")) || (future - net)) * 0.3784);
+    const parsedNetFuture = parseNokFromEl(document.getElementById("fk-right-net"));
+    const netFuture = isFinite(parsedNetFuture) ? Math.round(parsedNetFuture) : Math.max(0, future - taxFuture);
+    return { portfolio, tax: 0, net, years, expectedRate: r, taxFuture, future, netFuture };
+  }
+
   const sumAssets = (AppState.assets || []).reduce((s, x) => s + (x.amount || 0), 0);
   let portfolio = sumAssets;
   const portfolioSlider = document.getElementById("input-portfolio-slider");
@@ -6021,6 +6305,7 @@ function buildFondskontoVisGrafiskData(kind) {
   if (last) {
     last.tax = -taxFuture;
     last.final = netFuture;
+    if (isFinite(inputs.future)) last.endPortfolio = inputs.future;
   }
 
   return { portfolio, years, yearRows, netFuture };
@@ -6085,11 +6370,44 @@ function getVisGrafiskStacks(row) {
     return { positive, negative };
   }
 
+  if (row.kind === "fondskonto-differanse") {
+    const diff = Number(row.diff) || 0;
+    const part = signedChartPart("Differanse", diff);
+    const pctPart = isFinite(row.pct)
+      ? { label: "Andel av netto", value: row.pct, unit: "pct", note: true }
+      : null;
+    const shortPart = isFinite(row.shortPct)
+      ? {
+          label: "Årlig reduksjon i avkastning",
+          value: row.shortPct,
+          unit: "pct-short",
+          note: true,
+        }
+      : null;
+    const parts = [part, pctPart, shortPart].filter(Boolean);
+    if (diff > 0.5) {
+      positive.push({
+        value: diff,
+        color: VIS_GRAFISK_COLORS.positive,
+        title: "Differanse",
+        parts,
+      });
+    } else if (diff < -0.5) {
+      negative.push({
+        value: Math.abs(diff),
+        color: VIS_GRAFISK_COLORS.negative,
+        title: "Differanse",
+        parts,
+      });
+    }
+    return { positive, negative };
+  }
+
   if (row.kind === "fondskonto-flytt" || row.kind === "fondskonto-ikke-flytt") {
     const firstTax = Number(row.firstTax) || 0;
     const futureTax = row.isLast ? Number(row.tax) || 0 : 0;
     const negParts = [
-      signedChartPart("Skatt ved flytting", firstTax),
+      signedChartPart(isRealisationTabActive() ? "Skatt år 1" : "Skatt ved flytting", firstTax),
       signedChartPart("Skatt", futureTax),
     ].filter(Boolean);
     const negNet = firstTax + futureTax;
@@ -6149,20 +6467,83 @@ function buildFondskontoLineSeries(inputs, name, color) {
 }
 
 function buildFondskontoCompareLineData() {
+  const realisation = isRealisationTabActive();
   return {
     series: [
       buildFondskontoLineSeries(
         getFondskontoFlyttChartInputs(),
-        "Flytte fondskonto",
+        realisation ? "Gjennomføre endring" : "Flytte fondskonto",
         VIS_GRAFISK_COLORS.positive
       ),
       buildFondskontoLineSeries(
         getFondskontoIkkeFlyttChartInputs(),
-        "Ikke flytte Fondskonto",
+        realisation ? "Ikke gjennomføre endring" : "Ikke flytte Fondskonto",
         CHART_THEME.ink
       ),
     ],
   };
+}
+
+function buildFondskontoDiffBarData() {
+  const currentYears = Math.max(1, getSummaryYears() || 10);
+  const horizon = currentYears;
+  const r = getSummaryExpectedReturnPct() / 100;
+  const taxRate = 0.3784;
+
+  const parsedPortfolio = parseNokFromEl(document.getElementById("fk-left-portfolio"))
+    || parseNokFromEl(document.getElementById("fk-right-portfolio"));
+  const portfolio = isFinite(parsedPortfolio)
+    ? Math.round(parsedPortfolio)
+    : (isFinite(AppState.portfolioSize) ? Number(AppState.portfolioSize) : 0);
+
+  const parsedTax1 = parseNokFromEl(document.getElementById("fk-left-tax"));
+  const taxYear1 = isFinite(parsedTax1)
+    ? Math.round(parsedTax1)
+    : (Number.isFinite(Number(AppState.realisationTax)) ? Math.round(Number(AppState.realisationTax)) : 0);
+
+  const parsedGain = parseNokFromEl(document.getElementById("fk-right-gain"))
+    || parseNokFromEl(document.getElementById("fk-left-gain"));
+  const gainNow = isFinite(parsedGain)
+    ? Math.round(parsedGain)
+    : (Number.isFinite(Number(AppState.realisationGain)) ? Math.round(Number(AppState.realisationGain)) : 0);
+
+  const parsedNetNow = parseNokFromEl(document.getElementById("fk-right-net-now"));
+  const netRightNow = isFinite(parsedNetNow) ? Math.round(parsedNetNow) : portfolio;
+  const netLeftNow = Math.max(0, Math.round(portfolio - taxYear1));
+
+  const parsedLeftNet = parseNokFromEl(document.getElementById("fk-left-net"));
+  const pctBase = isFinite(parsedLeftNet) && parsedLeftNet > 0 ? parsedLeftNet : netLeftNow;
+
+  const yearRows = [];
+  for (let y = 1; y <= horizon; y++) {
+    const futureLeft = Math.round(netLeftNow * Math.pow(1 + r, y));
+    const taxLeftFuture = Math.round(Math.max(0, futureLeft - netLeftNow) * taxRate);
+    const netLeft = futureLeft - taxLeftFuture;
+
+    const futureRight = Math.round(netRightNow * Math.pow(1 + r, y));
+    const gainRight = gainNow + (futureRight - netRightNow);
+    const taxRightFuture = Math.round(Math.max(0, gainRight) * taxRate);
+    const netRight = futureRight - taxRightFuture;
+
+    const diff = netRight - netLeft;
+    const pct = pctBase > 0 ? (diff / pctBase) * 100 : 0;
+    const shortPct = longRateToShortRatePct(pct, y);
+    yearRows.push({
+      kind: "fondskonto-differanse",
+      year: y,
+      diff,
+      pct,
+      shortPct,
+      hovedstol: 0,
+      growth: 0,
+      endPortfolio: diff,
+      final: diff,
+      isLast: y === horizon,
+      alwaysShowLabel: y === currentYears,
+    });
+  }
+
+  return { years: horizon, yearRows, pctBase };
 }
 
 function cmToChartPx(cm) {
@@ -6207,11 +6588,11 @@ function separateStackedLabelYs(preferredYs, minSep, minY, maxY) {
   return result;
 }
 
-function drawFondskontoCompareChart() {
+function drawFondskontoCompareChart(data) {
   const chartContainer = document.getElementById("vis-grafisk-container");
   if (!chartContainer) return;
 
-  const { series } = buildFondskontoCompareLineData();
+  const { series } = data || buildFondskontoCompareLineData();
   const allPoints = series.flatMap((s) => s.points);
   if (!allPoints.length) return;
 
@@ -6416,163 +6797,9 @@ function drawFondskontoCompareChart() {
     item.innerHTML = `<i style="background:${s.color}"></i>${s.name}`;
     legendGroup.appendChild(item);
   });
-  legendGroup.appendChild(createVisGrafiskLegendActions());
   legend.appendChild(legendGroup);
   chartContainer.appendChild(legend);
   chartContainer.appendChild(tooltip);
-}
-
-function redrawVisGrafiskChartPreservingEditor() {
-  const container = document.getElementById("vis-grafisk-container");
-  const editor = container && container.querySelector(".vis-grafisk-value-editor");
-  const kind = window._visGrafiskKind || "fondskonto-sammenlign";
-  if (typeof drawVisGrafiskChart === "function") {
-    drawVisGrafiskChart(kind);
-  }
-  if (editor && container && !container.contains(editor)) {
-    container.appendChild(editor);
-  }
-}
-
-function createVisGrafiskLegendActions() {
-  const actions = document.createElement("div");
-  actions.className = "vis-grafisk-legend-actions";
-
-  const taxBtn = document.createElement("button");
-  taxBtn.type = "button";
-  taxBtn.className = "vis-grafisk-legend-btn vis-grafisk-legend-btn--secondary";
-  taxBtn.setAttribute("aria-label", "Endre skatt første år");
-  taxBtn.textContent = "Endre skatt første år";
-  taxBtn.addEventListener("click", (e) => {
-    e.stopPropagation();
-    openVisGrafiskValueEditor(taxBtn, {
-      kind: "tax",
-      label: "Skatt første år (%)",
-      getValue: () => (Number.isFinite(Number(AppState.fundTaxFirstYearPct)) ? Number(AppState.fundTaxFirstYearPct) : 37.84),
-      format: (v) => Number(v).toFixed(2).replace(".", ","),
-      parse: (raw) => {
-        const n = parseFloat(String(raw).replace(/\s/g, "").replace("%", "").replace(",", "."));
-        return Number.isFinite(n) ? n : null;
-      },
-      apply: (v, syncSummaries) => {
-        AppState.fundTaxFirstYearPct = v;
-        syncInputTaxFirstYearField(v);
-        redrawVisGrafiskChartPreservingEditor();
-        if (syncSummaries) {
-          try { if (typeof updateTopSummaries === "function") updateTopSummaries(); } catch (_) {}
-        }
-      },
-    });
-  });
-
-  const capitalBtn = document.createElement("button");
-  capitalBtn.type = "button";
-  capitalBtn.className = "vis-grafisk-legend-btn";
-  capitalBtn.setAttribute("aria-label", "Endre innskutt kapital første år");
-  capitalBtn.textContent = "Endre innskutt kapital første år";
-  capitalBtn.addEventListener("click", (e) => {
-    e.stopPropagation();
-    openVisGrafiskValueEditor(capitalBtn, {
-      kind: "capital",
-      label: "Innskutt kapital første år",
-      getValue: () => (Number.isFinite(Number(AppState.inputCapital)) ? Number(AppState.inputCapital) : 5000000),
-      format: (v) => String(Math.round(Number(v) || 0)),
-      parse: (raw) => {
-        const cleaned = String(raw).replace(/kr/gi, "").replace(/\s/g, "").replace(/\./g, "").replace(",", ".");
-        const n = parseFloat(cleaned);
-        return Number.isFinite(n) ? n : null;
-      },
-      apply: (v, syncSummaries) => {
-        const portfolio = Number.isFinite(Number(AppState.portfolioSize)) ? Number(AppState.portfolioSize) : v;
-        const capped = Math.max(0, Math.min(v, portfolio));
-        AppState.inputCapital = capped;
-        AppState.capitalManuallySet = true;
-        syncInputCapitalField(capped);
-        redrawVisGrafiskChartPreservingEditor();
-        if (syncSummaries) {
-          try { if (typeof updateTopSummaries === "function") updateTopSummaries(); } catch (_) {}
-        }
-      },
-    });
-  });
-
-  actions.appendChild(taxBtn);
-  actions.appendChild(capitalBtn);
-  return actions;
-}
-
-function syncInputTaxFirstYearField(value) {
-  const moduleRoot = document.getElementById("module-root");
-  if (!moduleRoot) return;
-  const textInputs = moduleRoot.querySelectorAll('input[type="text"][inputMode="decimal"]');
-  textInputs.forEach((input) => {
-    const label = input.closest("div")?.previousElementSibling;
-    const labelText = label?.textContent || "";
-    if (labelText.includes("Skatt fondskonto første år")) {
-      input.value = Number(value).toFixed(2).replace(".", ",");
-    }
-  });
-}
-
-function syncInputCapitalField(value) {
-  const capitalSlider = document.getElementById("input-capital-slider");
-  if (!capitalSlider) return;
-  capitalSlider.value = String(value);
-  const capitalRowEl = capitalSlider.closest('div[style*="grid"]');
-  const capitalOutEl = capitalRowEl && capitalRowEl.querySelector(".asset-amount");
-  if (capitalOutEl) capitalOutEl.textContent = formatNOK(value);
-}
-
-function openVisGrafiskValueEditor(anchorBtn, opts) {
-  const container = document.getElementById("vis-grafisk-container");
-  if (!container) return;
-  const existing = container.querySelector(".vis-grafisk-value-editor");
-  if (existing) {
-    const same = existing.dataset.kind === opts.kind;
-    existing.remove();
-    if (same) return;
-  }
-
-  const editor = document.createElement("div");
-  editor.className = "vis-grafisk-value-editor";
-  editor.dataset.kind = opts.kind;
-
-  const label = document.createElement("label");
-  label.textContent = opts.label;
-  const input = document.createElement("input");
-  input.type = "text";
-  input.inputMode = "decimal";
-  input.value = opts.format(opts.getValue());
-
-  const apply = (syncSummaries) => {
-    const parsed = opts.parse(input.value);
-    if (parsed === null) return;
-    opts.apply(parsed, syncSummaries);
-  };
-  input.addEventListener("input", () => apply(false));
-  input.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      apply(true);
-    }
-  });
-  input.addEventListener("blur", () => apply(true));
-
-  editor.appendChild(label);
-  editor.appendChild(input);
-  container.appendChild(editor);
-
-  const cr = container.getBoundingClientRect();
-  const br = anchorBtn.getBoundingClientRect();
-  const top = br.top - cr.top - editor.offsetHeight - 8;
-  let left = br.left - cr.left;
-  if (left + editor.offsetWidth + 8 > cr.width) {
-    left = Math.max(8, cr.width - editor.offsetWidth - 8);
-  }
-  editor.style.top = `${Math.max(8, top)}px`;
-  editor.style.left = `${Math.max(8, left)}px`;
-  input.focus();
-  input.select();
 }
 
 function drawVisGrafiskChart(kind) {
@@ -6590,7 +6817,9 @@ function drawVisGrafiskChart(kind) {
       ? buildDividendVisGrafiskData()
       : chartKind === "fondskonto-flytt" || chartKind === "fondskonto-ikke-flytt"
         ? buildFondskontoVisGrafiskData(chartKind)
-        : buildVisGrafiskData();
+        : chartKind === "fondskonto-differanse"
+          ? buildFondskontoDiffBarData()
+          : buildVisGrafiskData();
   const { yearRows } = data;
   if (!yearRows.length) return;
 
@@ -6612,6 +6841,18 @@ function drawVisGrafiskChart(kind) {
   const pad = 1.1;
   let niceMax = Math.max(maxPos * pad, 1);
   let niceMin = maxNeg > 0 ? -maxNeg * pad : 0;
+  if (chartKind === "fondskonto-differanse") {
+    const lastDiff = Number(yearRows[yearRows.length - 1]?.diff) || 0;
+    const lastAbs = Math.abs(lastDiff);
+    const axisMax = lastAbs * 2.5; // siste års differanse + 150 %
+    if (lastDiff >= 0) {
+      niceMax = Math.max(axisMax, 1);
+      niceMin = maxNeg > 0 ? -maxNeg * pad : 0;
+    } else {
+      niceMax = maxPos > 0 ? maxPos * pad : 0;
+      niceMin = -Math.max(axisMax, 1);
+    }
+  }
 
   let range = niceMax - niceMin || 1;
   const niceTick = niceNumber(range / 8, true) || range / 8;
@@ -6642,9 +6883,14 @@ function drawVisGrafiskChart(kind) {
     const parts = Array.isArray(seg.parts) && seg.parts.length
       ? seg.parts
       : [{ label: seg.title, value: seg.value }];
-    const rows = parts.map((p) => (
-      `<div class="vis-grafisk-tooltip-row"><span>${p.label}</span><span>${formatNOK(Math.round(p.value))}</span></div>`
-    ));
+    const rows = parts.map((p) => {
+      const formatted = p.unit === "pct-short"
+        ? formatShortRatePct(p.value)
+        : p.unit === "pct"
+          ? formatDiffPct(p.value)
+          : formatNOK(Math.round(p.value));
+      return `<div class="vis-grafisk-tooltip-row"><span>${p.label}</span><span>${formatted}</span></div>`;
+    });
     if (parts.length > 1) {
       const totalParts = parts.filter((p) => !p.note);
       const total = totalParts.reduce((s, p) => s + p.value, 0);
@@ -6671,7 +6917,12 @@ function drawVisGrafiskChart(kind) {
   const containerRect = chartContainer.getBoundingClientRect();
   const width = Math.max(640, containerRect.width || 900);
   const height = Math.max(360, containerRect.height || 520);
-  const margin = { top: 28, right: 20, bottom: 88, left: 108 };
+  const margin = {
+    top: 28,
+    right: chartKind === "fondskonto-differanse" ? 108 : 20,
+    bottom: 88,
+    left: 108,
+  };
   const chartWidth = width - margin.left - margin.right;
   const chartHeight = height - margin.top - margin.bottom;
 
@@ -6713,6 +6964,50 @@ function drawVisGrafiskChart(kind) {
     label.textContent = formatNOK(Math.round(tick));
     g.appendChild(label);
   });
+
+  if (chartKind === "fondskonto-differanse" && data.pctBase > 0) {
+    const rightAxis = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    rightAxis.setAttribute("x1", chartWidth);
+    rightAxis.setAttribute("y1", 0);
+    rightAxis.setAttribute("x2", chartWidth);
+    rightAxis.setAttribute("y2", chartHeight);
+    rightAxis.setAttribute("stroke", CHART_THEME.axis);
+    rightAxis.setAttribute("stroke-width", "1.5");
+    g.appendChild(rightAxis);
+
+    uniqueTicks.forEach((tick) => {
+      const yPct = yScale(tick);
+      const rightTick = document.createElementNS("http://www.w3.org/2000/svg", "line");
+      rightTick.setAttribute("x1", chartWidth);
+      rightTick.setAttribute("y1", yPct);
+      rightTick.setAttribute("x2", chartWidth + 6);
+      rightTick.setAttribute("y2", yPct);
+      rightTick.setAttribute("stroke", CHART_THEME.axis);
+      rightTick.setAttribute("stroke-width", "1.5");
+      g.appendChild(rightTick);
+
+      const pct = (tick / data.pctBase) * 100;
+      const pctLabel = document.createElementNS("http://www.w3.org/2000/svg", "text");
+      pctLabel.setAttribute("x", chartWidth + 10);
+      pctLabel.setAttribute("y", yPct);
+      pctLabel.setAttribute("text-anchor", "start");
+      pctLabel.setAttribute("dominant-baseline", "middle");
+      styleChartText(pctLabel, { size: CHART_THEME.tickSize, weight: "500" });
+      pctLabel.textContent = formatDiffPct(pct);
+      g.appendChild(pctLabel);
+    });
+
+    const pctTitleX = chartWidth + 86;
+    const pctTitleY = chartHeight / 2;
+    const pctAxisTitle = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    pctAxisTitle.setAttribute("x", pctTitleX);
+    pctAxisTitle.setAttribute("y", pctTitleY);
+    pctAxisTitle.setAttribute("text-anchor", "middle");
+    pctAxisTitle.setAttribute("transform", `rotate(-90 ${pctTitleX} ${pctTitleY})`);
+    styleChartText(pctAxisTitle, { size: CHART_THEME.axisTitleSize, weight: "600", fill: CHART_THEME.ink });
+    pctAxisTitle.textContent = "Differanse i %";
+    g.appendChild(pctAxisTitle);
+  }
 
   const zeroY = yScale(0);
   const xAxisLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
@@ -6802,15 +7097,16 @@ function drawVisGrafiskChart(kind) {
     yearLabel.textContent = String(row.year);
     yearGroup.appendChild(yearLabel);
 
-    const endVal = row.isLast ? row.final : row.endPortfolio;
+    const endVal = row.diff != null ? row.diff : (row.isLast ? row.final : row.endPortfolio);
     const endLabel = document.createElementNS("http://www.w3.org/2000/svg", "text");
     endLabel.setAttribute("x", x + barWidth / 2);
-    endLabel.setAttribute("y", yScale(posCursor) - 6);
+    const labelY = (Number(endVal) || 0) >= 0 ? yScale(posCursor) - 6 : yScale(negCursor) + 14;
+    endLabel.setAttribute("y", labelY);
     endLabel.setAttribute("text-anchor", "middle");
     styleChartText(endLabel, { size: CHART_THEME.valueSize, weight: "600", fill: CHART_THEME.ink });
     endLabel.textContent = formatNOK(Math.round(endVal));
     endLabel.style.pointerEvents = "none";
-    if (!row.isLast) {
+    if (!row.alwaysShowLabel && (row.kind === "fondskonto-differanse" || !row.isLast)) {
       endLabel.style.opacity = "0";
       endLabel.style.transition = "opacity 0.12s ease";
       yearGroup.addEventListener("mouseenter", () => { endLabel.style.opacity = "1"; });
@@ -6819,6 +7115,53 @@ function drawVisGrafiskChart(kind) {
     yearGroup.appendChild(endLabel);
     g.appendChild(yearGroup);
   });
+
+  if (chartKind === "fondskonto-differanse") {
+    const lineColor = "#8B95A5";
+    const pctPoints = yearRows.map((row) => ({
+      x: (row.year - 1) * groupWidth + groupWidth / 2,
+      y: yScale(Number(row.diff) || 0),
+      row,
+    }));
+    const linePath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    linePath.setAttribute("d", pctPoints.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`).join(" "));
+    linePath.setAttribute("fill", "none");
+    linePath.setAttribute("stroke", lineColor);
+    linePath.setAttribute("stroke-width", "2.75");
+    linePath.setAttribute("stroke-linejoin", "round");
+    linePath.setAttribute("stroke-linecap", "round");
+    linePath.style.pointerEvents = "none";
+    g.appendChild(linePath);
+
+    pctPoints.forEach((point) => {
+      const dot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+      dot.setAttribute("cx", point.x);
+      dot.setAttribute("cy", point.y);
+      dot.setAttribute("r", 5);
+      dot.setAttribute("fill", lineColor);
+      dot.setAttribute("stroke", "#FFFFFF");
+      dot.setAttribute("stroke-width", "2");
+      dot.style.cursor = "pointer";
+      const seg = {
+        title: "Differanse i %",
+        value: point.row.pct,
+        parts: [
+          { label: "Differanse", value: point.row.diff },
+          { label: "Andel av netto", value: point.row.pct, unit: "pct", note: true },
+          {
+            label: "Årlig reduksjon i avkastning",
+            value: point.row.shortPct,
+            unit: "pct-short",
+            note: true,
+          },
+        ],
+      };
+      dot.addEventListener("mouseenter", (e) => showChartTooltip(seg, e));
+      dot.addEventListener("mousemove", positionChartTooltip);
+      dot.addEventListener("mouseleave", hideChartTooltip);
+      g.appendChild(dot);
+    });
+  }
 
   const xAxisLabel = document.createElementNS("http://www.w3.org/2000/svg", "text");
   xAxisLabel.setAttribute("x", chartWidth / 2);
@@ -6836,13 +7179,25 @@ function drawVisGrafiskChart(kind) {
   const negativeLegend =
     chartKind === "dividend"
       ? "Uttak, skatt og renter"
-      : chartKind === "fondskonto-flytt" || chartKind === "fondskonto-ikke-flytt"
-        ? "Skatt"
-        : "Uttak og oppgjør";
+      : chartKind === "fondskonto-differanse"
+        ? "Negativ differanse"
+        : chartKind === "fondskonto-flytt" || chartKind === "fondskonto-ikke-flytt"
+          ? "Skatt"
+          : "Uttak og oppgjør";
+  const positiveLegend = chartKind === "fondskonto-differanse"
+    ? "Differanse ( Gjennomføre Vs. Ikke gjennomføre)"
+    : "Hovedstol + avkastning";
+  const pctLineItem = chartKind === "fondskonto-differanse"
+    ? `<span class="vis-grafisk-legend-item"><i style="background:#8B95A5;width:16px;height:3px;border-radius:2px;"></i>Differanseavkastning i % av nettoportefølje i år 1</span>`
+    : "";
+  const negativeItem = chartKind === "fondskonto-differanse"
+    ? ""
+    : `<span class="vis-grafisk-legend-item"><i style="background:${VIS_GRAFISK_COLORS.negative}"></i>${negativeLegend}</span>`;
   legend.innerHTML = `
     <div class="vis-grafisk-legend-group">
-      <span class="vis-grafisk-legend-item"><i style="background:${VIS_GRAFISK_COLORS.positive}"></i>Hovedstol + avkastning</span>
-      <span class="vis-grafisk-legend-item"><i style="background:${VIS_GRAFISK_COLORS.negative}"></i>${negativeLegend}</span>
+      <span class="vis-grafisk-legend-item"><i style="background:${VIS_GRAFISK_COLORS.positive}"></i>${positiveLegend}</span>
+      ${pctLineItem}
+      ${negativeItem}
     </div>
   `;
   chartContainer.appendChild(legend);
@@ -6863,7 +7218,8 @@ function initVisGrafiskUI() {
       kind === "dividend" ||
       kind === "fondskonto-flytt" ||
       kind === "fondskonto-ikke-flytt" ||
-      kind === "fondskonto-sammenlign"
+      kind === "fondskonto-sammenlign" ||
+      kind === "fondskonto-differanse"
         ? kind
         : "loan";
     modal.removeAttribute("hidden");
@@ -6871,12 +7227,14 @@ function initVisGrafiskUI() {
     if (title) {
       title.textContent =
         window._visGrafiskKind === "fondskonto-flytt"
-          ? "Flytte fondskonto"
+          ? (isRealisationTabActive() ? "Gjennomføre endring" : "Flytte fondskonto")
           : window._visGrafiskKind === "fondskonto-ikke-flytt"
-            ? "Ikke flytte Fondskonto"
+            ? (isRealisationTabActive() ? "Ikke gjennomføre endring" : "Ikke flytte Fondskonto")
             : window._visGrafiskKind === "fondskonto-sammenlign"
               ? "Sammenlign alternativer"
-              : "Porteføljeutvikling";
+              : window._visGrafiskKind === "fondskonto-differanse"
+                ? "Differanse mellom de to alternativene siste år etter skatt"
+                : "Porteføljeutvikling";
     }
     requestAnimationFrame(() => drawVisGrafiskChart(window._visGrafiskKind));
     document.addEventListener("keydown", onKeyDown);
