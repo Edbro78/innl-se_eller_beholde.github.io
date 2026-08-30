@@ -678,6 +678,9 @@ function renderPlaceholder(root) {
         left.appendChild(makeRow("Avkastning utover skjerming", { id: "fk-left-excess" }));
       }
       left.appendChild(makeRow("Skatt", { red: true, id: "fk-left-tax-future" }));
+      if (isRealisationTab) {
+        left.appendChild(makeRow("", { placeholder: true }));
+      }
       left.appendChild(makeDivider());
       left.appendChild(makeRow("Netto portefølje", { bold: true, id: "fk-left-net-future" }));
 
@@ -713,6 +716,9 @@ function renderPlaceholder(root) {
         right.appendChild(makeRow("Avkastning utover skjerming", { id: "fk-right-excess" }));
       }
       right.appendChild(makeRow("Skatt", { red: true, id: "fk-right-tax" }));
+      if (isRealisationTab) {
+        right.appendChild(makeRow("Utsatt skatt fra 2026", { red: true, id: "fk-right-deferred-tax" }));
+      }
       right.appendChild(makeDivider());
       right.appendChild(makeRow("Netto portefølje", { bold: true, id: "fk-right-net" }));
 
@@ -771,6 +777,7 @@ function renderPlaceholder(root) {
         const elShieldRight = document.getElementById("fk-right-shield");
         const elExcessRight = document.getElementById("fk-right-excess");
         const elTR = document.getElementById("fk-right-tax");
+        const elDeferredTax = document.getElementById("fk-right-deferred-tax");
         if (elP) elP.textContent = formatNOK(Math.round(portfolio));
         if (elPR) elPR.textContent = formatNOK(Math.round(portfolio));
         if (elC) elC.textContent = formatNOK(capitalLeft);
@@ -781,6 +788,11 @@ function renderPlaceholder(root) {
           elT.textContent = formatNOK(taxLeft); 
           elT.style.color = "var(--error-600)"; 
           elT.style.fontWeight = "400"; // Rød tekst skal ha font-weight 400
+        }
+        if (elDeferredTax) {
+          elDeferredTax.textContent = formatNOK(taxLeft);
+          elDeferredTax.style.color = "var(--error-600)";
+          elDeferredTax.style.fontWeight = "400";
         }
 
         // Netto portefølje = Portefølje - Skatt
@@ -846,9 +858,8 @@ function renderPlaceholder(root) {
         const futureRight = Math.round(netNowRight * Math.pow(1 + r, years));
         if (elFR) elFR.textContent = formatNOK(futureRight);
         // Høyre: Gevinst om x år
-        const gainNowRight = isRealisationTab ? gainLeft : gain;
         const gainRight = isRealisationTab
-          ? Math.max(0, Math.round(gainNowRight + (futureRight - netNowRight)))
+          ? Math.max(0, Math.round(futureRight - netNowRight))
           : Math.max(0, futureRight - capital);
         if (elGFR) elGFR.textContent = formatNOK(gainRight);
         
@@ -875,7 +886,7 @@ function renderPlaceholder(root) {
         if (elTR) {
           let taxRight;
           if (isRealisationTab) {
-            taxRight = Math.round(gainRight * 0.3784);
+            taxRight = calcRealisationRightTaxFuture(gainRight);
           } else {
             const stockTaxRate = (AppState.stockTaxPct ?? 37.84) / 100;
             const capitalTaxRate = (AppState.capitalTaxPct || 22.00) / 100;
@@ -886,7 +897,7 @@ function renderPlaceholder(root) {
           }
           elTR.textContent = formatNOK(taxRight);
           elTR.style.color = "var(--error-600)";
-          if (elNR) elNR.textContent = formatNOK(Math.max(0, futureRight - taxRight));
+          if (elNR) elNR.textContent = formatNOK(Math.max(0, futureRight - taxRight - (isRealisationTab ? taxLeft : 0)));
         }
 
         // Gevinst om x år = verdi portefølje om x år − netto portefølje
@@ -3365,6 +3376,15 @@ function isRealisationTabActive() {
   return section.trim() === "Realisasjon skatt 2026";
 }
 
+function getStockTaxRate() {
+  const pct = Number(AppState.stockTaxPct);
+  return (Number.isFinite(pct) ? pct : 37.84) / 100;
+}
+
+function calcRealisationRightTaxFuture(gainFuture) {
+  return Math.round(Math.max(0, Number(gainFuture) || 0) * getStockTaxRate());
+}
+
 function parseNokFromEl(el) {
   if (!el) return NaN;
   return parseNokInput(el.textContent);
@@ -4505,6 +4525,7 @@ function updateTopSummaries() {
       const elRP = document.getElementById("fk-right-portfolio");
       const elRG = document.getElementById("fk-right-gain");
       const elRT = document.getElementById("fk-right-tax");
+      const elDeferredTax = document.getElementById("fk-right-deferred-tax");
       const elRNet = document.getElementById("fk-right-net");
       const elNRNow = document.getElementById("fk-right-net-now");
 
@@ -4518,6 +4539,11 @@ function updateTopSummaries() {
         elLT.textContent = formatNOK(taxLeft); 
         elLT.style.color = "var(--error-600)"; 
         elLT.style.fontWeight = "400"; // Rød tekst skal ha font-weight 400
+      }
+      if (elDeferredTax) {
+        elDeferredTax.textContent = formatNOK(taxLeft);
+        elDeferredTax.style.color = "var(--error-600)";
+        elDeferredTax.style.fontWeight = "400";
       }
       const netLeft = Math.max(0, Math.round(portfolio - taxLeft));
       const netRightNow = Math.round(portfolio);
@@ -4612,9 +4638,8 @@ function updateTopSummaries() {
 
         const futureRight = Math.round(netRightNow * Math.pow(1 + r, years));
         if (elFR) elFR.textContent = formatNOK(futureRight);
-        const gainNowRight = isRealisationTab ? gainLeft : gain;
         const gainRightFuture = isRealisationTab
-          ? Math.max(0, Math.round(gainNowRight + (futureRight - netRightNow)))
+          ? Math.max(0, Math.round(futureRight - netRightNow))
           : Math.max(0, futureRight - capital);
         if (elGFR) elGFR.textContent = formatNOK(gainRightFuture);
         
@@ -4653,13 +4678,13 @@ function updateTopSummaries() {
         if (elNetFuture) elNetFuture.textContent = formatNOK(Math.max(0, future - taxFuture));
 
         if (isRealisationTab) {
-          const taxRightFuture = Math.round(gainRightFuture * 0.3784);
+          const taxRightFuture = calcRealisationRightTaxFuture(gainRightFuture);
           if (elRT) {
             elRT.textContent = formatNOK(taxRightFuture);
             elRT.style.color = "var(--error-600)";
             elRT.style.fontWeight = "400";
           }
-          if (elRNet) elRNet.textContent = formatNOK(Math.max(0, futureRight - taxRightFuture));
+          if (elRNet) elRNet.textContent = formatNOK(Math.max(0, futureRight - taxRightFuture - taxLeft));
         }
       }
     }
@@ -6173,9 +6198,13 @@ function getFondskontoIkkeFlyttChartInputs() {
     const parsedTaxFuture = parseNokFromEl(document.getElementById("fk-right-tax"));
     const taxFuture = isFinite(parsedTaxFuture)
       ? Math.round(parsedTaxFuture)
-      : Math.round(Math.max(0, parseNokFromEl(document.getElementById("fk-right-gain-future")) || (future - net)) * 0.3784);
+      : Math.round(Math.max(0, parseNokFromEl(document.getElementById("fk-right-gain-future")) || (future - net)) * getStockTaxRate());
+    const parsedDeferredTax = parseNokFromEl(document.getElementById("fk-right-deferred-tax"));
+    const deferredTax = isFinite(parsedDeferredTax)
+      ? Math.round(parsedDeferredTax)
+      : (Number.isFinite(Number(AppState.realisationTax)) ? Math.round(Number(AppState.realisationTax)) : 302720);
     const parsedNetFuture = parseNokFromEl(document.getElementById("fk-right-net"));
-    const netFuture = isFinite(parsedNetFuture) ? Math.round(parsedNetFuture) : Math.max(0, future - taxFuture);
+    const netFuture = isFinite(parsedNetFuture) ? Math.round(parsedNetFuture) : Math.max(0, future - taxFuture - deferredTax);
     return { portfolio, tax: 0, net, years, expectedRate: r, taxFuture, future, netFuture };
   }
 
@@ -6525,9 +6554,13 @@ function buildFondskontoDiffBarData() {
     const netLeft = futureLeft - taxLeftFuture;
 
     const futureRight = Math.round(netRightNow * Math.pow(1 + r, y));
-    const gainRight = gainNow + (futureRight - netRightNow);
-    const taxRightFuture = Math.round(Math.max(0, gainRight) * taxRate);
-    const netRight = futureRight - taxRightFuture;
+    const gainRight = isRealisationTabActive()
+      ? Math.max(0, futureRight - netRightNow)
+      : gainNow + (futureRight - netRightNow);
+    const taxRightFuture = isRealisationTabActive()
+      ? calcRealisationRightTaxFuture(gainRight)
+      : Math.round(Math.max(0, gainRight) * taxRate);
+    const netRight = futureRight - taxRightFuture - (isRealisationTabActive() ? taxYear1 : 0);
 
     const diff = netRight - netLeft;
     const pct = pctBase > 0 ? (diff / pctBase) * 100 : 0;
