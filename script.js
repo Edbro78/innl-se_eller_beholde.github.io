@@ -931,7 +931,7 @@ function renderPlaceholder(root) {
         // Hvis aksjeandel > 80%, bruk utbytteskatt på hele avkastningen
         const effectiveTaxRate = equitySharePct > 80 ? stockTaxRate : (equityShare * stockTaxRate + interestShare * capitalTaxRate);
         const taxFuture = isRealisationTab
-          ? Math.round(gainFuture * 0.3784)
+          ? Math.round(gainFuture * getStockTaxRate())
           : Math.round(excess * effectiveTaxRate);
         if (elTaxFuture) { 
           elTaxFuture.textContent = formatNOK(taxFuture); 
@@ -4670,7 +4670,7 @@ function updateTopSummaries() {
         // Hvis aksjeandel > 80%, bruk utbytteskatt på hele avkastningen
         const effectiveTaxRate = equitySharePct > 80 ? stockTaxRate : (equityShare * stockTaxRate + interestShare * capitalTaxRate);
         const taxFuture = isRealisationTab
-          ? Math.round(gainFuture * 0.3784)
+          ? Math.round(gainFuture * getStockTaxRate())
           : Math.round(excess * effectiveTaxRate);
         if (elTaxFuture) { elTaxFuture.textContent = formatNOK(taxFuture); elTaxFuture.style.color = "var(--error-600)"; }
         
@@ -6072,7 +6072,7 @@ function getFondskontoFlyttChartInputs() {
     const parsedTaxFuture = parseNokFromEl(document.getElementById("fk-left-tax-future"));
     const taxFuture = isFinite(parsedTaxFuture)
       ? Math.round(parsedTaxFuture)
-      : Math.round(Math.max(0, future - net) * 0.3784);
+      : Math.round(Math.max(0, future - net) * getStockTaxRate());
     const parsedNetFuture = parseNokFromEl(document.getElementById("fk-left-net-future"));
     const netFuture = isFinite(parsedNetFuture) ? Math.round(parsedNetFuture) : Math.max(0, future - taxFuture);
     return { portfolio, tax, net, years, expectedRate: r, taxFuture, future, netFuture };
@@ -6550,7 +6550,7 @@ function buildFondskontoDiffBarData() {
   const yearRows = [];
   for (let y = 1; y <= horizon; y++) {
     const futureLeft = Math.round(netLeftNow * Math.pow(1 + r, y));
-    const taxLeftFuture = Math.round(Math.max(0, futureLeft - netLeftNow) * taxRate);
+    const taxLeftFuture = Math.round(Math.max(0, futureLeft - netLeftNow) * (isRealisationTabActive() ? getStockTaxRate() : taxRate));
     const netLeft = futureLeft - taxLeftFuture;
 
     const futureRight = Math.round(netRightNow * Math.pow(1 + r, y));
