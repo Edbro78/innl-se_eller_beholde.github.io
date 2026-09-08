@@ -887,6 +887,28 @@ p { /* Avsnitt */
   font-weight: var(--weight-semibold);
 }
 
+.calc-hover-tip {
+  cursor: help;
+}
+
+.calc-hover-tip-float {
+  position: fixed;
+  z-index: 40;
+  max-width: 280px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--white);
+  border: 1px solid var(--gray-300);
+  box-shadow: 0 8px 24px rgba(16, 24, 40, 0.12);
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--sp-navy);
+  line-height: 1.4;
+  white-space: pre-line;
+  pointer-events: none;
+}
+
 /* Tom panel mellom overskrift og hovedinnhold */
 .panel-empty {
   height: 56px;
