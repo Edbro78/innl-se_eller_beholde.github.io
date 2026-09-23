@@ -902,12 +902,7 @@ function renderPlaceholder(root) {
           if (isRealisationTab) {
             taxRight = calcRealisationRightTaxFuture(gainRight);
           } else {
-            const stockTaxRate = (AppState.stockTaxPct ?? 37.84) / 100;
-            const capitalTaxRate = (AppState.capitalTaxPct ?? 22.00) / 100;
-            const equityShareR = Math.max(0, Math.min(1, equitySharePctR / 100));
-            const interestShareR = 1 - equityShareR;
-            const rateRight = equitySharePctR > 80 ? stockTaxRate : (equityShareR * stockTaxRate + interestShareR * capitalTaxRate);
-            taxRight = Math.round(excessRight * rateRight);
+            taxRight = calcEquityWeightedTax(excessRight, equitySharePctR);
           }
           elTR.textContent = formatNOK(taxRight);
           elTR.style.color = "var(--error-600)";
@@ -936,17 +931,11 @@ function renderPlaceholder(root) {
         const excess = Math.max(0, gainFuture - shieldBase);
         if (elExcess) elExcess.textContent = formatNOK(excess);
 
-        // Skatt (fremtid) = avkastning utover skjerming × ((aksjeandel × Utbytteskatt) + ((1 − aksjeandel) × Kapitalskatt))
-        // Hent skattesatser fra Input-fanen
-        const stockTaxRate = (AppState.stockTaxPct ?? 37.84) / 100; // Konverter prosent til desimal
-        const capitalTaxRate = (AppState.capitalTaxPct ?? 22.00) / 100; // Konverter prosent til desimal
-        const equityShare = Math.max(0, Math.min(1, equitySharePct / 100));
-        const interestShare = 1 - equityShare; // renteandel
-        // Hvis aksjeandel > 80%, bruk utbytteskatt på hele avkastningen
-        const effectiveTaxRate = equitySharePct > 80 ? stockTaxRate : (equityShare * stockTaxRate + interestShare * capitalTaxRate);
+        // Skatt (fremtid) = (avkastning utover skjerming × aksjeandel × utbytteskatt)
+        // + (avkastning utover skjerming × renteandel × kapitalskatt)
         const taxFuture = isRealisationTab
           ? Math.round(gainFuture * getStockTaxRate())
-          : Math.round(excess * effectiveTaxRate);
+          : calcEquityWeightedTax(excess, equitySharePct);
         if (elTaxFuture) { 
           elTaxFuture.textContent = formatNOK(taxFuture); 
           elTaxFuture.style.color = "var(--error-600)"; 
@@ -3371,6 +3360,19 @@ function getStockTaxRate() {
   return (Number.isFinite(pct) ? pct : 37.84) / 100;
 }
 
+// Avkastning utover skjerming skattlegges med utbytteskatt på aksjeandelen
+// og kapitalskatt (renteskatt) på rentedelen.
+function calcEquityWeightedTax(amount, equitySharePct) {
+  const base = Math.max(0, Number(amount) || 0);
+  const equityShare = Math.max(0, Math.min(1, (Number(equitySharePct) || 0) / 100));
+  const stockTaxRate = (AppState.stockTaxPct ?? 37.84) / 100;
+  const capitalTaxRate = (AppState.capitalTaxPct ?? 22.00) / 100;
+  return Math.round(
+    base * equityShare * stockTaxRate +
+    base * (1 - equityShare) * capitalTaxRate
+  );
+}
+
 function calcRealisationRightTaxFuture(gainFuture) {
   return Math.round(Math.max(0, Number(gainFuture) || 0) * getStockTaxRate());
 }
@@ -4482,29 +4484,9 @@ function updateTopSummaries() {
       if (elLNet) elLNet.textContent = formatNOK(netLeft);
       if (elNRNow) elNRNow.textContent = formatNOK(netRightNow);
 
-      // Høyre skatt avhenger av aksje-/renteandel
-      if (!isRealisationTab && (elRT || elRNet)) {
-        let equitySharePctR = 65;
-        if (typeof AppState.stockSharePercent === 'number') equitySharePctR = AppState.stockSharePercent;
-        else if (AppState.stockShareOption) {
-          const m = String(AppState.stockShareOption).match(/(\d+)%/);
-          if (m) equitySharePctR = Number(m[1]);
-        }
-        // Hent skattesatser fra Input-fanen
-        const stockTaxRate = (AppState.stockTaxPct ?? 37.84) / 100; // Konverter prosent til desimal
-        const capitalTaxRate = (AppState.capitalTaxPct ?? 22.00) / 100; // Konverter prosent til desimal
-        const equityShareR = Math.max(0, Math.min(1, equitySharePctR / 100));
-        const interestShareR = 1 - equityShareR;
-        // Hvis aksjeandel > 80%, bruk utbytteskatt på hele gevinsten
-        const rateRight = equitySharePctR > 80 ? stockTaxRate : (equityShareR * stockTaxRate + interestShareR * capitalTaxRate);
-        const taxRight = Math.round(gain * rateRight);
-        if (elRT) { 
-          elRT.textContent = formatNOK(taxRight); 
-          elRT.style.color = "var(--error-600)"; 
-          elRT.style.fontWeight = "400"; // Rød tekst skal ha font-weight 400
-        }
-        // På høyre side (øverste blokk) skal "Netto portefølje" vise Porteføljestørrelse
-        if (elNRNow) elNRNow.textContent = formatNOK(Math.round(portfolio));
+      // På høyre side (øverste blokk) skal "Netto portefølje" vise Porteføljestørrelse
+      if (!isRealisationTab && elNRNow) {
+        elNRNow.textContent = formatNOK(Math.round(portfolio));
       }
       
       // Oppdater label-tekstene med dynamisk antall år
@@ -4594,16 +4576,10 @@ function updateTopSummaries() {
         const excess = Math.max(0, gainFuture - shieldBase);
         if (elExcess) elExcess.textContent = formatNOK(excess);
         
-        // Beregn skatt (fremtid) med dynamiske skattesatser fra Input-fanen
-        const stockTaxRate = (AppState.stockTaxPct ?? 37.84) / 100; // Konverter prosent til desimal
-        const capitalTaxRate = (AppState.capitalTaxPct ?? 22.00) / 100; // Konverter prosent til desimal
-        const equityShare = Math.max(0, Math.min(1, equitySharePct / 100));
-        const interestShare = 1 - equityShare; // renteandel
-        // Hvis aksjeandel > 80%, bruk utbytteskatt på hele avkastningen
-        const effectiveTaxRate = equitySharePct > 80 ? stockTaxRate : (equityShare * stockTaxRate + interestShare * capitalTaxRate);
+        // Skatt (fremtid) vektes med aksjeandel: utbytteskatt på aksjedelen, kapitalskatt på rentedelen
         const taxFuture = isRealisationTab
           ? Math.round(gainFuture * getStockTaxRate())
-          : Math.round(excess * effectiveTaxRate);
+          : calcEquityWeightedTax(excess, equitySharePct);
         if (elTaxFuture) { elTaxFuture.textContent = formatNOK(taxFuture); elTaxFuture.style.color = "var(--error-600)"; }
         
         // Netto portefølje (fremtid) = Fremtidsverdi − Skatt (fremtid)
@@ -4617,6 +4593,23 @@ function updateTopSummaries() {
             elRT.style.fontWeight = "400";
           }
           if (elRNet) elRNet.textContent = formatNOK(Math.max(0, futureRight - taxRightFuture - taxLeft));
+        } else {
+          const capitalAksjeandel = capital * (equitySharePct / 100);
+          const shieldBaseRight = Math.round(
+            capitalAksjeandel * Math.pow(1 + shieldRate / 100, years) - capitalAksjeandel
+          );
+          const elShieldRight = document.getElementById("fk-right-shield");
+          const elExcessRight = document.getElementById("fk-right-excess");
+          if (elShieldRight) elShieldRight.textContent = formatNOK(shieldBaseRight);
+          const excessRight = Math.max(0, gainRightFuture - shieldBaseRight);
+          if (elExcessRight) elExcessRight.textContent = formatNOK(excessRight);
+          const taxRightFuture = calcEquityWeightedTax(excessRight, equitySharePct);
+          if (elRT) {
+            elRT.textContent = formatNOK(taxRightFuture);
+            elRT.style.color = "var(--error-600)";
+            elRT.style.fontWeight = "400";
+          }
+          if (elRNet) elRNet.textContent = formatNOK(Math.max(0, futureRight - taxRightFuture));
         }
       }
     }
@@ -6031,12 +6024,7 @@ function getFondskontoFlyttChartInputs() {
     net * (equitySharePct / 100) * Math.pow(1 + shieldRate / 100, years) - net * (equitySharePct / 100)
   );
   const excess = Math.max(0, gainFuture - shieldBase);
-  const stockTaxRate = (AppState.stockTaxPct ?? 37.84) / 100;
-  const capitalTaxRate = (AppState.capitalTaxPct ?? 22.00) / 100;
-  const equityShare = Math.max(0, Math.min(1, equitySharePct / 100));
-  const effectiveTaxRate =
-    equitySharePct > 80 ? stockTaxRate : equityShare * stockTaxRate + (1 - equityShare) * capitalTaxRate;
-  const taxFuture = Math.round(excess * effectiveTaxRate);
+  const taxFuture = calcEquityWeightedTax(excess, equitySharePct);
   const netFuture = Math.max(0, future - taxFuture);
 
   return {
@@ -6154,12 +6142,7 @@ function getFondskontoIkkeFlyttChartInputs() {
     capitalAksjeandel * Math.pow(1 + shieldRate / 100, years) - capitalAksjeandel
   );
   const excess = Math.max(0, gainFuture - shieldBase);
-  const stockTaxRate = (AppState.stockTaxPct ?? 37.84) / 100;
-  const capitalTaxRate = (AppState.capitalTaxPct ?? 22.00) / 100;
-  const equityShare = Math.max(0, Math.min(1, equitySharePct / 100));
-  const effectiveTaxRate =
-    equitySharePct > 80 ? stockTaxRate : equityShare * stockTaxRate + (1 - equityShare) * capitalTaxRate;
-  const taxFuture = Math.round(excess * effectiveTaxRate);
+  const taxFuture = calcEquityWeightedTax(excess, equitySharePct);
   const netFuture = Math.max(0, future - taxFuture);
 
   return {
