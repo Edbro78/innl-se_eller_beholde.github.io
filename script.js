@@ -931,10 +931,10 @@ function renderPlaceholder(root) {
         const excess = Math.max(0, gainFuture - shieldBase);
         if (elExcess) elExcess.textContent = formatNOK(excess);
 
-        // Skatt (fremtid) = (avkastning utover skjerming × aksjeandel × utbytteskatt)
-        // + (avkastning utover skjerming × renteandel × kapitalskatt)
+        // Skatt vektes etter aksjeandel: utbytteskatt på aksjedelen, kapitalskatt på rentedelen.
+        // Fondskonto bruker avkastning utover skjerming. Realisasjon bruker gevinsten.
         const taxFuture = isRealisationTab
-          ? Math.round(gainFuture * getStockTaxRate())
+          ? calcEquityWeightedTax(gainFuture, equitySharePct)
           : calcEquityWeightedTax(excess, equitySharePct);
         if (elTaxFuture) { 
           elTaxFuture.textContent = formatNOK(taxFuture); 
@@ -3355,12 +3355,15 @@ function isRealisationTabActive() {
   return section.trim() === "Realisasjon skatt 2026";
 }
 
-function getStockTaxRate() {
-  const pct = Number(AppState.stockTaxPct);
-  return (Number.isFinite(pct) ? pct : 37.84) / 100;
+function getEquitySharePct() {
+  if (typeof AppState.stockSharePercent === "number") return AppState.stockSharePercent;
+  const label = String(AppState.stockShareOption || "");
+  if (/Renter/i.test(label)) return 0;
+  const m = label.match(/(\d+)%/);
+  return m ? Number(m[1]) : 65;
 }
 
-// Avkastning utover skjerming skattlegges med utbytteskatt på aksjeandelen
+// Gevinsten skattlegges med utbytteskatt på aksjeandelen
 // og kapitalskatt (renteskatt) på rentedelen.
 function calcEquityWeightedTax(amount, equitySharePct) {
   const base = Math.max(0, Number(amount) || 0);
@@ -3374,7 +3377,7 @@ function calcEquityWeightedTax(amount, equitySharePct) {
 }
 
 function calcRealisationRightTaxFuture(gainFuture) {
-  return Math.round(Math.max(0, Number(gainFuture) || 0) * getStockTaxRate());
+  return calcEquityWeightedTax(gainFuture, getEquitySharePct());
 }
 
 function parseNokFromEl(el) {
@@ -4576,9 +4579,10 @@ function updateTopSummaries() {
         const excess = Math.max(0, gainFuture - shieldBase);
         if (elExcess) elExcess.textContent = formatNOK(excess);
         
-        // Skatt (fremtid) vektes med aksjeandel: utbytteskatt på aksjedelen, kapitalskatt på rentedelen
+        // Skatt vektes etter aksjeandel: utbytteskatt på aksjedelen, kapitalskatt på rentedelen.
+        // Fondskonto bruker avkastning utover skjerming. Realisasjon bruker gevinsten.
         const taxFuture = isRealisationTab
-          ? Math.round(gainFuture * getStockTaxRate())
+          ? calcEquityWeightedTax(gainFuture, equitySharePct)
           : calcEquityWeightedTax(excess, equitySharePct);
         if (elTaxFuture) { elTaxFuture.textContent = formatNOK(taxFuture); elTaxFuture.style.color = "var(--error-600)"; }
         
@@ -5936,7 +5940,7 @@ function getFondskontoFlyttChartInputs() {
     const parsedTaxFuture = parseNokFromEl(document.getElementById("fk-left-tax-future"));
     const taxFuture = isFinite(parsedTaxFuture)
       ? Math.round(parsedTaxFuture)
-      : Math.round(Math.max(0, future - net) * getStockTaxRate());
+      : calcRealisationRightTaxFuture(Math.max(0, future - net));
     const parsedNetFuture = parseNokFromEl(document.getElementById("fk-left-net-future"));
     const netFuture = isFinite(parsedNetFuture) ? Math.round(parsedNetFuture) : Math.max(0, future - taxFuture);
     return { portfolio, tax, net, years, expectedRate: r, taxFuture, future, netFuture };
@@ -6057,7 +6061,7 @@ function getFondskontoIkkeFlyttChartInputs() {
     const parsedTaxFuture = parseNokFromEl(document.getElementById("fk-right-tax"));
     const taxFuture = isFinite(parsedTaxFuture)
       ? Math.round(parsedTaxFuture)
-      : Math.round(Math.max(0, parseNokFromEl(document.getElementById("fk-right-gain-future")) || (future - net)) * getStockTaxRate());
+      : calcRealisationRightTaxFuture(Math.max(0, parseNokFromEl(document.getElementById("fk-right-gain-future")) || (future - net)));
     const parsedDeferredTax = parseNokFromEl(document.getElementById("fk-right-deferred-tax"));
     const deferredTax = isFinite(parsedDeferredTax)
       ? Math.round(parsedDeferredTax)
@@ -6404,7 +6408,10 @@ function buildFondskontoDiffBarData() {
   const yearRows = [];
   for (let y = 1; y <= horizon; y++) {
     const futureLeft = Math.round(netLeftNow * Math.pow(1 + r, y));
-    const taxLeftFuture = Math.round(Math.max(0, futureLeft - netLeftNow) * (isRealisationTabActive() ? getStockTaxRate() : taxRate));
+    const gainLeftFuture = Math.max(0, futureLeft - netLeftNow);
+    const taxLeftFuture = isRealisationTabActive()
+      ? calcRealisationRightTaxFuture(gainLeftFuture)
+      : Math.round(gainLeftFuture * taxRate);
     const netLeft = futureLeft - taxLeftFuture;
 
     const futureRight = Math.round(netRightNow * Math.pow(1 + r, y));
