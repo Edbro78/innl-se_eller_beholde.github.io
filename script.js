@@ -49,6 +49,9 @@ document.addEventListener("DOMContentLoaded", () => {
   // Interest cost chart modal init
   initInterestCostChartUI();
 
+  // Innskutt kapital chart modal init
+  initInputCapitalChartUI();
+
   // Bygg stepper
   const allSteps = [
     { key: "Forside" },
@@ -692,7 +695,7 @@ function renderPlaceholder(root) {
       right.appendChild(makeRow("Portefølje", { id: "fk-right-portfolio" }));
       right.appendChild(makeRow(capitalLabel, { id: "fk-right-capital" }));
       right.appendChild(makeRow("Gevinst", { id: "fk-right-gain" }));
-      right.appendChild(makeRow("Skatt", { red: true }));
+      right.appendChild(makeRow("Skatt", { red: true, id: "fk-right-tax-now" }));
       right.appendChild(makeDivider());
       right.appendChild(makeRow("Netto portefølje", { bold: true, id: "fk-right-net-now" }));
       // Sett øyeblikkelig verdi for høyre "Netto portefølje" til porteføljestørrelse
@@ -802,6 +805,12 @@ function renderPlaceholder(root) {
           elT.textContent = formatNOK(taxLeft); 
           elT.style.color = "var(--error-600)"; 
           elT.style.fontWeight = "400"; // Rød tekst skal ha font-weight 400
+        }
+        const elTRNow = document.getElementById("fk-right-tax-now");
+        if (elTRNow) {
+          elTRNow.textContent = formatNOK(0);
+          elTRNow.style.color = "var(--error-600)";
+          elTRNow.style.fontWeight = "400";
         }
         if (elDeferredTax) {
           elDeferredTax.textContent = formatNOK(taxLeft);
@@ -1122,7 +1131,9 @@ function renderPlaceholder(root) {
       left.appendChild(makeRow("Uttak til renter og avdrag", { red: true, id: "inv-left-payment" }));
       left.appendChild(makeDivider());
       left.appendChild(makeRow("Verdi ved periodens slutt", { bold: true, id: "inv-left-endvalue" }));
-      left.appendChild(makeRow("Avkastning:", { id: "inv-left-avkastning-diff" }));
+      const avkastningRow = makeRow("Avkastning:", { id: "inv-left-avkastning-diff" });
+      attachCalcHoverTip(avkastningRow, "Forklaring på skatteberegning finner du under knappen: Innskutt kapital + Forklaring skatt");
+      left.appendChild(avkastningRow);
       left.appendChild(makeRow("Rest innskutt kapital", { italic: true, id: "inv-left-rest-capital", hidden: true }));
       left.appendChild(makeRow("Skatt", { id: "inv-left-tax" }));
       left.appendChild(makeDivider());
@@ -1210,6 +1221,19 @@ function renderPlaceholder(root) {
           }
         });
         buttonWrapper.appendChild(interestCostIcon);
+
+        const inputCapitalIcon = document.createElement("button");
+        inputCapitalIcon.id = "chart-icon-input-capital";
+        inputCapitalIcon.type = "button";
+        inputCapitalIcon.className = "chart-action-btn chart-action-btn--soft";
+        inputCapitalIcon.setAttribute("aria-label", "Innskutt kapital + Forklaring skatt");
+        inputCapitalIcon.textContent = "Innskutt kapital + Forklaring skatt";
+        inputCapitalIcon.addEventListener("click", () => {
+          if (typeof window.openInputCapitalChartModal === "function") {
+            window.openInputCapitalChartModal();
+          }
+        });
+        buttonWrapper.appendChild(inputCapitalIcon);
 
         bottom.appendChild(buttonWrapper);
       }
@@ -3577,11 +3601,179 @@ function calculateFV(rate, nper, pmt, pv, type = 0) {
   return fv;
 }
 
+function readInputNumber(id, stateValue, fallback) {
+  const el = document.getElementById(id);
+  if (el && el.value !== "") {
+    const v = Number(el.value);
+    if (Number.isFinite(v)) return v;
+  }
+  const state = Number(stateValue);
+  if (Number.isFinite(state)) return state;
+  return fallback;
+}
+
+function expectedReturnPctForShare(equitySharePct) {
+  const expEquity = Number.isFinite(Number(AppState.expEquity)) ? Number(AppState.expEquity) : 8;
+  const expBonds = Number.isFinite(Number(AppState.expBonds)) ? Number(AppState.expBonds) : 5;
+  const fee = Number.isFinite(Number(AppState.advisoryFeePct)) ? Number(AppState.advisoryFeePct) : 0;
+  const kpi = Number.isFinite(Number(AppState.expKpi)) ? Number(AppState.expKpi) : 0;
+  const share = Math.max(0, Math.min(100, Number(equitySharePct) || 0)) / 100;
+  return share * expEquity + (1 - share) * expBonds - fee - kpi;
+}
+
+function getAskLoanInput(overrides) {
+  const deductionOn = AppState.interestTaxDeductionOnLoan !== false;
+  const input = {
+    innskuttKapital: readInputNumber("input-capital-slider", AppState.inputCapital, 5000000),
+    lanebelop: readInputNumber("input-portfolio-slider", AppState.portfolioSize, 10000000),
+    lanerente: readInputNumber("interest-cost-slider", AppState.interestCostPct, 5),
+    forventetAvkastning: expectedReturnPctForShare(getEquitySharePct()),
+    skjermingsrente: readInputNumber("shield-rate-slider", AppState.shieldRatePct, 3.9),
+    antallAar: readInputNumber("input-years-slider", AppState.yearsCount, 10),
+    avdragsfrihet: AppState.interestOnly === true,
+    avdragsprofilAar: readInputNumber("repayment-profile-slider", AppState.repaymentProfileYears, 20),
+    skattesatsGevinst: Number.isFinite(Number(AppState.stockTaxPct)) ? Number(AppState.stockTaxPct) : 37.84,
+    skattesatsRentefradrag: deductionOn
+      ? (Number.isFinite(Number(AppState.capitalTaxPct)) ? Number(AppState.capitalTaxPct) : 22)
+      : 0,
+  };
+  return Object.assign(input, overrides || {});
+}
+
+function setAskAmount(id, value, color) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = formatNOK(Math.round(Number(value) || 0));
+  if (color) el.style.color = color;
+}
+
+function askLoanStatusText(model) {
+  const lines = [];
+  model.warnings.forEach((warning) => {
+    if (warning.type === "uttak-over-innskudd") {
+      lines.push(`År ${warning.year}: renteuttaket er større enn innskutt kapital. Skattepliktig gevinst dette året er ${formatNOK(Math.round(warning.skattepliktig))}.`);
+    } else if (warning.type === "tap") {
+      lines.push(`Verdi etter renteuttak er lavere enn gjenværende innskudd. Skatt på gevinst er 0. Ubrukt skjerming gir ikke fradrag. Tapet er ${formatNOK(Math.round(warning.tapMotInnskudd))}, og fradraget er ${formatNOK(Math.round(warning.tapsfradrag))}.`);
+    }
+  });
+  model.controlErrors.forEach((error) => {
+    lines.push(`Kontrollen «${error.name}» avviker med ${formatNOK(Math.round(error.diff))}.`);
+  });
+  return lines.join(" ");
+}
+
+function applyAskLoanDashboard() {
+  if (!document.getElementById("inv-left-endvalue") && !document.getElementById("inv-left-portfolio")) return null;
+  const input = getAskLoanInput();
+  const model = calculateAskLoan(input);
+  window.__askLoanModel = model;
+  const last = model.years[model.years.length - 1];
+  const oppgjor = model.oppgjor;
+  const red = "var(--error-600)";
+
+  setAskAmount("inv-left-portfolio", input.lanebelop);
+  const elExpected = document.getElementById("inv-left-expected");
+  if (elExpected) {
+    elExpected.textContent = `${input.forventetAvkastning.toFixed(2).replace(".", ",")} %`;
+  }
+  setAskAmount("inv-left-capital", input.innskuttKapital);
+  setAskAmount("inv-left-payment", -model.arligUttak, red);
+  setAskAmount("inv-left-endvalue", oppgjor.verdiEtterRente);
+  setAskAmount("inv-left-avkastning-diff", model.nokkel.totalAvkastning);
+  setAskAmount("inv-left-rest-capital", last ? last.innskudd : input.innskuttKapital);
+  setAskAmount("inv-left-tax", -oppgjor.skattGevinst, red);
+  setAskAmount("inv-left-net", oppgjor.nettoFraASK);
+  setAskAmount("inv-left-debt-settle", -oppgjor.restlan, red);
+  setAskAmount("inv-left-interest-deduction", oppgjor.rentefradrag);
+  setAskAmount("inv-left-net-return", oppgjor.nettoResultat);
+  setAskAmount("inv-right-loan", input.lanebelop);
+  const elRate = document.getElementById("inv-right-rate");
+  if (elRate) elRate.textContent = `${input.lanerente.toFixed(1).replace(".", ",")} %`;
+  setAskAmount("inv-right-annual-payment", -model.arligUttak, red);
+  setAskAmount("inv-right-total-interest", -oppgjor.sumRenter, red);
+  setAskAmount("inv-right-remaining-loan", oppgjor.restlan);
+  setAskAmount("inv-right-excess-return", oppgjor.nettoResultat);
+
+  const netReturn = document.getElementById("inv-left-net-return");
+  if (netReturn) {
+    netReturn.style.marginLeft = "auto";
+    netReturn.style.textAlign = "right";
+  }
+  const status = document.getElementById("inv-ask-loan-status");
+  if (status) status.remove();
+
+  const capitalModal = document.getElementById("input-capital-chart-modal");
+  if (capitalModal && !capitalModal.hasAttribute("hidden")) renderAskCapitalOverview();
+  return model;
+}
+
+function renderAskCapitalOverview() {
+  const container = document.getElementById("input-capital-chart-container");
+  if (!container) return;
+  const model = window.__askLoanModel || calculateAskLoan(getAskLoanInput());
+  container.style.overflow = "auto";
+  container.style.display = "block";
+  const headers = [
+    "År",
+    "Verdi 1.1.",
+    "Avkastning",
+    "Verdi før uttak",
+    "Uttak (renter)",
+    "Verdi etter uttak",
+    "Innskutt kapital",
+    "Skjermingsgrunnlag 1.1.",
+    "Skjerming",
+    "Skjermingsgrunnlag 31.12.",
+  ];
+  const body = model.years.map((year) => `
+    <tr>
+      <td>${year.aar}</td>
+      <td>${formatNOK(Math.round(year.verdiStart))}</td>
+      <td>${formatNOK(Math.round(year.avkastning))}</td>
+      <td>${formatNOK(Math.round(year.verdiForUttak))}</td>
+      <td>${formatNOK(Math.round(-year.uttak))}</td>
+      <td>${formatNOK(Math.round(year.verdiEtterUttak))}</td>
+      <td>${formatNOK(Math.round(year.innskudd))}</td>
+      <td>${formatNOK(Math.round(year.grunnlagStart))}</td>
+      <td>${formatNOK(Math.round(year.skjerming))}</td>
+      <td>${formatNOK(Math.round(year.grunnlagSlutt))}</td>
+    </tr>
+  `).join("");
+  const n = model.nokkel;
+  const keys = [
+    ["Total avkastning", n.totalAvkastning],
+    ["Sum renter", -n.sumRenter],
+    ["Sum skjerming", n.sumSkjerming],
+    ["Skatt på gevinst", -n.skattGevinst],
+    ["Rentefradrag", n.rentefradrag],
+    ["Netto resultat", n.nettoResultat],
+  ];
+  const note = askLoanStatusText(model);
+  container.innerHTML = `
+    <div class="ask-loan-overview">
+      ${note ? `<p class="ask-loan-note">${note}</p>` : ""}
+      <div class="ask-loan-keys">
+        ${keys.map(([label, value]) => `<div><span>${label}</span><strong>${formatNOK(Math.round(value))}</strong></div>`).join("")}
+      </div>
+      <table>
+        <thead><tr>${headers.map((header) => `<th>${header}</th>`).join("")}</tr></thead>
+        <tbody>${body}</tbody>
+      </table>
+    </div>
+  `;
+}
+
 // Oppdater kalkulasjonslisten i "Nedbetale lån" dersom den finnes på siden
 function updateInvestLoanCalc() {
   // Sjekk om "Nedbetale lån" elementene finnes
   const elInvEndValue = document.getElementById('inv-left-endvalue');
   if (!elInvEndValue) return; // ikke i riktig fane
+  applyAskLoanDashboard();
+  const openVisGrafisk = document.getElementById("vis-grafisk-modal");
+  if (openVisGrafisk && !openVisGrafisk.hasAttribute("hidden") && typeof window.drawVisGrafiskChart === "function") {
+    window.drawVisGrafiskChart();
+  }
+  return;
 
   // Hent verdier fra AppState / Input-fanen
   const sumAssets = (AppState.assets || []).reduce((s, x) => s + (x.amount || 0), 0);
@@ -4621,281 +4813,8 @@ function updateTopSummaries() {
 
   // Oppdater "Nedbetale lån"-kortene dersom de finnes i DOM
   try {
-    const elInvPortfolio = document.getElementById("inv-left-portfolio");
-    const elInvCapital = document.getElementById("inv-left-capital");
-    if (elInvPortfolio) {
-      const sumAssets = (AppState.assets || []).reduce((s, x) => s + (x.amount || 0), 0);
-      let portfolio = isFinite(AppState.portfolioSize) ? Number(AppState.portfolioSize) : sumAssets;
-      const portfolioSlider = document.getElementById('input-portfolio-slider');
-      if (portfolioSlider && portfolioSlider.value) {
-        const v = Number(portfolioSlider.value);
-        if (isFinite(v)) portfolio = v;
-      }
-      elInvPortfolio.textContent = formatNOK(Math.round(portfolio));
-    }
-    if (elInvCapital) {
-      let capital = 0;
-      const capitalSliderEl = document.getElementById('input-capital-slider');
-      if (capitalSliderEl && capitalSliderEl.value) {
-        const v = Number(capitalSliderEl.value);
-        if (isFinite(v)) capital = v;
-      } else if (isFinite(AppState.inputCapital)) {
-        capital = Number(AppState.inputCapital);
-      }
-      elInvCapital.textContent = formatNOK(Math.round(capital));
-    }
-    const elInvExpected = document.getElementById("inv-left-expected");
-    if (elInvExpected) {
-      const inputExpectedReturn = document.getElementById('expected-return-out');
-      if (inputExpectedReturn) {
-        // Hent verdien direkte fra Input-fanen (allerede formatert med to desimaler)
-        const inputValue = inputExpectedReturn.textContent.trim();
-        elInvExpected.textContent = inputValue;
-      } else if (isFinite(AppState.expectedReturnPct)) {
-        // Fallback: bruk AppState hvis elementet ikke finnes
-        elInvExpected.textContent = `${AppState.expectedReturnPct.toFixed(2).replace('.', ',')} %`;
-      }
-    }
-    // Hent porteføljestørrelse og andre verdier som trengs for beregninger
-    const sumAssets = (AppState.assets || []).reduce((s, x) => s + (x.amount || 0), 0);
-    let portfolio = isFinite(AppState.portfolioSize) ? Number(AppState.portfolioSize) : sumAssets;
-    const portfolioSlider = document.getElementById('input-portfolio-slider');
-    if (portfolioSlider && portfolioSlider.value) {
-      const v = Number(portfolioSlider.value);
-      if (isFinite(v)) portfolio = v;
-    }
-    
-    // Oppdater "Uttak til renter og avdrag" med AVDRAG-funksjonen
-    const elInvPayment = document.getElementById("inv-left-payment");
-    let annualPayment = 0;
-    if (elInvPayment) {
-      let repaymentYears = 20;
-      const repaymentSliderEl = document.getElementById('repayment-profile-slider');
-      if (repaymentSliderEl && repaymentSliderEl.value) {
-        const v = Number(repaymentSliderEl.value);
-        if (isFinite(v) && v > 0) repaymentYears = v;
-      } else if (isFinite(AppState.repaymentProfileYears)) {
-        repaymentYears = Number(AppState.repaymentProfileYears);
-      }
-      
-      let interestCost = 5.0;
-      const interestSliderEl = document.getElementById('interest-cost-slider');
-      if (interestSliderEl && interestSliderEl.value) {
-        const v = Number(interestSliderEl.value);
-        if (isFinite(v)) interestCost = v;
-      } else if (isFinite(AppState.interestCostPct)) {
-        interestCost = Number(AppState.interestCostPct);
-      }
-      
-      annualPayment = getLoanAnnualPayment(portfolio, interestCost, repaymentYears);
-      elInvPayment.textContent = formatNOKZeroDash(annualPayment);
-      elInvPayment.style.color = "var(--error-600)";
-    }
-    
-    // Oppdater "Årlig renter og avdrag per år" i høyre boksen med minus foran
-    const elInvAnnualPayment = document.getElementById("inv-right-annual-payment");
-    if (elInvAnnualPayment) {
-      elInvAnnualPayment.textContent = formatNOKZeroDash(-annualPayment);
-      elInvAnnualPayment.style.color = "var(--error-600)";
-    }
-    
-    // "Verdi ved periodens slutt" og "Avkastning" beregnes i updateInvestLoanCalc() som kalles tidligere i funksjonen
-    // for å unngå duplisert logikk og sikre konsistent oppdatering
-    // Beregn og oppdater "Restlån ved periodens slutt" hvis nødvendig (avkastning er allerede beregnet)
-    const elInvRemainingLoan = document.getElementById("inv-right-remaining-loan");
-    if (elInvRemainingLoan && annualPayment > 0) {
-      // Sjekk om avdragsfrihet er aktivert
-      const interestOnly = AppState.interestOnly === true;
-      
-      // Hent verdier for beregning
-      let years = 10;
-      const yearsSliderEl = document.getElementById('input-years-slider');
-      if (yearsSliderEl && yearsSliderEl.value) {
-        const v = Number(yearsSliderEl.value);
-        if (isFinite(v) && v > 0) years = v;
-      } else if (isFinite(AppState.yearsCount)) {
-        years = Number(AppState.yearsCount);
-      }
-      
-      let interestCost = 5.0;
-      const interestSliderEl = document.getElementById('interest-cost-slider');
-      if (interestSliderEl && interestSliderEl.value) {
-        const v = Number(interestSliderEl.value);
-        if (isFinite(v)) interestCost = v;
-      } else if (isFinite(AppState.interestCostPct)) {
-        interestCost = Number(AppState.interestCostPct);
-      }
-      
-      // Hent porteføljestørrelse
-      const sumAssets = (AppState.assets || []).reduce((s, x) => s + (x.amount || 0), 0);
-      let portfolio = isFinite(AppState.portfolioSize) ? Number(AppState.portfolioSize) : sumAssets;
-      const portfolioSlider = document.getElementById('input-portfolio-slider');
-      if (portfolioSlider && portfolioSlider.value) {
-        const v = Number(portfolioSlider.value);
-        if (isFinite(v)) portfolio = v;
-      }
-      
-      let remainingLoan = 0;
-      if (interestOnly) {
-        // Hvis avdragsfrihet er aktivert: restlån er uforandret (samme som opprinnelig lån)
-        remainingLoan = portfolio;
-      } else {
-        // Hent avdragsprofil for å sjekke om lånet er nedbetalt
-        let repaymentYearsForTop = 20; // default
-        const repaymentSliderElForTop = document.getElementById('repayment-profile-slider');
-        if (repaymentSliderElForTop && repaymentSliderElForTop.value) {
-          const v = Number(repaymentSliderElForTop.value);
-          if (isFinite(v) && v > 0) repaymentYearsForTop = v;
-        } else if (isFinite(AppState.repaymentProfileYears)) {
-          repaymentYearsForTop = Number(AppState.repaymentProfileYears);
-        }
-        
-        // Hvis antall år >= avdragsprofil, er lånet fullstendig nedbetalt (restlån = 0)
-        if (years >= repaymentYearsForTop) {
-          remainingLoan = 0;
-        } else {
-          // PV-parametere:
-          const pvRate = interestCost / 100;
-          const remainingYears = repaymentYearsForTop - years;
-          const pvNper = remainingYears;
-          const pvPmt = -annualPayment; // Negativ fordi det er utbetaling
-          const pvFv = 0;
-          const pvType = 0;
-          
-          remainingLoan = Math.abs(calculatePV(pvRate, pvNper, pvPmt, pvFv, pvType));
-        }
-      }
-      elInvRemainingLoan.textContent = formatNOK(Math.round(remainingLoan));
-      
-      // Avkastning er allerede beregnet i updateInvestLoanCalc() som kalles tidligere i funksjonen
-      
-      // Beregn og oppdater "Rest innskutt kapital" med SLUTTVERDI-funksjonen
-      const elInvRestCapital = document.getElementById("inv-left-rest-capital");
-      if (elInvRestCapital && annualPayment > 0) {
-        // Hent innskutt kapital fra Input-fanen
-        let capital = 0;
-        const capitalSliderEl = document.getElementById('input-capital-slider');
-        if (capitalSliderEl && capitalSliderEl.value) {
-          const v = Number(capitalSliderEl.value);
-          if (isFinite(v)) capital = v;
-        } else if (isFinite(AppState.inputCapital)) {
-          capital = Number(AppState.inputCapital);
-        }
-        
-        // Hent skjermingsrente fra Input-fanen
-        let shieldRatePct = 3.9;
-        const shieldSliderEl = document.getElementById('shield-rate-slider');
-        if (shieldSliderEl && shieldSliderEl.value) {
-          const v = Number(shieldSliderEl.value);
-          if (isFinite(v)) shieldRatePct = v;
-        } else if (isFinite(AppState.shieldRatePct)) {
-          shieldRatePct = Number(AppState.shieldRatePct);
-        }
-        
-        // FV-parametere:
-        const restRate = shieldRatePct / 100;
-        const restNper = years;
-        const restPmt = -annualPayment; // Med minus først
-        const restPv = capital; // Innskutt kapital
-        const restType = 0;
-        
-        // Beregn rest innskutt kapital med SLUTTVERDI
-        // Hvis innskutt kapital er 0 eller negativ, vis 0
-        let restCapitalValue = 0;
-        if (capital <= 0) {
-          elInvRestCapital.textContent = formatNOK(0);
-          restCapitalValue = 0;
-        } else {
-          const restCapital = -calculateFV(restRate, restNper, restPmt, restPv, restType);
-          // Hvis verdien blir negativ, vis 0
-          restCapitalValue = Math.max(0, Math.round(restCapital));
-          elInvRestCapital.textContent = formatNOK(restCapitalValue);
-        }
-        
-        applyInvestLoanTaxAndNet();
-      }
-    } else if (elInvRemainingLoan && annualPayment > 0 && !elInvReturn) {
-      // Fallback: bare beregn restlån uten avkastning
-      const sumAssets = (AppState.assets || []).reduce((s, x) => s + (x.amount || 0), 0);
-      let portfolio = isFinite(AppState.portfolioSize) ? Number(AppState.portfolioSize) : sumAssets;
-      const portfolioSlider = document.getElementById('input-portfolio-slider');
-      if (portfolioSlider && portfolioSlider.value) {
-        const v = Number(portfolioSlider.value);
-        if (isFinite(v)) portfolio = v;
-      }
-      
-      let years = 10;
-      const yearsSliderEl = document.getElementById('input-years-slider');
-      if (yearsSliderEl && yearsSliderEl.value) {
-        const v = Number(yearsSliderEl.value);
-        if (isFinite(v) && v > 0) years = v;
-      } else if (isFinite(AppState.yearsCount)) {
-        years = Number(AppState.yearsCount);
-      }
-      
-      let interestCost = 5.0;
-      const interestSliderEl = document.getElementById('interest-cost-slider');
-      if (interestSliderEl && interestSliderEl.value) {
-        const v = Number(interestSliderEl.value);
-        if (isFinite(v)) interestCost = v;
-      } else if (isFinite(AppState.interestCostPct)) {
-        interestCost = Number(AppState.interestCostPct);
-      }
-      
-      // Hent avdragsprofil for å sjekke om lånet er nedbetalt
-      let repaymentYearsForTop2 = 20; // default
-      const repaymentSliderElForTop2 = document.getElementById('repayment-profile-slider');
-      if (repaymentSliderElForTop2 && repaymentSliderElForTop2.value) {
-        const v = Number(repaymentSliderElForTop2.value);
-        if (isFinite(v) && v > 0) repaymentYearsForTop2 = v;
-      } else if (isFinite(AppState.repaymentProfileYears)) {
-        repaymentYearsForTop2 = Number(AppState.repaymentProfileYears);
-      }
-      
-      let remainingLoan = 0;
-      // Hvis antall år >= avdragsprofil, er lånet fullstendig nedbetalt (restlån = 0)
-      if (years >= repaymentYearsForTop2) {
-        remainingLoan = 0;
-      } else {
-        const pvRate = interestCost / 100;
-        const remainingYears = repaymentYearsForTop2 - years;
-        const pvNper = remainingYears;
-        const pvFv = 0;
-        const pvType = 0;
-        
-        remainingLoan = Math.abs(calculatePV(pvRate, pvNper, pvFv, pvType));
-      }
-      elInvRemainingLoan.textContent = formatNOK(Math.round(remainingLoan));
-    }
-    // Oppdater også høyre boksen: Lån og Rentekostnad
-    const elInvRightLoan = document.getElementById("inv-right-loan");
-    const elInvRightRate = document.getElementById("inv-right-rate");
-    if (elInvRightLoan) {
-      const sumAssets = (AppState.assets || []).reduce((s, x) => s + (x.amount || 0), 0);
-      let portfolio = isFinite(AppState.portfolioSize) ? Number(AppState.portfolioSize) : sumAssets;
-      const portfolioSlider = document.getElementById('input-portfolio-slider');
-      if (portfolioSlider && portfolioSlider.value) {
-        const v = Number(portfolioSlider.value);
-        if (isFinite(v)) portfolio = v;
-      }
-      elInvRightLoan.textContent = formatNOK(Math.round(portfolio));
-    }
-    
-    // "Verdi ved periodens slutt" er allerede oppdatert tidligere i denne funksjonen
-    // "Avkastning" er også allerede oppdatert tidligere i denne funksjonen (linje 3298-3304)
-    // Denne ekstra oppdateringen er ikke lenger nødvendig siden oppdateringen alltid skjer
-    // tidligere i funksjonen
-    
-    if (elInvRightRate) {
-      let interestCost = 5.0;
-      const interestSliderEl = document.getElementById('interest-cost-slider');
-      if (interestSliderEl && interestSliderEl.value) {
-        const v = Number(interestSliderEl.value);
-        if (isFinite(v)) interestCost = v;
-      } else if (isFinite(AppState.interestCostPct)) {
-        interestCost = Number(AppState.interestCostPct);
-      }
-      elInvRightRate.textContent = `${interestCost.toFixed(1).replace('.', ',')} %`;
+    if (document.getElementById("inv-left-endvalue") || document.getElementById("inv-left-portfolio")) {
+      applyAskLoanDashboard();
     }
   } catch (_) {}
 }
@@ -4922,73 +4841,34 @@ function initOutputUI() {
       
       // Get list of all calculation tabs that need to be rendered
       // Note: ASK tab is not yet implemented, so skip it
-      const calculationTabs = ["Nedbetale lån", "Utbetale utbytte", "Innløse Fondskonto"];
-      
-      // Create hidden container to store all rendered tabs
-      const hiddenContainer = document.createElement("div");
-      hiddenContainer.style.position = "absolute";
-      hiddenContainer.style.left = "-9999px";
-      hiddenContainer.style.visibility = "hidden";
-      document.body.appendChild(hiddenContainer);
-      
-      // Iterate through each calculation tab and render it temporarily to collect data
+      const calculationTabs = ["Nedbetale lån", "Utbetale utbytte", "Innløse Fondskonto", "Realisasjon skatt 2026"];
+      if (moduleRoot) moduleRoot.innerHTML = "";
+      const outputParts = [generateInputLines()];
+
       calculationTabs.forEach((tabName) => {
-        // Find the tab button
         const tabButton = Array.from(document.querySelectorAll(".nav-item")).find(
-          btn => btn.getAttribute("data-section") === tabName || btn.textContent.includes(tabName)
+          btn => btn.getAttribute("data-section") === tabName
         );
-        
-        if (tabButton) {
-          // Activate this tab
-          document.querySelectorAll(".nav-item").forEach(t => t.classList.remove("is-active"));
-          tabButton.classList.add("is-active");
-          
-          // Create a temporary root for this tab and append to body so getElementById works
-          const tempRoot = document.createElement("div");
-          tempRoot.style.position = "absolute";
-          tempRoot.style.left = "-9999px";
-          tempRoot.style.visibility = "hidden";
-          document.body.appendChild(tempRoot);
-          
-          // Render the tab content into tempRoot
-          try {
-            renderPlaceholder(tempRoot);
-            updateTopSummaries();
-            
-            // Copy all elements with IDs from tempRoot to hidden container
-            // But skip modal elements to avoid creating backdrops
-            const clonedElements = tempRoot.querySelectorAll("[id]");
-            clonedElements.forEach(el => {
-              // Skip modal elements and their children
-              if (el.closest('.modal')) return;
-              const clone = el.cloneNode(true);
-              clone.id = el.id; // Preserve the ID
-              hiddenContainer.appendChild(clone);
-            });
-            
-            // Clean up tempRoot
-            document.body.removeChild(tempRoot);
-          } catch (e) {
-            console.error(`Error rendering tab ${tabName}:`, e);
-            // Ensure cleanup even on error
-            try { document.body.removeChild(tempRoot); } catch (_) {}
-          }
+        if (!tabButton) return;
+        document.querySelectorAll(".nav-item").forEach(t => t.classList.remove("is-active"));
+        tabButton.classList.add("is-active");
+        const tempRoot = document.createElement("div");
+        tempRoot.style.position = "absolute";
+        tempRoot.style.left = "-9999px";
+        tempRoot.style.visibility = "hidden";
+        document.body.appendChild(tempRoot);
+        try {
+          renderPlaceholder(tempRoot);
+          updateTopSummaries();
+          outputParts.push(generateTabLines(tabName, tempRoot));
+        } catch (e) {
+          console.error(`Error rendering tab ${tabName}:`, e);
+          outputParts.push(`=== ${tabName.toUpperCase()} ===\nKunne ikke lese fanen.`);
         }
+        try { document.body.removeChild(tempRoot); } catch (_) {}
       });
-      
-      // Now generate output which will read all the rendered tabs from the hidden container
-      // Temporarily move hidden container content to main moduleRoot so getElementById works
-      const savedModuleRootHTML = moduleRoot ? moduleRoot.innerHTML : "";
-      if (moduleRoot) {
-        moduleRoot.innerHTML = "";
-        const hiddenElements = Array.from(hiddenContainer.children);
-        hiddenElements.forEach(el => moduleRoot.appendChild(el.cloneNode(true)));
-      }
-      
-      textArea.value = generateOutputText();
-      
-      // Clean up hidden container first
-      document.body.removeChild(hiddenContainer);
+
+      textArea.value = outputParts.filter(Boolean).join("\n\n");
       
       // Restore the previously active tab by re-rendering it
       // Don't restore originalRootHTML since we'll re-render anyway
@@ -5069,106 +4949,81 @@ function initOutputUI() {
   });
 }
 
-function generateOutputText() {
-  const nf = new Intl.NumberFormat("nb-NO");
+function generateInputLines() {
   const nok = (v) => new Intl.NumberFormat("nb-NO", { style: "currency", currency: "NOK", maximumFractionDigits: 0 }).format(v || 0);
-  const lines = [];
-  
-  // === INPUT FANEN ===
-  lines.push("=== INPUT ===");
-  lines.push(`Antall år: ${AppState.yearsCount || 10} år`);
-  lines.push(`Porteføljestørrelse: ${nok(AppState.portfolioSize ?? 10000000)}`);
-  lines.push(`Innskutt kapital: ${nok(AppState.inputCapital || 0)}`);
-  lines.push(`Aksjeandel: ${AppState.stockShareOption || "65% Aksjer"}`);
-  lines.push(`Forventet avkastning aksjer: ${(AppState.expEquity ?? 8.0).toFixed(1).replace('.', ',')} %`);
-  lines.push(`Forventet avkastning renter: ${(AppState.expBonds ?? 5.0).toFixed(1).replace('.', ',')} %`);
-  lines.push(`Forventet KPI: ${(AppState.expKpi ?? 2.0).toFixed(1).replace('.', ',')} %`);
-  lines.push(`Rådgivningshonorar: ${(AppState.advisoryFeePct || 0.0).toFixed(2).replace('.', ',')} %`);
-  lines.push(`Skjermingsrente: ${(AppState.shieldRatePct ?? 3.9).toFixed(1).replace('.', ',')} %`);
-  lines.push(`Rentekostnader: ${(AppState.interestCostPct ?? 5.0).toFixed(1).replace('.', ',')} %`);
-  lines.push(`Avdragsprofil: ${AppState.repaymentProfileYears || 20} år`);
-  lines.push(`Skattefradrag renter: ${AppState.interestTaxDeductionOnLoan !== false ? "Ja" : "Nei"}`);
-  lines.push(`Utbytteskatt: ${(AppState.stockTaxPct ?? 37.84).toFixed(2).replace('.', ',')} %`);
-  lines.push(`Kapitalskatt: ${(AppState.capitalTaxPct ?? 22.0).toFixed(2).replace('.', ',')} %`);
-  lines.push("");
-  
-  // === NEDBETALE LÅN FANEN ===
-  lines.push("=== NEDBETALE LÅN ===");
-  const nedbetaleData = [
-    { id: "inv-left-portfolio", label: "Portefølje" },
-    { id: "inv-left-capital", label: "Innskutt kapital" },
-    { id: "inv-left-expected", label: "Forventet avkastning" },
-    { id: "inv-left-payment", label: "Uttak til renter og avdrag" },
-    { id: "inv-left-endvalue", label: "Verdi ved periodens slutt" },
-    { id: "inv-left-avkastning-diff", label: "Avkastning:" },
-    { id: "inv-left-rest-capital", label: "Rest innskutt kapital" },
-    { id: "inv-left-tax", label: "Skatt" },
-    { id: "inv-left-net", label: "Netto portefølje etter skatt" },
-    { id: "inv-left-debt-settle", label: "Oppgjør gjeld" },
-    { id: "inv-left-interest-deduction", label: "Fradrag rentekostnader" },
-    { id: "inv-left-net-return", label: "Netto avkastning" },
-    { id: "inv-right-remaining-loan", label: "Restlån ved periodens slutt" },
-    { id: "inv-right-annual-payment", label: "Årlig renter og avdrag per år" }
-  ];
-  nedbetaleData.forEach(item => {
-    const el = document.getElementById(item.id);
-    if (el && el.textContent.trim()) {
-      lines.push(`${item.label}: ${el.textContent.trim()}`);
-    }
-  });
-  lines.push("");
-  
-  // === UTBETALE UTBYTTE FANEN ===
-  lines.push("=== UTBETALE UTBYTTE ===");
-  const utbytteData = [
-    { id: "div-portfolio", label: "Beholde portefølje" },
-    { id: "div-expected", label: "Forventet avkastning" },
-    { id: "div-endvalue", label: "Verdi ved periodens slutt" },
-    { id: "div-dividend", label: "Utbytte" },
-    { id: "div-dividend-tax", label: "Utbytteskatt" },
-    { id: "div-dividend-net", label: "Netto" },
-    { id: "div-remaining", label: "Restportefølje" },
-    { id: "div-loan", label: "Lån" },
-    { id: "div-interest-costs", label: "rentekostnader i x år" },
-    { id: "div-interest-deduction", label: "Skattefradrag renter" },
-    { id: "div-sum", label: "Sum" }
-  ];
-  utbytteData.forEach(item => {
-    const el = document.getElementById(item.id);
-    if (el && el.textContent.trim()) {
-      lines.push(`${item.label}: ${el.textContent.trim()}`);
-    }
-  });
-  lines.push("");
-  
-  // === INNLØSE FONDSKONTO FANEN ===
-  lines.push("=== INNLØSE FONDSKONTO ===");
-  const fondskontoData = [
-    { id: "fk-left-portfolio", label: "Portefølje" },
-    { id: "fk-left-capital", label: "Innskutt kapital" },
-    { id: "fk-left-gain", label: "Gevinst" },
-    { id: "fk-left-tax", label: "Skatt" },
-    { id: "fk-left-net", label: "Netto portefølje" },
-    { id: "fk-left-future", label: "Verdi portefølje om x år" },
-    { id: "fk-left-gain-future", label: "Gevinst om x år" },
-    { id: "fk-left-shield", label: "Skjermingsgrunnlag" },
-    { id: "fk-left-excess", label: "Avkastning utover skjerming" },
-    { id: "fk-left-tax-future", label: "Skatt" },
-    { id: "fk-left-net-future", label: "Netto portefølje" },
-    { id: "fk-right-portfolio", label: "Portefølje" },
-    { id: "fk-right-capital", label: "Innskutt kapital" },
-    { id: "fk-right-gain", label: "Gevinst" },
-    { id: "fk-right-tax", label: "Skatt" },
-    { id: "fk-right-net", label: "Netto portefølje" }
-  ];
-  fondskontoData.forEach(item => {
-    const el = document.getElementById(item.id);
-    if (el && el.textContent.trim()) {
-      lines.push(`${item.label}: ${el.textContent.trim()}`);
-    }
-  });
-  lines.push("");
+  const pct = (v, digits) => Number(v).toFixed(digits).replace(".", ",");
+  return [
+    "=== INPUT ===",
+    `Antall år: ${AppState.yearsCount || 10} år`,
+    `Porteføljestørrelse: ${nok(AppState.portfolioSize ?? 10000000)}`,
+    `Innskutt kapital: ${nok(AppState.inputCapital || 0)}`,
+    `Aksjeandel: ${AppState.stockShareOption || "65% Aksjer"}`,
+    `Forventet avkastning aksjer: ${pct(AppState.expEquity ?? 8.0, 1)} %`,
+    `Forventet avkastning renter: ${pct(AppState.expBonds ?? 5.0, 1)} %`,
+    `Forventet KPI: ${pct(AppState.expKpi ?? 2.0, 1)} %`,
+    `Rådgivningshonorar: ${pct(AppState.advisoryFeePct || 0.0, 2)} %`,
+    `Skjermingsrente: ${pct(AppState.shieldRatePct ?? 3.9, 1)} %`,
+    `Rentekostnader: ${pct(AppState.interestCostPct ?? 5.0, 1)} %`,
+    `Avdragsprofil: ${AppState.repaymentProfileYears || 20} år`,
+    `Avdragsfrihet: ${AppState.interestOnly === true ? "Ja" : "Nei"}`,
+    `Skattefradrag renter: ${AppState.interestTaxDeductionOnLoan !== false ? "Ja" : "Nei"}`,
+    `Utbytteskatt: ${pct(AppState.stockTaxPct ?? 37.84, 2)} %`,
+    `Kapitalskatt: ${pct(AppState.capitalTaxPct ?? 22.0, 2)} %`,
+    `Skatt fondskonto første år: ${pct(AppState.fundTaxFirstYearPct ?? 37.84, 2)} %`,
+  ].join("\n");
+}
 
+function pushOutputFields(lines, root, ids, prefix) {
+  ids.forEach((id) => {
+    const el = root.querySelector(`[id="${id}"]`);
+    if (!el) return;
+    const text = el.textContent.trim();
+    if (!text || text === "X") return;
+    const row = el.parentElement;
+    const labelNode = row && Array.from(row.children).find((child) => child !== el);
+    const label = labelNode ? labelNode.textContent.trim() : "";
+    if (!label) return;
+    const sep = label.endsWith(":") ? " " : ": ";
+    lines.push(`${prefix || ""}${label}${sep}${text}`);
+  });
+}
+
+function generateTabLines(tabName, root) {
+  const lines = [`=== ${tabName.toUpperCase()} ===`];
+  if (tabName === "Nedbetale lån") {
+    pushOutputFields(lines, root, [
+      "inv-left-portfolio", "inv-left-expected", "inv-left-capital", "inv-left-payment",
+      "inv-left-endvalue", "inv-left-avkastning-diff", "inv-left-rest-capital", "inv-left-tax",
+      "inv-left-net", "inv-left-debt-settle", "inv-left-interest-deduction", "inv-left-net-return",
+      "inv-right-loan", "inv-right-rate", "inv-right-annual-payment", "inv-right-total-interest",
+      "inv-right-remaining-loan", "inv-right-excess-return",
+    ]);
+  } else if (tabName === "Utbetale utbytte") {
+    lines.push("Beholde portefølje");
+    pushOutputFields(lines, root, [
+      "div-portfolio", "div-expected", "div-endvalue", "div-dividend", "div-dividend-tax",
+      "div-dividend-net", "div-loan-status", "div-remaining-portfolio", "div-interest-costs",
+      "div-interest-deduction", "div-sum", "div-difference",
+    ]);
+    lines.push("Utbetale utbytte");
+    pushOutputFields(lines, root, [
+      "r-div", "r-div-tax", "r-div-net", "r-loan", "r-remaining", "r-interest-costs",
+      "r-interest-deduction", "r-sum",
+    ]);
+  } else {
+    const leftPrefix = tabName === "Realisasjon skatt 2026" ? "Gjennomføre – " : "Flytte – ";
+    const rightPrefix = tabName === "Realisasjon skatt 2026" ? "Ikke gjennomføre – " : "Beholde – ";
+    pushOutputFields(lines, root, [
+      "fk-left-portfolio", "fk-left-capital", "fk-left-gain", "fk-left-tax", "fk-left-net",
+      "fk-left-future", "fk-left-gain-future", "fk-left-shield", "fk-left-excess",
+      "fk-left-tax-future", "fk-left-net-future",
+    ], leftPrefix);
+    pushOutputFields(lines, root, [
+      "fk-right-portfolio", "fk-right-capital", "fk-right-gain", "fk-right-tax-now", "fk-right-net-now",
+      "fk-right-future", "fk-right-gain-future", "fk-right-shield", "fk-right-excess",
+      "fk-right-tax", "fk-right-deferred-tax", "fk-right-net",
+    ], rightPrefix);
+  }
   return lines.join("\n");
 }
 
@@ -5281,9 +5136,11 @@ function parseInputText(text) {
       if (match) {
         AppState.stockShareOption = match[1].trim();
         // Prøv å ekstrahere prosent hvis mulig
-        const pctMatch = match[1].match(/(\d+)%/);
-        if (pctMatch) {
-          AppState.stockSharePercent = parseInt(pctMatch[1], 10);
+        if (/Renter/i.test(match[1])) {
+          AppState.stockSharePercent = 0;
+        } else {
+          const pctMatch = match[1].match(/(\d+)%/);
+          if (pctMatch) AppState.stockSharePercent = parseInt(pctMatch[1], 10);
         }
       }
     } else if (line.startsWith("Forventet avkastning aksjer:")) {
@@ -5316,6 +5173,9 @@ function parseInputText(text) {
       if (match) {
         AppState.interestCostPct = parseFloat(match[1].replace(",", "."));
       }
+    } else if (line.startsWith("Avdragsfrihet:")) {
+      const match = line.match(/Avdragsfrihet:\s*(Ja|Nei)/i);
+      if (match) AppState.interestOnly = /^ja$/i.test(match[1]);
     } else if (line.startsWith("Avdragsprofil:")) {
       const match = line.match(/Avdragsprofil:\s*(\d+)\s*år/);
       if (match) {
@@ -5336,6 +5196,9 @@ function parseInputText(text) {
       if (match) {
         AppState.capitalTaxPct = parseFloat(match[1].replace(",", "."));
       }
+    } else if (line.startsWith("Skatt fondskonto første år:")) {
+      const match = line.match(/Skatt fondskonto første år:\s*([\d,]+)\s*%/);
+      if (match) AppState.fundTaxFirstYearPct = parseFloat(match[1].replace(",", "."));
     }
   }
   
@@ -5715,6 +5578,38 @@ function getInvestLoanChartInputs() {
  * Siste år: skatt + oppgjør gjeld + fradrag slås sammen til én negativ søyle.
  */
 function buildVisGrafiskData() {
+  const model = calculateAskLoan(getAskLoanInput());
+  const yearRows = model.years.map((year) => ({
+    year: year.aar,
+    hovedstol: year.verdiStart,
+    growth: year.avkastning,
+    interest: year.uttak,
+    principal: 0,
+    payment: year.uttak,
+    endPortfolio: year.verdiEtterUttak,
+    isLast: year.aar === model.years.length,
+  }));
+  const lastRow = yearRows[yearRows.length - 1];
+  if (lastRow) {
+    lastRow.tax = -model.oppgjor.skattGevinst;
+    lastRow.debtSettle = -model.oppgjor.restlan;
+    lastRow.interestDeduction = model.oppgjor.rentefradrag + model.oppgjor.tapsfradrag;
+    lastRow.final = model.oppgjor.nettoResultat;
+  }
+  return {
+    portfolio: model.years.length ? model.years[0].verdiStart : 0,
+    years: model.years.length,
+    yearRows,
+    futureValue: model.oppgjor.verdiForUttak,
+    remainingLoan: model.oppgjor.restlan,
+    taxAmount: -model.oppgjor.skattGevinst,
+    debtSettle: -model.oppgjor.restlan,
+    interestDeduction: model.oppgjor.rentefradrag,
+    netReturn: model.oppgjor.nettoResultat,
+  };
+}
+
+function buildVisGrafiskDataLegacy() {
   const {
     portfolio,
     years,
@@ -7163,6 +7058,10 @@ function initVisGrafiskUI() {
 
 // Beregn netto avkastning for en gitt aksjeandel-grad (basert på nedbetale lån-beregninger)
 function calculateNetReturnForEquityShare(equitySharePercent) {
+  const input = getAskLoanInput({
+    forventetAvkastning: expectedReturnPctForShare(equitySharePercent),
+  });
+  return calculateAskLoan(input).nokkel.nettoResultat;
   // Hent verdier fra AppState / Input-fanen
   const sumAssets = (AppState.assets || []).reduce((s, x) => s + (x.amount || 0), 0);
   const portfolio = isFinite(AppState.portfolioSize) ? Number(AppState.portfolioSize) : sumAssets;
@@ -7336,6 +7235,7 @@ function calculateNetReturnForEquityShare(equitySharePercent) {
 
 // Beregn netto avkastning (Avkastning utover lånekostnad) for en gitt rentekostnad
 function calculateNetReturnForInterestCost(interestCostPercent) {
+  return calculateAskLoan(getAskLoanInput({ lanerente: interestCostPercent })).nokkel.nettoResultat;
   // Hent verdier fra AppState / Input-fanen
   const sumAssets = (AppState.assets || []).reduce((s, x) => s + (x.amount || 0), 0);
   const portfolio = isFinite(AppState.portfolioSize) ? Number(AppState.portfolioSize) : sumAssets;
@@ -7520,6 +7420,7 @@ function calculateNetReturnForInterestCost(interestCostPercent) {
 
 // Beregn netto avkastning for et gitt antall år
 function calculateNetReturnForYears(years) {
+  return calculateAskLoan(getAskLoanInput({ antallAar: years })).nokkel.nettoResultat;
   // Hent verdier fra AppState / Input-fanen
   const sumAssets = (AppState.assets || []).reduce((s, x) => s + (x.amount || 0), 0);
   const portfolio = isFinite(AppState.portfolioSize) ? Number(AppState.portfolioSize) : sumAssets;
@@ -9407,6 +9308,303 @@ function drawInterestCostBarChart() {
       if (tooltip) tooltip.remove();
     });
 
+    g.appendChild(rect);
+  });
+
+  svg.appendChild(g);
+  chartContainer.appendChild(svg);
+}
+
+function formatInputCapitalAxisLabel(amount) {
+  const n = Number(amount) || 0;
+  const abs = Math.abs(n);
+  if (abs >= 1000000) {
+    const millions = n / 1000000;
+    const rounded = Math.round(millions * 10) / 10;
+    const text = Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1).replace(".", ",");
+    return `${text} mill.`;
+  }
+  if (abs >= 1000) {
+    return `${Math.round(n / 1000)} tusen`;
+  }
+  return formatNOK(Math.round(n));
+}
+
+function getInputCapitalChartSteps() {
+  const sumAssets = (AppState.assets || []).reduce((s, x) => s + (x.amount || 0), 0);
+  const portfolio = isFinite(AppState.portfolioSize) ? Number(AppState.portfolioSize) : sumAssets;
+  const steps = [];
+  for (let i = 0; i <= 10; i++) {
+    steps.push(Math.round((portfolio * i) / 10));
+  }
+  return steps;
+}
+
+function calculateNetReturnForInputCapital(capitalAmount) {
+  const previous = AppState.inputCapital;
+  AppState.inputCapital = Math.max(0, Number(capitalAmount) || 0);
+  try {
+    const interestPct = isFinite(AppState.interestCostPct) ? Number(AppState.interestCostPct) : 5.0;
+    return calculateNetReturnForInterestCost(interestPct);
+  } finally {
+    AppState.inputCapital = previous;
+  }
+}
+
+function initInputCapitalChartUI() {
+  const modal = document.getElementById("input-capital-chart-modal");
+  const chartContainer = document.getElementById("input-capital-chart-container");
+  const resizeHandle = document.getElementById("input-capital-chart-resize-handle");
+  if (!modal || !chartContainer) return;
+
+  if (resizeHandle) {
+    let isResizing = false;
+    let startX, startY, startWidth, startHeight;
+
+    resizeHandle.addEventListener("mousedown", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      isResizing = true;
+      const rect = chartContainer.getBoundingClientRect();
+      startX = e.clientX;
+      startY = e.clientY;
+      startWidth = rect.width;
+      startHeight = rect.height;
+      document.addEventListener("mousemove", handleResize);
+      document.addEventListener("mouseup", stopResize);
+      chartContainer.style.userSelect = "none";
+    });
+
+    function handleResize(e) {
+      if (!isResizing) return;
+      const deltaX = e.clientX - startX;
+      const deltaY = e.clientY - startY;
+      const newWidth = Math.max(400, startWidth + deltaX);
+      const newHeight = Math.max(300, startHeight + deltaY);
+      chartContainer.style.width = `${newWidth}px`;
+      chartContainer.style.height = `${newHeight}px`;
+      chartContainer.style.minHeight = `${newHeight}px`;
+    }
+
+    function stopResize() {
+      isResizing = false;
+      document.removeEventListener("mousemove", handleResize);
+      document.removeEventListener("mouseup", stopResize);
+      chartContainer.style.userSelect = "";
+      setTimeout(() => {
+        renderAskCapitalOverview();
+      }, 10);
+    }
+  }
+
+  function openInputCapitalChartModal() {
+    if (!modal.hasAttribute("hidden")) {
+      closeInputCapitalChartModal();
+      return;
+    }
+    modal.removeAttribute("hidden");
+    if (chartContainer) {
+      chartContainer.style.width = "";
+      chartContainer.style.height = "";
+      chartContainer.style.minHeight = "";
+    }
+    requestAnimationFrame(() => renderAskCapitalOverview());
+    document.addEventListener("keydown", onKeyDown);
+  }
+
+  function closeInputCapitalChartModal() {
+    modal.setAttribute("hidden", "");
+    document.removeEventListener("keydown", onKeyDown);
+  }
+
+  function onKeyDown(e) {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      closeInputCapitalChartModal();
+    }
+  }
+
+  modal.addEventListener("click", (e) => {
+    const t = e.target;
+    if (t && t.getAttribute && t.getAttribute("data-close") === "true") {
+      closeInputCapitalChartModal();
+    }
+  });
+
+  window.openInputCapitalChartModal = openInputCapitalChartModal;
+}
+
+function drawInputCapitalBarChart() {
+  const chartContainer = document.getElementById("input-capital-chart-container");
+  if (!chartContainer) return;
+
+  const data = getInputCapitalChartSteps().map((capital) => ({
+    label: formatInputCapitalAxisLabel(capital),
+    value: calculateNetReturnForInputCapital(capital),
+  }));
+
+  const values = data.map(d => d.value);
+  const minValue = Math.min(...values);
+  const maxValue = Math.max(...values);
+
+  let niceMin;
+  let niceMax;
+  const maxAllowed = maxValue * 1.1;
+  const minAllowed = minValue < 0 ? minValue * 1.1 : Math.max(0, minValue * 0.9);
+
+  if (minValue >= 0) {
+    niceMin = 0;
+    niceMax = maxAllowed;
+  } else if (maxValue <= 0) {
+    niceMin = minAllowed;
+    niceMax = 0;
+  } else {
+    const maxAbs = Math.max(Math.abs(minValue), Math.abs(maxValue));
+    niceMin = Math.min(-maxAbs * 1.1, minAllowed);
+    niceMax = Math.min(maxAbs * 1.1, maxAllowed);
+  }
+
+  let range = niceMax - niceMin;
+  const niceRange = niceNumber(range, false);
+  niceMin = Math.floor(niceMin / niceRange) * niceRange;
+  const calculatedMax = Math.ceil(niceMax / niceRange) * niceRange;
+  niceMax = Math.min(calculatedMax, maxAllowed);
+  if (minValue < 0) niceMin = Math.max(niceMin, minAllowed);
+  if (niceMax === niceMin) niceMax = niceMin + 1;
+
+  range = niceMax - niceMin;
+  const niceTick = niceNumber(range / 10, true) || 1;
+
+  const containerRect = chartContainer.getBoundingClientRect();
+  const containerWidth = containerRect.width > 0 ? containerRect.width : 1800;
+  const containerHeight = containerRect.height > 0 ? containerRect.height : 1300;
+
+  const margin = { top: 16, right: 24, bottom: 96, left: 112 };
+  const width = Math.max(800, containerWidth);
+  const height = Math.max(600, containerHeight);
+  const chartWidth = width - margin.left - margin.right;
+  const chartHeight = height - margin.top - margin.bottom;
+
+  const existingSvg = chartContainer.querySelector("svg");
+  if (existingSvg) existingSvg.remove();
+
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+  svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
+  svg.setAttribute("width", width);
+  svg.setAttribute("height", height);
+  svg.style.width = "100%";
+  svg.style.maxWidth = `${width}px`;
+  svg.style.height = "auto";
+  svg.style.aspectRatio = `${width} / ${height}`;
+  svg.style.overflow = "visible";
+
+  const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+  g.setAttribute("transform", `translate(${margin.left},${margin.top})`);
+
+  const yAxisLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
+  yAxisLine.setAttribute("x1", 0);
+  yAxisLine.setAttribute("y1", 0);
+  yAxisLine.setAttribute("x2", 0);
+  yAxisLine.setAttribute("y2", chartHeight);
+  yAxisLine.setAttribute("stroke", CHART_THEME.axis);
+  yAxisLine.setAttribute("stroke-width", "1.5");
+  g.appendChild(yAxisLine);
+
+  const ticks = [];
+  for (let tick = 0; tick >= niceMin; tick -= niceTick) ticks.push(tick);
+  for (let tick = niceTick; tick <= niceMax; tick += niceTick) ticks.push(tick);
+  ticks.sort((a, b) => a - b);
+  const uniqueTicks = [...new Set(ticks)];
+
+  appendChartGridLines(g, uniqueTicks, niceMin, niceMax, chartWidth, chartHeight);
+
+  uniqueTicks.forEach(tick => {
+    const y = chartHeight - ((tick - niceMin) / (niceMax - niceMin)) * chartHeight;
+    const tickLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    tickLine.setAttribute("x1", -8);
+    tickLine.setAttribute("y1", y);
+    tickLine.setAttribute("x2", 0);
+    tickLine.setAttribute("y2", y);
+    tickLine.setAttribute("stroke", CHART_THEME.axis);
+    tickLine.setAttribute("stroke-width", "1.5");
+    g.appendChild(tickLine);
+
+    const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    label.setAttribute("x", -20);
+    label.setAttribute("y", y);
+    label.setAttribute("text-anchor", "end");
+    label.setAttribute("dominant-baseline", "middle");
+    styleChartText(label, { size: CHART_THEME.tickSize, weight: "500" });
+    label.textContent = formatNOK(Math.round(tick));
+    g.appendChild(label);
+  });
+
+  const zeroY = chartHeight - ((0 - niceMin) / (niceMax - niceMin)) * chartHeight;
+  const xAxisLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
+  xAxisLine.setAttribute("x1", 0);
+  xAxisLine.setAttribute("y1", zeroY);
+  xAxisLine.setAttribute("x2", chartWidth);
+  xAxisLine.setAttribute("y2", zeroY);
+  xAxisLine.setAttribute("stroke", CHART_THEME.zero);
+  xAxisLine.setAttribute("stroke-width", "1.5");
+  g.appendChild(xAxisLine);
+
+  const barSlot = chartWidth / data.length;
+  data.forEach((d, i) => {
+    const x = (i + 0.5) * barSlot;
+    const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    label.setAttribute("x", x);
+    label.setAttribute("y", chartHeight + 30);
+    label.setAttribute("text-anchor", "middle");
+    styleChartText(label, { size: CHART_THEME.categorySize, weight: "500" });
+    label.textContent = d.label;
+    g.appendChild(label);
+  });
+
+  const capitalAxisLabel = document.createElementNS("http://www.w3.org/2000/svg", "text");
+  capitalAxisLabel.setAttribute("x", chartWidth / 2);
+  capitalAxisLabel.setAttribute("y", chartHeight + 80);
+  capitalAxisLabel.setAttribute("text-anchor", "middle");
+  styleChartText(capitalAxisLabel, { size: CHART_THEME.axisTitleSize, weight: "600", fill: CHART_THEME.ink });
+  capitalAxisLabel.textContent = "Innskutt kapital";
+  g.appendChild(capitalAxisLabel);
+
+  data.forEach((d, i) => {
+    const barHeight = Math.abs((d.value / (niceMax - niceMin)) * chartHeight);
+    const x = i * barSlot + barSlot * 0.1;
+    const barW = barSlot * 0.8;
+    const y = d.value >= 0 ? zeroY - barHeight : zeroY;
+    const fillColor = d.value >= 0 ? CHART_THEME.positive : CHART_THEME.negative;
+
+    const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+    rect.setAttribute("x", x);
+    rect.setAttribute("y", y);
+    rect.setAttribute("width", barW);
+    rect.setAttribute("height", barHeight);
+    rect.setAttribute("fill", fillColor);
+    rect.setAttribute("stroke", "none");
+    rect.setAttribute("rx", "6");
+    rect.setAttribute("ry", "6");
+    rect.style.cursor = "pointer";
+    rect.style.transition = "opacity 0.2s";
+
+    rect.addEventListener("mouseenter", () => {
+      rect.style.opacity = "0.8";
+      const tooltip = document.createElementNS("http://www.w3.org/2000/svg", "text");
+      tooltip.setAttribute("x", x + barW / 2);
+      tooltip.setAttribute("y", d.value >= 0 ? y - 8 : y + barHeight + 20);
+      tooltip.setAttribute("text-anchor", "middle");
+      styleChartText(tooltip, { size: CHART_THEME.valueSize, weight: "600", fill: CHART_THEME.ink });
+      tooltip.setAttribute("id", `tooltip-capital-${i}`);
+      tooltip.textContent = formatNOK(Math.round(d.value));
+      g.appendChild(tooltip);
+    });
+    rect.addEventListener("mouseleave", () => {
+      rect.style.opacity = "1";
+      const tooltip = g.querySelector(`#tooltip-capital-${i}`);
+      if (tooltip) tooltip.remove();
+    });
     g.appendChild(rect);
   });
 

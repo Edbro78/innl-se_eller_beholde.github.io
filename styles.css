@@ -603,6 +603,63 @@ p { /* Avsnitt */
   background: linear-gradient(180deg, var(--white) 0%, var(--blue-25) 100%);
   box-sizing: border-box;
 }
+.ask-loan-overview {
+  overflow: auto;
+  width: 100%;
+  height: 100%;
+  padding: 8px 12px 16px;
+  box-sizing: border-box;
+  font-family: var(--font-sans);
+  color: var(--sp-navy);
+}
+.ask-loan-keys {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.ask-loan-keys div {
+  background: var(--white);
+  border: 1px solid var(--blue-200);
+  border-radius: var(--radius-md);
+  padding: 8px 10px;
+  min-width: 140px;
+}
+.ask-loan-keys span {
+  display: block;
+  font-size: 0.7rem;
+  color: var(--gray-600);
+}
+.ask-loan-keys strong {
+  font-size: 0.9rem;
+}
+.ask-loan-overview table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.75rem;
+  margin-bottom: 16px;
+}
+.ask-loan-overview th,
+.ask-loan-overview td {
+  padding: 6px 8px;
+  text-align: right;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--gray-200);
+}
+.ask-loan-overview th:first-child,
+.ask-loan-overview td:first-child {
+  text-align: left;
+}
+.ask-loan-overview th {
+  position: sticky;
+  top: 0;
+  background: var(--blue-50);
+}
+.ask-loan-note {
+  margin: 0 0 10px;
+  font-size: 0.8rem;
+  color: var(--error-600);
+}
 .chart-modal-canvas > svg {
   flex: 1 1 auto;
   width: 100%;
