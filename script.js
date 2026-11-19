@@ -314,7 +314,7 @@ function renderPlaceholder(root) {
     if (AppState.capitalTaxPct === undefined) AppState.capitalTaxPct = 22.0;
     if (AppState.stockTaxPct === undefined) AppState.stockTaxPct = 37.84;
     if (AppState.fundTaxFirstYearPct === undefined) AppState.fundTaxFirstYearPct = 37.84;
-    if (AppState.inputCapital === undefined) AppState.inputCapital = 5000000;
+    if (AppState.inputCapital === undefined) AppState.inputCapital = AppState.portfolioSize ?? 10000000;
     if (AppState.repaymentProfileYears === undefined) AppState.repaymentProfileYears = 20;
     if (AppState.interestTaxDeductionOnLoan === undefined) AppState.interestTaxDeductionOnLoan = true;
     
@@ -2206,9 +2206,9 @@ function renderPlaceholder(root) {
         // Oppdater maksverdi til ny porteføljestørrelse
         capitalSliderEl.max = String(v);
         
-        // Innskutt kapital har egen default (5 MNOK) og følger ikke porteføljen.
-        // Begrens den bare hvis den overstiger ny porteføljestørrelse.
-        if (currentCapitalValue > v) {
+        // Innskutt kapital følger porteføljen til brukeren har endret den selv,
+        // og kan aldri overstige porteføljestørrelsen.
+        if (!AppState.capitalManuallySet || currentCapitalValue > v) {
           capitalSliderEl.value = String(v);
           AppState.inputCapital = v;
           const capitalRowEl = capitalSliderEl.closest('div[style*="grid"]');
@@ -2656,9 +2656,9 @@ function renderPlaceholder(root) {
     capitalSlider.max = "50000000";
     capitalSlider.step = "50000";
     
-    // Default: Innskutt kapital = 5 MNOK (begrenset av porteføljestørrelse)
-    const defaultInputCapital = 5000000;
+    // Default: Innskutt kapital = porteføljestørrelse, til brukeren endrer den
     const initialPortfolioSize = AppState.portfolioSize ?? 10000000;
+    const defaultInputCapital = initialPortfolioSize;
     if (AppState.inputCapital === undefined) AppState.inputCapital = defaultInputCapital;
     const initialCapitalValue = Math.min(AppState.inputCapital, initialPortfolioSize);
     capitalSlider.value = String(initialCapitalValue);
@@ -2679,7 +2679,7 @@ function renderPlaceholder(root) {
     }
     
     const capitalValue = Math.min(
-      AppState.capitalManuallySet ? (AppState.inputCapital || 0) : (AppState.inputCapital ?? defaultInputCapital),
+      AppState.capitalManuallySet ? (AppState.inputCapital || 0) : defaultInputCapital,
       initialPortfolioSize
     );
     capitalSlider.value = String(capitalValue);
@@ -3623,19 +3623,22 @@ function expectedReturnPctForShare(equitySharePct) {
 
 function getAskLoanInput(overrides) {
   const deductionOn = AppState.interestTaxDeductionOnLoan !== false;
+  const lanebelop = readInputNumber("input-portfolio-slider", AppState.portfolioSize, 10000000);
+  const capitalTax = Number.isFinite(Number(AppState.capitalTaxPct)) ? Number(AppState.capitalTaxPct) : 22;
   const input = {
-    innskuttKapital: readInputNumber("input-capital-slider", AppState.inputCapital, 5000000),
-    lanebelop: readInputNumber("input-portfolio-slider", AppState.portfolioSize, 10000000),
+    startverdiASK: lanebelop,
+    innskuttKapital: readInputNumber("input-capital-slider", AppState.inputCapital, lanebelop),
+    lanebelop,
     lanerente: readInputNumber("interest-cost-slider", AppState.interestCostPct, 5),
     forventetAvkastning: expectedReturnPctForShare(getEquitySharePct()),
     skjermingsrente: readInputNumber("shield-rate-slider", AppState.shieldRatePct, 3.9),
     antallAar: readInputNumber("input-years-slider", AppState.yearsCount, 10),
     avdragsfrihet: AppState.interestOnly === true,
     avdragsprofilAar: readInputNumber("repayment-profile-slider", AppState.repaymentProfileYears, 20),
-    skattesatsGevinst: Number.isFinite(Number(AppState.stockTaxPct)) ? Number(AppState.stockTaxPct) : 37.84,
-    skattesatsRentefradrag: deductionOn
-      ? (Number.isFinite(Number(AppState.capitalTaxPct)) ? Number(AppState.capitalTaxPct) : 22)
-      : 0,
+    aksjeandel: getEquitySharePct(),
+    aksjeskatt: Number.isFinite(Number(AppState.stockTaxPct)) ? Number(AppState.stockTaxPct) : 37.84,
+    renteskatt: capitalTax,
+    skattesatsRentefradrag: deductionOn ? capitalTax : 0,
   };
   return Object.assign(input, overrides || {});
 }
@@ -3650,10 +3653,12 @@ function setAskAmount(id, value, color) {
 function askLoanStatusText(model) {
   const lines = [];
   model.warnings.forEach((warning) => {
-    if (warning.type === "uttak-over-innskudd") {
-      lines.push(`År ${warning.year}: renteuttaket er større enn innskutt kapital. Skattepliktig gevinst dette året er ${formatNOK(Math.round(warning.skattepliktig))}.`);
+    if (warning.type === "skattepliktig-uttak") {
+      lines.push(`År ${warning.year}: uttaket på ${formatNOK(Math.round(warning.uttak))} er større enn innskudd og ubrukt skjerming (${formatNOK(Math.round(warning.tilgjengeligSkattefritt))}). Skattepliktig uttak er ${formatNOK(Math.round(warning.skattepliktigUttak))}, og skatten på ${formatNOK(Math.round(warning.skattUttak))} betales fra egen lomme samme år.`);
+    } else if (warning.type === "negativ-verdi") {
+      lines.push(`År ${warning.year}: kontoverdien er brukt opp. Resten av renter og avdrag må dekkes med egne midler.`);
     } else if (warning.type === "tap") {
-      lines.push(`Verdi etter renteuttak er lavere enn gjenværende innskudd. Skatt på gevinst er 0. Ubrukt skjerming gir ikke fradrag. Tapet er ${formatNOK(Math.round(warning.tapMotInnskudd))}, og fradraget er ${formatNOK(Math.round(warning.tapsfradrag))}.`);
+      lines.push(`Tapsscenario: verdi etter renteuttak er lavere enn gjenværende innskudd. Skatt på gevinst er 0, og ubrukt skjerming går tapt. Tapet er ${formatNOK(Math.round(warning.tapMotInnskudd))}, og fradraget er ${formatNOK(Math.round(warning.tapsfradrag))}.`);
     }
   });
   model.controlErrors.forEach((error) => {
@@ -3671,7 +3676,7 @@ function applyAskLoanDashboard() {
   const oppgjor = model.oppgjor;
   const red = "var(--error-600)";
 
-  setAskAmount("inv-left-portfolio", input.lanebelop);
+  setAskAmount("inv-left-portfolio", model.input.startverdiASK);
   const elExpected = document.getElementById("inv-left-expected");
   if (elExpected) {
     elExpected.textContent = `${input.forventetAvkastning.toFixed(2).replace(".", ",")} %`;
@@ -3681,10 +3686,10 @@ function applyAskLoanDashboard() {
   setAskAmount("inv-left-endvalue", oppgjor.verdiEtterRente);
   setAskAmount("inv-left-avkastning-diff", model.nokkel.totalAvkastning);
   setAskAmount("inv-left-rest-capital", last ? last.innskudd : input.innskuttKapital);
-  setAskAmount("inv-left-tax", -oppgjor.skattGevinst, red);
-  setAskAmount("inv-left-net", oppgjor.nettoFraASK);
+  setAskAmount("inv-left-tax", -oppgjor.totalSkatt, red);
+  setAskAmount("inv-left-net", oppgjor.verdiEtterRente - oppgjor.totalSkatt);
   setAskAmount("inv-left-debt-settle", -oppgjor.restlan, red);
-  setAskAmount("inv-left-interest-deduction", oppgjor.rentefradrag);
+  setAskAmount("inv-left-interest-deduction", oppgjor.rentefradrag + oppgjor.tapsfradrag);
   setAskAmount("inv-left-net-return", oppgjor.nettoResultat);
   setAskAmount("inv-right-loan", input.lanebelop);
   const elRate = document.getElementById("inv-right-rate");
@@ -3713,52 +3718,93 @@ function renderAskCapitalOverview() {
   const model = window.__askLoanModel || calculateAskLoan(getAskLoanInput());
   container.style.overflow = "auto";
   container.style.display = "block";
+  const kr = (value) => formatNOK(Math.round(value) || 0);
+  const showRepayment = !model.input.avdragsfrihet;
   const headers = [
     "År",
     "Verdi 1.1.",
     "Avkastning",
     "Verdi før uttak",
-    "Uttak (renter)",
+    ...(showRepayment ? ["Renter", "Avdrag"] : []),
+    "Uttak",
+    ...(showRepayment ? ["Restlån"] : []),
     "Verdi etter uttak",
-    "Innskutt kapital",
-    "Skjermingsgrunnlag 1.1.",
+    "Innskudd 31.12.",
+    "Grunnlag 1.1.",
     "Skjerming",
-    "Skjermingsgrunnlag 31.12.",
+    "Grunnlag 31.12.",
+    "Skattepliktig uttak",
+    "Skatt på uttak",
   ];
+  const marker = (text) => `<span class="ask-loan-marker">${text}</span>`;
   const body = model.years.map((year) => `
-    <tr>
+    <tr${year.skattepliktigUttak > 0 ? ' class="ask-loan-taxed"' : ""}>
       <td>${year.aar}</td>
-      <td>${formatNOK(Math.round(year.verdiStart))}</td>
-      <td>${formatNOK(Math.round(year.avkastning))}</td>
-      <td>${formatNOK(Math.round(year.verdiForUttak))}</td>
-      <td>${formatNOK(Math.round(-year.uttak))}</td>
-      <td>${formatNOK(Math.round(year.verdiEtterUttak))}</td>
-      <td>${formatNOK(Math.round(year.innskudd))}</td>
-      <td>${formatNOK(Math.round(year.grunnlagStart))}</td>
-      <td>${formatNOK(Math.round(year.skjerming))}</td>
-      <td>${formatNOK(Math.round(year.grunnlagSlutt))}</td>
+      <td>${kr(year.verdiStart)}</td>
+      <td>${kr(year.avkastning)}</td>
+      <td>${kr(year.verdiForUttak)}</td>
+      ${showRepayment ? `<td>${kr(-year.rente)}</td><td>${kr(-year.avdrag)}</td>` : ""}
+      <td>${kr(-year.uttak)}</td>
+      ${showRepayment ? `<td>${kr(year.restlan)}</td>` : ""}
+      <td>${kr(year.verdiEtterUttak)}</td>
+      <td>${kr(year.innskudd)}${year.innskuddNaarNull ? marker("innskudd når 0") : ""}</td>
+      <td>${kr(year.grunnlagStart)}</td>
+      <td>${kr(year.skjerming)}</td>
+      <td>${kr(year.grunnlagSlutt)}${year.grunnlagNaarNull ? marker("grunnlag når 0") : ""}</td>
+      <td>${kr(year.skattepliktigUttak)}</td>
+      <td>${kr(-year.skattUttak)}</td>
     </tr>
   `).join("");
+  const o = model.oppgjor;
+  const settlement = [
+    ["Verdi etter renteuttak", o.verdiEtterRente],
+    ["Skjermingsgrunnlag", o.skjermingsgrunnlag],
+    ["Skattepliktig gevinst", o.skattepliktigGevinst],
+    [`Skatt ${proofPct(model.vektetSkattesats)}`, -o.skattGevinst],
+    ["Netto", o.nettoFraASK],
+    [model.input.avdragsfrihet ? "Lån" : "Restlån", -o.restlan],
+    ["Skatt på uttak underveis", -o.sumSkattUnderveis],
+    ["Rentefradrag", o.rentefradrag],
+  ];
+  if (o.tapScenario) settlement.push(["Tapsfradrag", o.tapsfradrag]);
+  settlement.push(["Netto resultat", o.nettoResultat]);
   const n = model.nokkel;
   const keys = [
     ["Total avkastning", n.totalAvkastning],
     ["Sum renter", -n.sumRenter],
     ["Sum skjerming", n.sumSkjerming],
-    ["Skatt på gevinst", -n.skattGevinst],
+    ["Total skatt", -n.totalSkatt],
     ["Rentefradrag", n.rentefradrag],
     ["Netto resultat", n.nettoResultat],
   ];
+  const rates = [
+    ["Vektet skattesats", model.vektetSkattesats],
+    ["Effektiv skjermingsrente", model.effektivSkjermingsrente],
+  ];
+  const proof = buildAskLoanProof(model).map((section) => `
+    <h4>${section.title}</h4>
+    <ul>${section.lines.map((line) => `<li>${line}</li>`).join("")}</ul>
+  `).join("");
   const note = askLoanStatusText(model);
   container.innerHTML = `
     <div class="ask-loan-overview">
       ${note ? `<p class="ask-loan-note">${note}</p>` : ""}
       <div class="ask-loan-keys">
-        ${keys.map(([label, value]) => `<div><span>${label}</span><strong>${formatNOK(Math.round(value))}</strong></div>`).join("")}
+        ${rates.map(([label, value]) => `<div><span>${label}</span><strong>${proofPct(value)}</strong></div>`).join("")}
+        ${keys.map(([label, value]) => `<div><span>${label}</span><strong>${kr(value)}</strong></div>`).join("")}
       </div>
       <table>
         <thead><tr>${headers.map((header) => `<th>${header}</th>`).join("")}</tr></thead>
         <tbody>${body}</tbody>
       </table>
+      <table class="ask-loan-settlement">
+        <thead><tr><th>Oppgjør</th><th>Beløp</th></tr></thead>
+        <tbody>${settlement.map(([label, value]) => `<tr><td>${label}</td><td>${kr(value)}</td></tr>`).join("")}</tbody>
+      </table>
+      <details class="ask-loan-proof">
+        <summary>Vis utregning</summary>
+        ${proof}
+      </details>
     </div>
   `;
 }
@@ -5130,6 +5176,7 @@ function parseInputText(text) {
       if (match) {
         const value = parseInt(match[1].replace(/\s/g, ""), 10);
         AppState.inputCapital = value;
+        AppState.capitalManuallySet = true;
       }
     } else if (line.startsWith("Aksjeandel:")) {
       const match = line.match(/Aksjeandel:\s*(.+)/);
@@ -5583,15 +5630,15 @@ function buildVisGrafiskData() {
     year: year.aar,
     hovedstol: year.verdiStart,
     growth: year.avkastning,
-    interest: year.uttak,
-    principal: 0,
+    interest: year.rente,
+    principal: year.avdrag,
     payment: year.uttak,
     endPortfolio: year.verdiEtterUttak,
     isLast: year.aar === model.years.length,
   }));
   const lastRow = yearRows[yearRows.length - 1];
   if (lastRow) {
-    lastRow.tax = -model.oppgjor.skattGevinst;
+    lastRow.tax = -model.oppgjor.totalSkatt;
     lastRow.debtSettle = -model.oppgjor.restlan;
     lastRow.interestDeduction = model.oppgjor.rentefradrag + model.oppgjor.tapsfradrag;
     lastRow.final = model.oppgjor.nettoResultat;
@@ -5602,9 +5649,9 @@ function buildVisGrafiskData() {
     yearRows,
     futureValue: model.oppgjor.verdiForUttak,
     remainingLoan: model.oppgjor.restlan,
-    taxAmount: -model.oppgjor.skattGevinst,
+    taxAmount: -model.oppgjor.totalSkatt,
     debtSettle: -model.oppgjor.restlan,
-    interestDeduction: model.oppgjor.rentefradrag,
+    interestDeduction: model.oppgjor.rentefradrag + model.oppgjor.tapsfradrag,
     netReturn: model.oppgjor.nettoResultat,
   };
 }
@@ -7060,6 +7107,7 @@ function initVisGrafiskUI() {
 function calculateNetReturnForEquityShare(equitySharePercent) {
   const input = getAskLoanInput({
     forventetAvkastning: expectedReturnPctForShare(equitySharePercent),
+    aksjeandel: equitySharePercent,
   });
   return calculateAskLoan(input).nokkel.nettoResultat;
   // Hent verdier fra AppState / Input-fanen
