@@ -1263,18 +1263,10 @@ function renderPlaceholder(root) {
         if (elPortfolio) {
           elPortfolio.textContent = formatNOK(Math.round(portfolio));
         }
-        // Sett inn innskutt kapital fra Input-fanen
+        // Innskutt kapital er porteføljen ved starten, uavhengig av aksjeandel
         const elCapital = document.getElementById("inv-left-capital");
         if (elCapital) {
-          let capital = 0;
-          const capitalSliderEl = document.getElementById('input-capital-slider');
-          if (capitalSliderEl && capitalSliderEl.value) {
-            const v = Number(capitalSliderEl.value);
-            if (isFinite(v)) capital = v;
-          } else if (isFinite(AppState.inputCapital)) {
-            capital = Number(AppState.inputCapital);
-          }
-          elCapital.textContent = formatNOK(Math.round(capital));
+          elCapital.textContent = formatNOK(Math.round(portfolio));
         }
         // Sett inn forventet avkastning fra Input-fanen
         const elExpected = document.getElementById("inv-left-expected");
@@ -1380,15 +1372,8 @@ function renderPlaceholder(root) {
             // Beregn og oppdater "Rest innskutt kapital" med SLUTTVERDI-funksjonen
             const elRestCapital = document.getElementById("inv-left-rest-capital");
             if (elRestCapital && annualPayment > 0) {
-                // Hent innskutt kapital fra Input-fanen
-                let capital = 0;
-                const capitalSliderEl = document.getElementById('input-capital-slider');
-                if (capitalSliderEl && capitalSliderEl.value) {
-                  const v = Number(capitalSliderEl.value);
-                  if (isFinite(v)) capital = v;
-                } else if (isFinite(AppState.inputCapital)) {
-                  capital = Number(AppState.inputCapital);
-                }
+                // Innskutt kapital er porteføljen ved starten
+                const capital = portfolio;
                 
                 // Hent skjermingsrente fra Input-fanen
                 let shieldRatePct = 3.9;
@@ -3627,7 +3612,9 @@ function getAskLoanInput(overrides) {
   const capitalTax = Number.isFinite(Number(AppState.capitalTaxPct)) ? Number(AppState.capitalTaxPct) : 22;
   const input = {
     startverdiASK: lanebelop,
-    innskuttKapital: readInputNumber("input-capital-slider", AppState.inputCapital, lanebelop),
+    // Innskutt kapital er alltid porteføljen ved start, uavhengig av aksjeandel.
+    // Skjermingsrenten beregnes som før av denne kapitalen.
+    innskuttKapital: lanebelop,
     lanebelop,
     lanerente: readInputNumber("interest-cost-slider", AppState.interestCostPct, 5),
     forventetAvkastning: expectedReturnPctForShare(getEquitySharePct()),
@@ -3640,7 +3627,9 @@ function getAskLoanInput(overrides) {
     renteskatt: capitalTax,
     skattesatsRentefradrag: deductionOn ? capitalTax : 0,
   };
-  return Object.assign(input, overrides || {});
+  const merged = Object.assign(input, overrides || {});
+  merged.innskuttKapital = merged.startverdiASK;
+  return merged;
 }
 
 function setAskAmount(id, value, color) {
